@@ -45,4 +45,11 @@ public class MigrationController {
         migrationService.saveLeagueAndSeason(leaguesAndSeasons);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
     }
+
+    @Operation(summary = "리그 경기 불러오기", description = "각 리그의 경기를 불러오며, 상태값 및 경기 결과를 자동 업데이트")
+    @PostMapping("/games")
+    public ResponseEntity<ResponseDTO<Void>> fetchGames(@RequestParam String season) {
+        List<League> leagues = leagueService.findAll();
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
+    }
 }
