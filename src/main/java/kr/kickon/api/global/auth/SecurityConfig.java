@@ -1,0 +1,91 @@
+package kr.kickon.api.global.auth;
+
+import jakarta.servlet.http.HttpServletResponse;
+import kr.kickon.api.global.auth.jwt.JwtAuthenticationFilter;
+import kr.kickon.api.global.auth.oauth.OAuth2SuccessHandler;
+import kr.kickon.api.global.auth.oauth.PrincipalOauth2UserService;
+import kr.kickon.api.global.common.enums.Role;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+@Configuration
+@EnableWebSecurity
+@RequiredArgsConstructor
+@Slf4j
+public class SecurityConfig {
+    private final PrincipalOauth2UserService principalOauth2UserService;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
+        http
+                .httpBasic(AbstractHttpConfigurer::disable) // ui 사용하는거 비활성화
+                .formLogin(AbstractHttpConfigurer::disable)
+
+                .csrf(AbstractHttpConfigurer::disable) // CSRF 보안 비활성화
+
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .sessionManagement((sessionConfig)->{
+                    sessionConfig.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+                }) // 세션 관리 정책
+                .authorizeHttpRequests((authorizeRequests) -> {
+                    authorizeRequests
+                            .requestMatchers("/swagger-ui/*", "/oauth2/*", "/v3/**").permitAll() // ✅ OAuth2 로그인 경로, swagger 호출 허용
+                            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                            .requestMatchers(HttpMethod.GET,
+                                    "/api/auth/jwt/me",
+                                    "/api/gamble-user-ranking"
+                            ).hasRole("USER")
+                            .requestMatchers(HttpMethod.POST,
+                                    "/api/user-match-gamble",
+                                    "/api/board",
+                                    "/api/news",
+                                    "/api/board-reply",
+                                    "/api/news-reply",
+                                    "/api/report-news",
+                                    "/api/report-board"
+                            ).hasRole("USER")
+                            .requestMatchers(HttpMethod.PATCH,
+                                    "/api/user-match-gamble"
+                            )
+                            .hasRole("USER")
+                            .requestMatchers(HttpMethod.DELETE,
+                                    "/api/user-match-gamble"
+                            ).hasRole("USER")
+
+                            .requestMatchers(HttpMethod.PATCH,"/api/user").hasAnyRole("OAUTH_FIRST_JOIN", "USER")
+                            .requestMatchers(HttpMethod.POST,"/api/user/privacy").hasAnyRole("OAUTH_FIRST_JOIN", "USER")
+
+                            .requestMatchers("/api/**").hasAnyRole("GUEST", "OAUTH_FIRST_JOIN", "USER") // "GUEST"는 내부적으로 "ROLE_GUEST"로 변환됨
+
+                            .requestMatchers("/**").permitAll()
+                            .anyRequest().authenticated(); // ✅ 인증 필요
+                })
+                .oauth2Login(oAuth2Login -> {
+                    oAuth2Login.userInfoEndpoint(userInfoEndpointConfig -> userInfoEndpointConfig.userService(principalOauth2UserService)).successHandler(oAuth2SuccessHandler);
+                        }
+                )
+                .exceptionHandling(exception ->
+                        exception.authenticationEntryPoint((request, response, authException) ->
+                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized with" + authException.getMessage())
+                        )
+                );
+
+
+        return http.build();
+    }
+
+}

@@ -1,0 +1,68 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main  # 프로덕션 배포
+      - dev   # 개발 환경 배포
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set environment variables
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "SPRING_PROFILES_ACTIVE=prod" >> $GITHUB_ENV
+            echo "APPLICATION_NAME=kickon-prod" >> $GITHUB_ENV
+            echo "DEPLOYMENT_GROUP=kickon-prod-group" >> $GITHUB_ENV
+          else
+            echo "SPRING_PROFILES_ACTIVE=dev" >> $GITHUB_ENV
+            echo "APPLICATION_NAME=kickon-dev" >> $GITHUB_ENV
+            echo "DEPLOYMENT_GROUP=kickon-dev-group" >> $GITHUB_ENV
+          fi
+
+      - name: Build with Gradle
+        run: ./gradlew clean build -x test
+
+      - name: Copy appspec.yml
+        run: cp appspec/appspec-${{env.SPRING_PROFILES_ACTIVE}}.yml appspec.yml
+
+      - name: Copy application.yml
+        run: cp src/main/resources/application-${{env.SPRING_PROFILES_ACTIVE}}.yml application-${{env.SPRING_PROFILES_ACTIVE}}.yml
+
+      - name: Copy scripts
+        run: mkdir -p scripts && cp -r ${{env.SPRING_PROFILES_ACTIVE}}-scripts/* scripts/
+
+      - name: Package files for deployment
+        run: |
+          mkdir -p deploy
+          cp application-${{env.SPRING_PROFILES_ACTIVE}}.yml deploy/
+          cp appspec.yml deploy/
+          cp -r scripts deploy/
+          cp build/libs/*.jar deploy/
+
+      - name: Compress deployment package
+        run: zip -r deploy.zip deploy/
+
+      - name: Upload to S3
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: Upload zip to S3
+        run: |
+          aws s3 cp deploy.zip s3://${{ secrets.S3_BUCKET }}/deploy/${{env.SPRING_PROFILES_ACTIVE}}.zip
+
+      - name: Deploy with CodeDeploy
+        run: |
+          aws deploy create-deployment \
+          --application-name ${{ env.APPLICATION_NAME }} \
+          --deployment-group-name ${{ env.DEPLOYMENT_GROUP }} \
+          --s3-location bucket=${{ secrets.S3_BUCKET }},bundleType=zip,key=deploy/${{env.SPRING_PROFILES_ACTIVE}}.zip

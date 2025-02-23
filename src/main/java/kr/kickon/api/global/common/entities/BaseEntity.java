@@ -1,0 +1,57 @@
+package kr.kickon.api.global.common.entities;
+
+import jakarta.persistence.*;
+import kr.kickon.api.global.common.enums.DataStatus;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.ColumnDefault;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Getter
+@Setter
+@MappedSuperclass
+@SuperBuilder
+@EntityListeners(AuditingEntityListener.class)
+@NoArgsConstructor
+@AllArgsConstructor
+public abstract class BaseEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long pk;
+
+    @Column(unique = true, nullable = false)
+    private String id;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private DataStatus status = DataStatus.ACTIVATED;
+
+    @CreatedDate
+    @Column(updatable = false, nullable = false)
+    private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    @Column(nullable = true)
+    private LocalDateTime updatedAt;
+
+    @Column(length = 500)
+    private String etc;
+
+    public void softDelete() {
+        this.status = DataStatus.DEACTIVATED;
+    }
+
+    public void restore() {
+        this.status = DataStatus.ACTIVATED;
+    }
+
+    @PrePersist
+    public void prePersist() {
+        if(status==null) status = DataStatus.ACTIVATED;
+    }
+}
