@@ -38,3 +38,5 @@ out/
 
 ### yml file ###
 src/main/resources/application.yml
+
+/src/main/generated/
