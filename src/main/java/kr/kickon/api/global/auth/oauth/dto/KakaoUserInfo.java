@@ -1,6 +1,5 @@
-package kr.kickon.api.global.auth.kakao;
+package kr.kickon.api.global.auth.oauth.dto;
 
-import kr.kickon.api.global.auth.oauth.OAuth2UserInfo;
 import kr.kickon.api.global.common.enums.ProviderType;
 
 import java.util.Map;

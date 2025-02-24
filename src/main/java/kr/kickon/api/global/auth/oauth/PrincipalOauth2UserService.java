@@ -2,28 +2,20 @@ package kr.kickon.api.global.auth.oauth;
 
 import jakarta.transaction.Transactional;
 import kr.kickon.api.domain.user.UserService;
-import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
-import kr.kickon.api.global.auth.jwt.TokenDto;
-import kr.kickon.api.global.auth.kakao.KakaoUserInfo;
-import kr.kickon.api.global.auth.naver.NaverUserInfo;
+import kr.kickon.api.global.auth.oauth.dto.KakaoUserInfo;
+import kr.kickon.api.global.auth.oauth.dto.NaverUserInfo;
+import kr.kickon.api.global.auth.oauth.dto.OAuth2UserInfo;
+import kr.kickon.api.global.auth.oauth.dto.PrincipalUserDetail;
 import kr.kickon.api.global.common.entities.User;
-import kr.kickon.api.global.common.enums.ProviderType;
 import kr.kickon.api.global.common.enums.Role;
-import kr.kickon.api.global.common.enums.UserAccountStatus;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Bean;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
