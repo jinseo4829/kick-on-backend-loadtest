@@ -1,5 +1,6 @@
 package kr.kickon.api.global.error.handler;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import io.swagger.v3.oas.annotations.Hidden;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.BaseException;
@@ -15,10 +16,12 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Hidden
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
@@ -79,9 +82,13 @@ public class GlobalExceptionHandler {
     // server error
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ResponseDTO<Void>> handleServerError(Exception e) {
+        int httpCode=500;
         String error = e.getMessage();
+        log.error("Exception: {}", e.getClass().getSimpleName());
         log.error("Validation errors: {}", error);  // 상세한 오류는 로그로 남기기
-        return ResponseEntity.status(500)
-                .body(ResponseDTO.error(ResponseCode.INTERNAL_SERVER_ERROR));
+        if(e.getCause() instanceof NoResourceFoundException)
+            httpCode = 404;
+        return ResponseEntity.status(httpCode)
+                .body(ResponseDTO.error(e.getClass().getSimpleName() ,error));
     }
 }

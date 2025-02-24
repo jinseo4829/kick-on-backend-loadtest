@@ -14,6 +14,15 @@ public class SwaggerConfig {
 
     @Bean
     public OpenAPI kickonAPI() {
+        String jwt = "JWT";
+        SecurityRequirement securityRequirement = new SecurityRequirement().addList(jwt);
+        Components components = new Components().addSecuritySchemes(jwt, new SecurityScheme()
+                .name(jwt)
+                .type(SecurityScheme.Type.HTTP)
+                .scheme("bearer")
+                .bearerFormat("JWT")
+        );
+
 
         // API 문서 정보 설정
         Info info = new Info()
@@ -21,16 +30,9 @@ public class SwaggerConfig {
                 .description("kick-on API 명세서")
                 .version("0.1.0");
 
-        // Security Scheme 정의 (userId 기반 인증)
-        SecurityScheme userIdScheme = new SecurityScheme()
-                .type(SecurityScheme.Type.APIKEY)  // API 키 방식
-                .in(SecurityScheme.In.HEADER)  // 헤더에서 userId를 받음
-                .name("userId");  // Swagger에서 사용할 인증 키 이름
-
         return new OpenAPI()
                 .addServersItem(new Server().url("/"))  // 기본 서버 설정
                 .info(info)  // API 문서 정보 추가
-                .addSecurityItem(new SecurityRequirement().addList("userId"))  // 보안 요구 사항 추가
-                .components(new Components().addSecuritySchemes("userId", userIdScheme)); // 보안 스키마 설정
+                .addSecurityItem(securityRequirement).components(components);
     }
 }

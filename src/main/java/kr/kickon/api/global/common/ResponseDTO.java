@@ -1,20 +1,35 @@
 package kr.kickon.api.global.common;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import kr.kickon.api.global.common.enums.ResponseCode;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Setter
 @Getter
-@RequiredArgsConstructor
+@NoArgsConstructor
+@Schema(description = "Response DTO for API responses")
 public class ResponseDTO<T> {
-    private final String code;
-    private final String message;
-    private final T data;
-    private final Object meta;
+    @Schema(example = "SUCCESS", description = "API CODE")
+    private String code;
+    @Schema(example = "성공", description = "API에 대한 메시지")
+    private String message;
+    @Schema(description = "응답 데이터", nullable = true)
+    private T data;
+    @Schema(description = "메타 데이터",nullable = true)
+    private Object meta;
 
+    public ResponseDTO(String code, String message, T o, Object o1) {
+        this.code = code;
+        this.message = message;
+        this.data = o;
+        this.meta = o1;
+    }
 
     public static <T> ResponseDTO<T> success(ResponseCode code) {
-        return new ResponseDTO<>(code.getCode(), code.getMessage(),null,null);
+        return new ResponseDTO<>(code.getCode(), code.getMessage(), null, null);
     }
 
     // ✅ 성공 응답 (메타 없음)
@@ -34,5 +49,10 @@ public class ResponseDTO<T> {
 
     public static <T> ResponseDTO<T> error(ResponseCode code, T data) {
         return new ResponseDTO<>(code.getCode(), code.getMessage(), data, null);
+    }
+
+
+    public static ResponseDTO<Void> error(String code, String message) {
+        return new ResponseDTO<>(code, message, null, null);
     }
 }
