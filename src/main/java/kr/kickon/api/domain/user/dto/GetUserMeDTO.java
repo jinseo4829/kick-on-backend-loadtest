@@ -7,9 +7,6 @@ import kr.kickon.api.global.common.entities.UserFavoriteTeam;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.util.Map;
 
 @Getter
 @Setter
@@ -26,13 +23,6 @@ public class GetUserMeDTO {
 
     @Schema(description = "팀 로고 url", example = "https://naver.me/image.png")
     private String teamLogoUrl;
-
-    public GetUserMeDTO(User user,Team team) {
-        this.id = user.getId();
-        this.nickname = user.getNickname();
-        this.profileImageUrl = user.getProfileImageUrl();
-        this.teamLogoUrl = team.getLogoUrl();
-    }
 
     public GetUserMeDTO(User user) {
         this.id = user.getId();

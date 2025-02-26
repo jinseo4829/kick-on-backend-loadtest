@@ -26,7 +26,8 @@ public enum ResponseCode {
     FORBIDDEN(HttpStatus.FORBIDDEN, "FORBIDDEN", "접근 권한이 없습니다."),
 
     // ✅ 404 Not Found
-    NOT_FOUND_USER(HttpStatus.NOT_FOUND, "NOT_FOUND_USER", "요청한 유저를 찾을 수 없습니다."),
+    NOT_FOUND_USER(HttpStatus.NOT_FOUND, "NOT_FOUND_USER", "해당 유저를 찾을 수 없습니다."),
+    NOT_FOUND_EVENT_BOARD(HttpStatus.NOT_FOUND, "NOT_FOUND_EVENT_BOARD", "해당 이벤트 게시글을 찾을 수 없습니다."),
     NOT_FOUND_TEAM(HttpStatus.NOT_FOUND, "NOT_FOUND_TEAM", "해당 팀을 찾을 수 없습니다."),
     NOT_FOUND_USER_FAVORITE_TEAM(HttpStatus.NOT_FOUND, "NOT_FOUND_USER_FAVORITE_TEAM", "유저가 좋아하는 팀을 찾을 수 없습니다."),
 

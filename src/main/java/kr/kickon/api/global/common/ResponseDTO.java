@@ -6,18 +6,23 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+
+import java.lang.reflect.Array;
+import java.util.List;
 
 @Setter
 @Getter
 @NoArgsConstructor
+@Slf4j
 @Schema(description = "Response DTO for API responses")
 public class ResponseDTO<T> {
     @Schema(example = "SUCCESS", description = "API CODE")
     private String code;
     @Schema(example = "성공", description = "API에 대한 메시지")
     private String message;
-    @Schema(description = "응답 데이터", nullable = true)
-    private T data;
+    @Schema(description = "응답 데이터, 객체일수도, 배열일수도 있음", nullable = true)
+    private Object data;
     @Schema(description = "메타 데이터",nullable = true)
     private Object meta;
 
@@ -40,6 +45,10 @@ public class ResponseDTO<T> {
     // ✅ 성공 응답 (메타 포함)
     public static <T> ResponseDTO<T> success(ResponseCode code, T data, Object meta) {
         return new ResponseDTO<>(code.getCode(), code.getMessage(), data, meta);
+    }
+
+    public static <T> ResponseDTO<List<T>> success(ResponseCode code, List<T> dataList) {
+        return new ResponseDTO<>(code.getCode(), code.getMessage(), dataList, null);
     }
 
     // ✅ 에러 응답
