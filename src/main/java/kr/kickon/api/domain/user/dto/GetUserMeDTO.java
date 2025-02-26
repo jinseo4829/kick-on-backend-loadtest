@@ -7,7 +7,9 @@ import kr.kickon.api.global.common.entities.UserFavoriteTeam;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -19,41 +21,23 @@ public class GetUserMeDTO {
     @Schema(description = "닉네임", example = "민서짱9")
     private String nickname;
 
-
+    @Schema(description = "사용자 프로필 이미지", example = "https://naver.me/image.png")
     private String profileImageUrl;
 
-
-    private String logoUrl;
+    @Schema(description = "팀 로고 url", example = "https://naver.me/image.png")
+    private String teamLogoUrl;
 
     public GetUserMeDTO(User user,Team team) {
         this.id = user.getId();
         this.nickname = user.getNickname();
         this.profileImageUrl = user.getProfileImageUrl();
-        this.logoUrl = team.getLogoUrl();
-        applySchemaAnnotations(GetUserMeDTO.class,User.class);
-        applySchemaAnnotations(GetUserMeDTO.class,Team.class);
+        this.teamLogoUrl = team.getLogoUrl();
     }
 
     public GetUserMeDTO(User user) {
         this.id = user.getId();
         this.nickname = user.getNickname();
         this.profileImageUrl = user.getProfileImageUrl();
-        this.logoUrl = null;
-        applySchemaAnnotations(GetUserMeDTO.class,User.class);
-    }
-
-    private void applySchemaAnnotations(Class<?> dtoClass, Class<?> entityClass) {
-        for (Field dtoField : dtoClass.getDeclaredFields()) {
-            try {
-                Field entityField = entityClass.getDeclaredField(dtoField.getName());
-                Schema schema = entityField.getAnnotation(Schema.class);
-                if (schema != null) {
-                    dtoField.setAccessible(true);
-                    dtoField.getAnnotation(Schema.class).description();
-                    dtoField.getAnnotation(Schema.class).example();
-                }
-            } catch (NoSuchFieldException ignored) {
-            }
-        }
+        this.teamLogoUrl = null;
     }
 }

@@ -3,6 +3,7 @@ package kr.kickon.api.domain.user;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.transaction.Transactional;
+import kr.kickon.api.domain.user.request.PatchUserRequest;
 import kr.kickon.api.domain.user.request.PrivacyUpdateRequest;
 import kr.kickon.api.global.auth.oauth.dto.OAuth2UserInfo;
 import kr.kickon.api.global.common.BaseService;
@@ -90,6 +91,11 @@ public class UserService implements BaseService<User> {
         user.setPrivacyAgreedAt(request.getPrivacyAgreedAt());
         user.setMarketingAgreedAt(request.getMarketingAgreedAt());
 
+        userRepository.save(user);
+    }
+
+    public void updateUser(User user, PatchUserRequest request){
+        user.setNickname(request.getNickname());
         userRepository.save(user);
     }
 }
