@@ -1,5 +1,6 @@
 package kr.kickon.api.global.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import io.swagger.v3.oas.models.Components;
@@ -9,7 +10,9 @@ import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 
+
 @Configuration
+@Slf4j
 public class SwaggerConfig {
 
     @Bean

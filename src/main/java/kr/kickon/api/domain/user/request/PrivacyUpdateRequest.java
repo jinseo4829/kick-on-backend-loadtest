@@ -1,4 +1,4 @@
-package kr.kickon.api.domain.user.dto;
+package kr.kickon.api.domain.user.request;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.swagger.v3.oas.annotations.media.Schema;

@@ -2,6 +2,7 @@ package kr.kickon.api.global.auth;
 
 import com.nimbusds.oauth2.sdk.TokenRequest;
 import io.jsonwebtoken.Claims;
+import kr.kickon.api.domain.user.UserService;
 import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
 import kr.kickon.api.global.auth.jwt.dto.TokenDto;
 import kr.kickon.api.global.auth.jwt.dto.TokenRequestDTO;
@@ -25,6 +26,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthController {
     private final JwtTokenProvider jwtTokenProvider;
+    private final UserService userService;
 
     @PostMapping("/refresh")
     public ResponseEntity<ResponseDTO<TokenDto>> refreshToken(@RequestBody TokenRequestDTO request) {
@@ -34,7 +36,7 @@ public class AuthController {
         }
         String authorities = "GUEST, ROLE_OAUTH_FIRST_JOIN";
         Claims claims = jwtTokenProvider.getClaimsFromToken(refreshToken);
-        User user = jwtTokenProvider.getUserByClaims(claims);
+        User user = userService.findByPk(Long.parseLong(claims.get(jwtTokenProvider.AUTH_PK).toString()));
         long now = (new Date()).getTime();
 
         Map<String, Object> newClaims = new HashMap<>();

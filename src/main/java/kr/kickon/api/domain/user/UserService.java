@@ -3,7 +3,7 @@ package kr.kickon.api.domain.user;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.transaction.Transactional;
-import kr.kickon.api.domain.user.dto.PrivacyUpdateRequest;
+import kr.kickon.api.domain.user.request.PrivacyUpdateRequest;
 import kr.kickon.api.global.auth.oauth.dto.OAuth2UserInfo;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.QUser;
@@ -56,9 +56,11 @@ public class UserService implements BaseService<User> {
         userRepository.save(user);
     }
 
-    public Optional<User> findByPk(Long pk){
+    public User findByPk(Long pk){
         BooleanExpression predicate = QUser.user.pk.eq(pk).and(QUser.user.status.eq(DataStatus.ACTIVATED));
-        return userRepository.findOne(predicate);
+        Optional<User> user = userRepository.findOne(predicate);
+        if(user.isEmpty()) throw new NotFoundException(ResponseCode.NOT_FOUND_USER);
+        return user.get();
     }
 
     @Transactional
@@ -77,9 +79,11 @@ public class UserService implements BaseService<User> {
     }
 
     @Override
-    public Optional<User> findById(String uuid) {
+    public User findById(String uuid) {
         BooleanExpression predicate = QUser.user.id.eq(uuid).and(QUser.user.status.eq(DataStatus.ACTIVATED));
-        return userRepository.findOne(predicate);
+        Optional<User> user = userRepository.findOne(predicate);
+        if(user.isEmpty()) throw new NotFoundException(ResponseCode.NOT_FOUND_USER);
+        return user.get();
     }
 
     public void updatePrivacy(User user, PrivacyUpdateRequest request) {

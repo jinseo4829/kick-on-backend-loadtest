@@ -5,6 +5,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import kr.kickon.api.domain.user.UserService;
 import kr.kickon.api.global.auth.oauth.dto.PrincipalUserDetail;
 import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.enums.ResponseCode;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     public final String AUTHORIZATION_HEADER = "Authorization";
     private final JwtTokenProvider jwtTokenProvider;
+    private final UserService userService;
     public int tokenPrefixLength = JwtTokenProvider.TOKEN_PREFIX.length();
     private final List<String> protectedUris = Arrays.asList("/really","/need-jwt"); // JWT가 필요한 URI 목록
 
@@ -55,10 +57,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (StringUtils.hasText(jwt) && jwtTokenProvider.validateToken(jwt)) {
                 // 토큰이 유효하면, 사용자 정보 가져오기
-                Claims claims = jwtTokenProvider.getClaimsFromToken(jwt);
-                User user = jwtTokenProvider.getUserByClaims(claims);
-                Long userPk = user.getPk();
-                String authority = jwtTokenProvider.getUserAuthorityFromClaims(claims);
                 authentication = jwtTokenProvider.getAuthentication(jwt);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }else{

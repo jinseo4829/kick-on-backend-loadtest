@@ -1,5 +1,6 @@
-package kr.kickon.api.domain.user.dto;
+package kr.kickon.api.domain.user.response;
 
+import kr.kickon.api.domain.user.request.PrivacyUpdateRequest;
 import kr.kickon.api.global.common.ResponseDTO;
 
 
@@ -9,3 +10,4 @@ public class PrivacyUpdateResponseDTO extends ResponseDTO<PrivacyUpdateRequest> 
         super.setData(data);
     }
 }
+

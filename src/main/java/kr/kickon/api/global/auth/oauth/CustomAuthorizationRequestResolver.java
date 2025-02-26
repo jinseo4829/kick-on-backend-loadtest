@@ -3,6 +3,7 @@ package kr.kickon.api.global.auth.oauth;
 import jakarta.servlet.http.HttpServletRequest;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import org.apache.coyote.BadRequestException;
+import org.apache.coyote.Response;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
@@ -29,7 +30,7 @@ public class CustomAuthorizationRequestResolver implements OAuth2AuthorizationRe
         try {
             return customizeAuthorizationRequest(request, authorizationRequest);
         } catch (BadRequestException e) {
-            throw new RuntimeException(e);
+            throw new kr.kickon.api.global.error.exceptions.BadRequestException(ResponseCode.PARAMETER_NOT_EXIST);
         }
     }
 
@@ -42,7 +43,7 @@ public class CustomAuthorizationRequestResolver implements OAuth2AuthorizationRe
         try {
             return customizeAuthorizationRequest(request, authorizationRequest);
         } catch (BadRequestException e) {
-            throw new RuntimeException(e);
+            throw new kr.kickon.api.global.error.exceptions.BadRequestException(ResponseCode.PARAMETER_NOT_EXIST);
         }
     }
 

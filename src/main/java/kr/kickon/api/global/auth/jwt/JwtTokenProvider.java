@@ -10,6 +10,7 @@ import kr.kickon.api.global.auth.oauth.dto.PrincipalUserDetail;
 import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.JwtAuthenticationException;
+import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.error.exceptions.UnauthorizedException;
 import kr.kickon.api.global.error.exceptions.UserNotFoundException;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Component;
 
@@ -85,14 +87,7 @@ public class JwtTokenProvider{
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-        Optional<User> userOptional = userService.findByPk(Long.parseLong(oAuth2User.getName()));
-
-        if(userOptional.isEmpty()) {
-            throw new UserNotFoundException(oAuth2User.getName());
-        }
-        User user = userOptional.get();
-
-        long now = (new Date()).getTime();
+        User user = userService.findByPk(Long.parseLong(oAuth2User.getName()));
 
         Map<String, Object> claims = new HashMap<>();
         claims.put(AUTH_PK, user.getPk());
@@ -131,13 +126,6 @@ public class JwtTokenProvider{
         }
     }
 
-
-    public User getUserByClaims(Claims claims){
-        Optional<User> user = userService.findByPk(Long.parseLong(claims.get(AUTH_PK).toString()));
-        if(user.isEmpty()) throw new UnauthorizedException(ResponseCode.INVALID_TOKEN);
-        return user.get();
-    }
-
     public Claims getClaimsFromToken(String token) {
         return Jwts.parser()
                 .verifyWith(getSignInKey())
@@ -157,7 +145,8 @@ public class JwtTokenProvider{
             if (claims == null) {
                 throw new UnauthorizedException(ResponseCode.INVALID_TOKEN);
             }
-            User user = getUserByClaims(claims);
+            User user = userService.findByPk(Long.parseLong(claims.get(AUTH_PK).toString()));
+
             String authority = getUserAuthorityFromClaims(claims);
             PrincipalUserDetail principal = new PrincipalUserDetail(
                     user,
@@ -169,7 +158,22 @@ public class JwtTokenProvider{
         } catch (Exception e) {
             throw new UnauthorizedException(ResponseCode.INVALID_TOKEN);
         }
+    }
 
+    public User getUserFromSecurityContext() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        PrincipalUserDetail principalUserDetail = null;
+        User user;
+        if (authentication != null) {
+            principalUserDetail = (PrincipalUserDetail) authentication.getPrincipal();
+        }
+        if(principalUserDetail==null) throw new UnauthorizedException(ResponseCode.INVALID_TOKEN);
+        try {
+            user = userService.findByPk(Long.parseLong(principalUserDetail.getName()));
+        }catch (NotFoundException e){
+            throw new UnauthorizedException(ResponseCode.INVALID_TOKEN);
+        }
 
+        return user;
     }
 }
