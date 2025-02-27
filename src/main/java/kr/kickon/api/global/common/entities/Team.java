@@ -20,10 +20,10 @@ public class Team extends BaseEntity {
     @Column(nullable = false, length = 100)
     private String nameEn;
 
-    @Column(nullable = false)
+    @Column()
     private String logoUrl;
 
-    @Column(nullable = false, length = 3)
+    @Column(length = 3)
     private String code;
 
     @Column(nullable = false)

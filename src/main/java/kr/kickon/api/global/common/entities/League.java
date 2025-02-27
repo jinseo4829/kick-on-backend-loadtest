@@ -3,12 +3,16 @@ package kr.kickon.api.global.common.entities;
 import jakarta.persistence.*;
 import kr.kickon.api.global.common.enums.LeagueType;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "League")
 @Getter
 @Setter
+@SuperBuilder
+@NoArgsConstructor
 public class League extends BaseEntity {
     @Column(nullable = false, length = 50)
     private String enName;
@@ -23,7 +27,7 @@ public class League extends BaseEntity {
     private Integer division;
 
     @Column(nullable = false)
-    private Integer apiId;
+    private Long apiId;
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)

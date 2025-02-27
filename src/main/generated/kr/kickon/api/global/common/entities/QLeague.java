@@ -24,7 +24,7 @@ public class QLeague extends EntityPathBase<League> {
 
     public final QBaseEntity _super = new QBaseEntity(this);
 
-    public final NumberPath<Integer> apiId = createNumber("apiId", Integer.class);
+    public final NumberPath<Long> apiId = createNumber("apiId", Long.class);
 
     public final QCountry country;
 

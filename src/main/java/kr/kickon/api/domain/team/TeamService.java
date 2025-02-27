@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -52,10 +53,8 @@ public class TeamService implements BaseService<Team> {
 
     @Transactional
     public void saveTeamsByApi(List<ApiTeamDTO> apiTeams) {
-        String[] ids = new String[apiTeams.size()];
-        int index = 0;
+        List<String> ids = new ArrayList<>();
         apiTeams.forEach(apiTeam -> {
-            boolean isDuplicate;
             String id="";
             Optional<Team> team = findByApiId(apiTeam.getId());
             if(team.isPresent()) {
@@ -71,17 +70,12 @@ public class TeamService implements BaseService<Team> {
                         id = uuidGenerator.generateUniqueUUID(this::findById);
                     }catch (NotFoundException ignore){
                     }
-
-                    isDuplicate = false;
                     // 이미 생성된 ID가 배열에 있는지 확인
-                    for (int j = 0; j < index; j++) {
-                        if (ids[j].equals(id)) {
-                            isDuplicate = true;
-                            break;
-                        }
+                    if(!ids.contains(id)) {
+                        break;
                     }
-                } while (isDuplicate); // 중복이 있을 경우 다시 생성
-                ids[index] = id;
+                } while (true); // 중복이 있을 경우 다시 생성
+                ids.add(id);
                 Team teamObj = Team.builder()
                         .id(id)
                         .nameEn(apiTeam.getName())
@@ -91,7 +85,6 @@ public class TeamService implements BaseService<Team> {
                         .build();
                 teamRepository.save(teamObj);
             }
-
         });
     }
 }
