@@ -28,6 +28,9 @@ public class Game extends BaseEntity {
     @Column(nullable = false)
     private GameStatus gameStatus;
 
+    @Column(length = 50)
+    private String round;
+
     @ManyToOne
     @JoinColumn(name = "home_team_pk", foreignKey = @ForeignKey(name = "fk_game_home_team"))
     private Team homeTeam;

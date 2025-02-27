@@ -32,8 +32,8 @@ public class LeagueService implements BaseService<League> {
     public League findById(String uuid) {
         BooleanExpression predicate = QLeague.league.id.eq(uuid).and(QLeague.league.status.eq(DataStatus.ACTIVATED));
         Optional<League> league = leagueRepository.findOne(predicate);
-        if(league.isEmpty()) throw new NotFoundException(ResponseCode.NOT_FOUND_LEAGUE);
-        return league.get();
+        return league.orElse(null);
+
     }
 
     @Override

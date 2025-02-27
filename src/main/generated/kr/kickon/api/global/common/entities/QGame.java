@@ -52,6 +52,8 @@ public class QGame extends EntityPathBase<Game> {
     //inherited
     public final NumberPath<Long> pk = _super.pk;
 
+    public final StringPath round = createString("round");
+
     public final DateTimePath<java.time.LocalDateTime> startedAt = createDateTime("startedAt", java.time.LocalDateTime.class);
 
     //inherited
@@ -79,9 +81,9 @@ public class QGame extends EntityPathBase<Game> {
     public QGame(Class<? extends Game> type, PathMetadata metadata, PathInits inits) {
         super(type, metadata, inits);
         this.actualSeason = inits.isInitialized("actualSeason") ? new QActualSeason(forProperty("actualSeason"), inits.get("actualSeason")) : null;
-        this.awayTeam = inits.isInitialized("awayTeam") ? new QTeam(forProperty("awayTeam"), inits.get("awayTeam")) : null;
+        this.awayTeam = inits.isInitialized("awayTeam") ? new QTeam(forProperty("awayTeam")) : null;
         this.gambleSeason = inits.isInitialized("gambleSeason") ? new QGambleSeason(forProperty("gambleSeason"), inits.get("gambleSeason")) : null;
-        this.homeTeam = inits.isInitialized("homeTeam") ? new QTeam(forProperty("homeTeam"), inits.get("homeTeam")) : null;
+        this.homeTeam = inits.isInitialized("homeTeam") ? new QTeam(forProperty("homeTeam")) : null;
     }
 
 }

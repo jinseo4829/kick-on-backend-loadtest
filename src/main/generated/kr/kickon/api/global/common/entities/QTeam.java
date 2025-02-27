@@ -7,7 +7,6 @@ import com.querydsl.core.types.dsl.*;
 import com.querydsl.core.types.PathMetadata;
 import javax.annotation.processing.Generated;
 import com.querydsl.core.types.Path;
-import com.querydsl.core.types.dsl.PathInits;
 
 
 /**
@@ -18,11 +17,13 @@ public class QTeam extends EntityPathBase<Team> {
 
     private static final long serialVersionUID = -389319556L;
 
-    private static final PathInits INITS = PathInits.DIRECT2;
-
     public static final QTeam team = new QTeam("team");
 
     public final QBaseEntity _super = new QBaseEntity(this);
+
+    public final NumberPath<Long> apiId = createNumber("apiId", Long.class);
+
+    public final StringPath code = createString("code");
 
     //inherited
     public final DateTimePath<java.time.LocalDateTime> createdAt = _super.createdAt;
@@ -32,8 +33,6 @@ public class QTeam extends EntityPathBase<Team> {
 
     //inherited
     public final StringPath id = _super.id;
-
-    public final QLeague league;
 
     public final StringPath logoUrl = createString("logoUrl");
 
@@ -51,24 +50,15 @@ public class QTeam extends EntityPathBase<Team> {
     public final DateTimePath<java.time.LocalDateTime> updatedAt = _super.updatedAt;
 
     public QTeam(String variable) {
-        this(Team.class, forVariable(variable), INITS);
+        super(Team.class, forVariable(variable));
     }
 
     public QTeam(Path<? extends Team> path) {
-        this(path.getType(), path.getMetadata(), PathInits.getFor(path.getMetadata(), INITS));
+        super(path.getType(), path.getMetadata());
     }
 
     public QTeam(PathMetadata metadata) {
-        this(metadata, PathInits.getFor(metadata, INITS));
-    }
-
-    public QTeam(PathMetadata metadata, PathInits inits) {
-        this(Team.class, metadata, inits);
-    }
-
-    public QTeam(Class<? extends Team> type, PathMetadata metadata, PathInits inits) {
-        super(type, metadata, inits);
-        this.league = inits.isInitialized("league") ? new QLeague(forProperty("league"), inits.get("league")) : null;
+        super(Team.class, metadata);
     }
 
 }

@@ -71,7 +71,7 @@ public class QGambleSeasonRanking extends EntityPathBase<GambleSeasonRanking> {
     public QGambleSeasonRanking(Class<? extends GambleSeasonRanking> type, PathMetadata metadata, PathInits inits) {
         super(type, metadata, inits);
         this.gambleSeason = inits.isInitialized("gambleSeason") ? new QGambleSeason(forProperty("gambleSeason"), inits.get("gambleSeason")) : null;
-        this.team = inits.isInitialized("team") ? new QTeam(forProperty("team"), inits.get("team")) : null;
+        this.team = inits.isInitialized("team") ? new QTeam(forProperty("team")) : null;
     }
 
 }

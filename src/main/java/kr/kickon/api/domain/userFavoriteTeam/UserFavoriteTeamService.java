@@ -29,23 +29,20 @@ public class UserFavoriteTeamService implements BaseService<UserFavoriteTeam> {
     public UserFavoriteTeam findById(String uuid) {
         BooleanExpression predicate = qUserFavoriteTeam.id.eq(uuid).and(qUserFavoriteTeam.status.eq(DataStatus.ACTIVATED));
         Optional<UserFavoriteTeam> userFavoriteTeam = userFavoriteTeamRepository.findOne(predicate);
-        if(userFavoriteTeam.isEmpty()) throw new NotFoundException(ResponseCode.NOT_FOUND_USER_FAVORITE_TEAM);
-        return userFavoriteTeam.get();
+        return userFavoriteTeam.orElse(null);
     }
 
     @Override
     public UserFavoriteTeam findByPk(Long pk) {
         BooleanExpression predicate = qUserFavoriteTeam.pk.eq(pk).and(qUserFavoriteTeam.status.eq(DataStatus.ACTIVATED));
         Optional<UserFavoriteTeam> userFavoriteTeam =userFavoriteTeamRepository.findOne(predicate);
-        if(userFavoriteTeam.isEmpty()) throw new NotFoundException(ResponseCode.NOT_FOUND_USER_FAVORITE_TEAM);
-        return userFavoriteTeam.get();
+        return userFavoriteTeam.orElse(null);
     }
 
     public UserFavoriteTeam findByUserPk(long pk){
         BooleanExpression predicate = qUserFavoriteTeam.user.pk.eq(pk)
                 .and(qUserFavoriteTeam.status.eq(DataStatus.ACTIVATED));
         Optional<UserFavoriteTeam> userFavoriteTeam =userFavoriteTeamRepository.findOne(predicate);
-        if(userFavoriteTeam.isEmpty()) throw new NotFoundException(ResponseCode.NOT_FOUND_USER_FAVORITE_TEAM);
-        return userFavoriteTeam.get();
+        return userFavoriteTeam.orElse(null);
     }
 }

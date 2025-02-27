@@ -21,11 +21,15 @@ public class QCountry extends EntityPathBase<Country> {
 
     public final QBaseEntity _super = new QBaseEntity(this);
 
+    public final StringPath code = createString("code");
+
     //inherited
     public final DateTimePath<java.time.LocalDateTime> createdAt = _super.createdAt;
 
     //inherited
     public final StringPath etc = _super.etc;
+
+    public final StringPath flagUrl = createString("flagUrl");
 
     //inherited
     public final StringPath id = _super.id;

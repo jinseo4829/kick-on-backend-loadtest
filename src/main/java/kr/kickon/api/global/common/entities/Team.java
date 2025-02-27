@@ -3,14 +3,18 @@ package kr.kickon.api.global.common.entities;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "Team")
 @Getter
 @Setter
+@SuperBuilder
+@NoArgsConstructor
 public class Team extends BaseEntity {
-    @Column(nullable = false, length = 50)
+    @Column(length = 50)
     private String nameKr;
 
     @Column(nullable = false, length = 100)
@@ -23,5 +27,5 @@ public class Team extends BaseEntity {
     private String code;
 
     @Column(nullable = false)
-    private long apiId;
+    private Long apiId;
 }

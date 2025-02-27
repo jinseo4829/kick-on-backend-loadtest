@@ -33,9 +33,8 @@ public class ActualSeasonRanking extends BaseEntity {
     @Column(nullable = false)
     private Integer points;
 
-    @ManyToOne
-    @JoinColumn(name = "actual_season_pk", foreignKey = @ForeignKey(name = "fk_actual_season_ranking_season"))
-    private ActualSeason actualSeason;
+    @Column(nullable = false)
+    private int season;
 
     @ManyToOne
     @JoinColumn(name = "team_pk", foreignKey = @ForeignKey(name = "fk_actual_season_ranking_team"))

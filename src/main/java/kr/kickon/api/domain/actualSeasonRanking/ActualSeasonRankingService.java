@@ -29,16 +29,14 @@ public class ActualSeasonRankingService implements BaseService<ActualSeasonRanki
     public ActualSeasonRanking findById(String uuid) {
         BooleanExpression predicate = QActualSeasonRanking.actualSeasonRanking.id.eq(uuid).and(QActualSeasonRanking.actualSeasonRanking.status.eq(DataStatus.ACTIVATED));
         Optional<ActualSeasonRanking> actualSeasonRanking = actualSeasonRankingRepository.findOne(predicate);
-        if(actualSeasonRanking.isEmpty()) throw new NotFoundException(ResponseCode.NOT_FOUND_EVENT_BOARD);
-        return actualSeasonRanking.get();
+        return actualSeasonRanking.orElse(null);
     }
 
     @Override
     public ActualSeasonRanking findByPk(Long pk) {
         BooleanExpression predicate = QActualSeasonRanking.actualSeasonRanking.pk.eq(pk).and(QActualSeasonRanking.actualSeasonRanking.status.eq(DataStatus.ACTIVATED));
         Optional<ActualSeasonRanking> actualSeasonRanking = actualSeasonRankingRepository.findOne(predicate);
-        if(actualSeasonRanking.isEmpty()) throw new NotFoundException(ResponseCode.NOT_FOUND_EVENT_BOARD);
-        return actualSeasonRanking.get();
+        return actualSeasonRanking.orElse(null);
     }
 
     public List<GetActualSeasonRankingDTO> findRecentSeasonRankingByLeague(Long leaguePk) {
@@ -57,8 +55,7 @@ public class ActualSeasonRankingService implements BaseService<ActualSeasonRanki
                 ))
                 .from(actualSeasonRanking)
                 .join(actualSeasonRanking.team, team)
-                .where(team.league.pk.eq(leaguePk)
-                        .and(actualSeasonRanking.status.eq(DataStatus.ACTIVATED)))
+                .where(actualSeasonRanking.status.eq(DataStatus.ACTIVATED))
                 .orderBy(actualSeasonRanking.rankOrder.asc())
                 .fetch();
     }
