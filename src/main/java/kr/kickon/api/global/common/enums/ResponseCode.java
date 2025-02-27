@@ -28,8 +28,12 @@ public enum ResponseCode {
     // ✅ 404 Not Found
     NOT_FOUND_USER(HttpStatus.NOT_FOUND, "NOT_FOUND_USER", "해당 유저를 찾을 수 없습니다."),
     NOT_FOUND_EVENT_BOARD(HttpStatus.NOT_FOUND, "NOT_FOUND_EVENT_BOARD", "해당 이벤트 게시글을 찾을 수 없습니다."),
+    NOT_FOUND_ACTUAL_SEASON_RANKING(HttpStatus.NOT_FOUND,"NOT_FOUND_ACTUAL_SEASON_RANKING","해당 실제 시즌 순위를 찾을 수 없습니다."),
     NOT_FOUND_TEAM(HttpStatus.NOT_FOUND, "NOT_FOUND_TEAM", "해당 팀을 찾을 수 없습니다."),
     NOT_FOUND_USER_FAVORITE_TEAM(HttpStatus.NOT_FOUND, "NOT_FOUND_USER_FAVORITE_TEAM", "유저가 좋아하는 팀을 찾을 수 없습니다."),
+    NOT_FOUND_LEAGUE(HttpStatus.NOT_FOUND,"NOT_FOUND_LEAGUE", "해당 리그를 찾을 수 없습니다."),
+    NOT_FOUND_ACTUAL_LEAGUE(HttpStatus.NOT_FOUND,"NOT_FOUND_ACTUAL_LEAGUE", "해당 실제 시즌을 찾을 수 없습니다."),
+    NOT_FOUND_ACTUAL_LEAGUE_BY_LEAGUE(HttpStatus.NOT_FOUND,"NOT_FOUND_ACTUAL_LEAGUE_BY_LEAGUE", "해당 리그 PK값에 맞는 시즌을 찾을 수 없습니다."),
 
     // ✅ 500 Internal Server Error
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다.");

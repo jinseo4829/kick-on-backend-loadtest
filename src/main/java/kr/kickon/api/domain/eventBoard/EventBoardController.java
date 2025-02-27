@@ -1,6 +1,7 @@
 package kr.kickon.api.domain.eventBoard;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.kickon.api.domain.eventBoard.dto.GetEventBoardDTO;
 import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
 import kr.kickon.api.global.common.ResponseDTO;
@@ -16,6 +17,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/event-board")
+@Tag(name = "배너 게시글")
 @Slf4j
 public class EventBoardController {
     private final EventBoardService eventBoardService;
