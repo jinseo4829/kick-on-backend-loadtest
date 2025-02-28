@@ -1,4 +1,4 @@
-package kr.kickon.api.global.error;
+package kr.kickon.api.global.error.exceptions;
 
 import org.springframework.security.core.AuthenticationException;
 

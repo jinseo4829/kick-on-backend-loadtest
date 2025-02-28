@@ -24,7 +24,7 @@ public class QEventBoard extends EntityPathBase<EventBoard> {
     //inherited
     public final DateTimePath<java.time.LocalDateTime> createdAt = _super.createdAt;
 
-    public final StringPath embededUrl = createString("embededUrl");
+    public final StringPath embeddedUrl = createString("embeddedUrl");
 
     //inherited
     public final StringPath etc = _super.etc;

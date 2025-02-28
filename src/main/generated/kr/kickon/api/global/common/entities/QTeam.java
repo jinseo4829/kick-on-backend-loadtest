@@ -35,6 +35,8 @@ public class QTeam extends EntityPathBase<Team> {
 
     public final QLeague league;
 
+    public final StringPath logoUrl = createString("logoUrl");
+
     public final StringPath nameEn = createString("nameEn");
 
     public final StringPath nameKr = createString("nameKr");

@@ -1,5 +1,6 @@
 package kr.kickon.api.global.common.entities;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,7 +16,12 @@ public class Team extends BaseEntity {
     @Column(nullable = false, length = 100)
     private String nameEn;
 
-    @ManyToOne
-    @JoinColumn(name = "league_pk", foreignKey = @ForeignKey(name = "fk_team_league"))
-    private League league;
+    @Column(nullable = false)
+    private String logoUrl;
+
+    @Column(nullable = false, length = 3)
+    private String code;
+
+    @Column(nullable = false)
+    private long apiId;
 }

@@ -1,4 +1,4 @@
-package kr.kickon.api.global.auth.jwt;
+package kr.kickon.api.global.auth.jwt.dto;
 
 public class TokenDto {
     private final String accessToken;

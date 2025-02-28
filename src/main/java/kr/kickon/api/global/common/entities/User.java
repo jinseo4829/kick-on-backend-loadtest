@@ -1,5 +1,6 @@
 package kr.kickon.api.global.common.entities;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import kr.kickon.api.global.common.enums.ProviderType;
 import kr.kickon.api.global.common.enums.UserAccountStatus;
@@ -20,7 +21,8 @@ public class User extends BaseEntity{
     @Column(nullable = false, length = 255)
     private String providerId;
 
-    @Column(columnDefinition = "text")
+    @Schema(description = "프로필 사진 url", example = "https://naver.com/index.png")
+    @Column(columnDefinition = "TEXT")
     private String profileImageUrl;
 
     @Column(nullable = false)

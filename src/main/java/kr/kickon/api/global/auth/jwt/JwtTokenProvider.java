@@ -3,18 +3,25 @@ package kr.kickon.api.global.auth.jwt;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SecurityException;
 import kr.kickon.api.domain.user.UserService;
-import kr.kickon.api.global.auth.oauth.PrincipalUserDetail;
+import kr.kickon.api.global.auth.jwt.dto.TokenDto;
+import kr.kickon.api.global.auth.oauth.dto.PrincipalUserDetail;
 import kr.kickon.api.global.common.entities.User;
-import kr.kickon.api.global.error.JwtAuthenticationException;
-import kr.kickon.api.global.error.UserNotFoundException;
+import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.error.exceptions.JwtAuthenticationException;
+import kr.kickon.api.global.error.exceptions.NotFoundException;
+import kr.kickon.api.global.error.exceptions.UnauthorizedException;
+import kr.kickon.api.global.error.exceptions.UserNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Component;
 
@@ -26,8 +33,8 @@ import java.util.stream.Collectors;
 @Component
 public class JwtTokenProvider{
     public static final String TOKEN_PREFIX = "Bearer ";
-    private static final String AUTH_PK = "pk";
-    private static final String AUTHORITIES_KEY = "auth";
+    public final String AUTH_PK = "pk";
+    public final String AUTHORITIES_KEY = "auth";
 
     private final String key;
     private final long accessTokenValidityMilliSeconds;
@@ -52,58 +59,54 @@ public class JwtTokenProvider{
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
+    public String createRefreshToken(Map<String, Object> claims,Long pk) {
+        long now = (new Date()).getTime();
+        Date refreshValidity = new Date(now + this.refreshTokenValidityMilliSeconds* 1000);
+        return Jwts.builder()
+                .claims(claims)
+                .expiration(refreshValidity)
+                .signWith(getSignInKey(), Jwts.SIG.HS256)
+                .compact();
+    }
+
+    public String createAccessToken(Map<String, Object> claims,Long pk, String authorities) {
+        long now = (new Date()).getTime();
+        Date accessValidity = new Date(now + this.accessTokenValidityMilliSeconds* 1000);
+        return Jwts.builder()
+                .claims(claims)
+                .subject(pk + "_" + authorities)
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(accessValidity)
+                .signWith(getSignInKey(),Jwts.SIG.HS256)
+                .compact();
+    }
+
     // access, refresh Token 생성
     public TokenDto createToken(Authentication authentication) {
         String authorities = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-        Optional<User> userOptional = userService.findByPk(Long.parseLong(oAuth2User.getName()));
-
-        if(userOptional.isEmpty()) {
-            throw new UserNotFoundException(oAuth2User.getName());
-        }
-        User user = userOptional.get();
-
-        long now = (new Date()).getTime();
+        User user = userService.findByPk(Long.parseLong(oAuth2User.getName()));
 
         Map<String, Object> claims = new HashMap<>();
         claims.put(AUTH_PK, user.getPk());
         claims.put(AUTHORITIES_KEY, authorities);
-        Date accessValidity = new Date(now + this.accessTokenValidityMilliSeconds* 1000);
-        Date refreshValidity = new Date(now + this.refreshTokenValidityMilliSeconds* 1000);
-        String accessToken = Jwts.builder()
-                .claims(claims)
-                .subject(user.getPk() + "_" + authorities)
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(accessValidity)
-                .signWith(getSignInKey(),Jwts.SIG.HS256)
-                .compact();
-
-        String refreshToken = Jwts.builder()
-                .claims(claims)
-                .expiration(refreshValidity)
-                .signWith(getSignInKey(), Jwts.SIG.HS256)
-                .compact();
+        String refreshToken = createRefreshToken(claims, user.getPk());
+        String accessToken = createAccessToken(claims, user.getPk(), authorities);
 
         return TokenDto.of(accessToken, refreshToken);
     }
 
     // token이 유효한 지 검사
-    public boolean validateToken(String token) {
+    public boolean validateToken(String token) throws AuthenticationException {
         try {
             Jwts.parser()
                     .verifyWith(getSignInKey())
                     .build()
                     .parseSignedClaims(token);
             return true;
-        } catch (io.jsonwebtoken.security.SecurityException | MalformedJwtException e) {
-            log.error(e.getMessage());
-            return false;
-        } catch (UnsupportedJwtException e) {
-            log.error(e.getMessage());
-            return false;
-        } catch (IllegalArgumentException e) {
+        } catch (Exception e) {
             log.error(e.getMessage());
             return false;
         }
@@ -117,16 +120,10 @@ public class JwtTokenProvider{
                     .build()
                     .parseSignedClaims(token);
             return true;
-        } catch (ExpiredJwtException e) {
+        } catch (Exception e) {
+            log.error(e.getMessage());
             return false;
         }
-    }
-
-
-    public User getUserByClaims(Claims claims){
-        Optional<User> user = userService.findByPk(Long.parseLong(claims.get(AUTH_PK).toString()));
-        if(user.isEmpty()) throw new AuthenticationServiceException("해당 jwt의 유저가 존재하지 않습니다.");
-        return user.get();
     }
 
     public Claims getClaimsFromToken(String token) {
@@ -142,14 +139,14 @@ public class JwtTokenProvider{
     }
 
     // token으로부터 Authentication 객체를 만들어 리턴하는 메소드
-    public Authentication getAuthentication(String token) throws Exception{
+    public Authentication getAuthentication(String token) throws UnauthorizedException {
         try {
             Claims claims =  getClaimsFromToken(token);
             if (claims == null) {
-                log.error("Invalid JWT claims.");
-                return null;
+                throw new UnauthorizedException(ResponseCode.INVALID_TOKEN);
             }
-            User user = getUserByClaims(claims);
+            User user = userService.findByPk(Long.parseLong(claims.get(AUTH_PK).toString()));
+
             String authority = getUserAuthorityFromClaims(claims);
             PrincipalUserDetail principal = new PrincipalUserDetail(
                     user,
@@ -159,10 +156,24 @@ public class JwtTokenProvider{
                     .collect(Collectors.toList());
             return new UsernamePasswordAuthenticationToken(principal, null, authorities);
         } catch (Exception e) {
-            log.error("Error during JWT authentication", e);
-            throw new JwtAuthenticationException("Failed to authenticate JWT", e);
+            throw new UnauthorizedException(ResponseCode.INVALID_TOKEN);
+        }
+    }
+
+    public User getUserFromSecurityContext() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        PrincipalUserDetail principalUserDetail = null;
+        User user;
+        if (authentication != null) {
+            principalUserDetail = (PrincipalUserDetail) authentication.getPrincipal();
+        }
+        if(principalUserDetail==null) throw new UnauthorizedException(ResponseCode.INVALID_TOKEN);
+        try {
+            user = userService.findByPk(Long.parseLong(principalUserDetail.getName()));
+        }catch (NotFoundException e){
+            throw new UnauthorizedException(ResponseCode.INVALID_TOKEN);
         }
 
-
+        return user;
     }
 }
