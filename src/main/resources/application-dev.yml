@@ -66,14 +66,18 @@ logging:
   level:
     org:
       springframework:
-        security:
-          DEBUG
+        DEBUG
+    kr:
+      kickon:
+        DEBUG
 
 jwt:
   secret_key: ${JWT_SECRET_KEY}
   access-token-validity-in-seconds: 3600
   refresh-token-validity-in-seconds: 31104000
 
+api:
+  key: ${API_SPORTS_KEY}
 
 aws:
   paramstore:
@@ -81,6 +85,3 @@ aws:
     prefix: /config
     profile-sparator: _
     name: kickon
-
-api:
-  key: ${API_SPORTS_KEY}
