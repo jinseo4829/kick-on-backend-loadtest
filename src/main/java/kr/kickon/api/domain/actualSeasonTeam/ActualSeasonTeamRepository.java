@@ -1,0 +1,10 @@
+package kr.kickon.api.domain.actualSeasonTeam;
+
+import kr.kickon.api.global.common.entities.ActualSeasonTeam;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.querydsl.QuerydslPredicateExecutor;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface ActualSeasonTeamRepository extends JpaRepository<ActualSeasonTeam, Long>, QuerydslPredicateExecutor<ActualSeasonTeam> {
+}

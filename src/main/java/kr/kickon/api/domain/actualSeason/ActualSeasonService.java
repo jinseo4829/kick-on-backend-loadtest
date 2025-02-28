@@ -48,7 +48,7 @@ public class ActualSeasonService implements BaseService<ActualSeason> {
                 .and(QActualSeason.actualSeason.league.pk.eq(league));
         Optional<ActualSeason> actualSeason = actualSeasonRepository.findOne(predicate);
         if (actualSeason.isPresent()) return actualSeason.get();
-        throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
+        throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON,"year : " + year + ", league pk : " + league);
     }
 
     public ActualSeason findRecentByLeaguePk(Long pk){

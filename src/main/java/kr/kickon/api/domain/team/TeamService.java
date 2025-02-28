@@ -52,39 +52,7 @@ public class TeamService implements BaseService<Team> {
     }
 
     @Transactional
-    public void saveTeamsByApi(List<ApiTeamDTO> apiTeams) {
-        List<String> ids = new ArrayList<>();
-        apiTeams.forEach(apiTeam -> {
-            String id="";
-            Optional<Team> team = findByApiId(apiTeam.getId());
-            if(team.isPresent()) {
-                Team teamObj = team.get();
-                teamObj.setCode(apiTeam.getCode());
-                teamObj.setNameEn(apiTeam.getName());
-                teamObj.setLogoUrl(apiTeam.getLogo());
-                teamRepository.save(teamObj);
-            }else{
-                // 중복되지 않는 ID를 생성할 때까지 반복
-                do {
-                    try{
-                        id = uuidGenerator.generateUniqueUUID(this::findById);
-                    }catch (NotFoundException ignore){
-                    }
-                    // 이미 생성된 ID가 배열에 있는지 확인
-                    if(!ids.contains(id)) {
-                        break;
-                    }
-                } while (true); // 중복이 있을 경우 다시 생성
-                ids.add(id);
-                Team teamObj = Team.builder()
-                        .id(id)
-                        .nameEn(apiTeam.getName())
-                        .code(apiTeam.getCode())
-                        .logoUrl(apiTeam.getLogo())
-                        .apiId(Long.valueOf(apiTeam.getId()))
-                        .build();
-                teamRepository.save(teamObj);
-            }
-        });
+    public Team save(Team team) {
+        return teamRepository.save(team);
     }
 }

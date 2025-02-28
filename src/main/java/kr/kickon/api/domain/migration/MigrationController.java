@@ -33,7 +33,7 @@ public class MigrationController {
     public ResponseEntity<ResponseDTO<Void>> fetchTeams(@RequestParam String season) {
         List<League> leagues = leagueService.findAll();
         List<ApiTeamDTO> teams = migrationService.fetchTeams(leagues,Integer.parseInt(season));
-        teamService.saveTeamsByApi(teams);
+        migrationService.saveTeamsAndSeasonTeams(teams);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
     }
 

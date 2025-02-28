@@ -24,7 +24,7 @@ public class ApiLeagueDTO {
             @JsonProperty("type") String type,
             @JsonProperty("logo") String logo
             ) {
-//        log.error("{} {} {} {}", id, name, type, logo);
+
         this.id = Long.valueOf(id);
         this.name = name;
         this.type = LeagueType.valueOf(type);
