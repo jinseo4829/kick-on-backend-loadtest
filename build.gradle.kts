@@ -12,6 +12,10 @@ tasks.named<BootJar>("bootJar") {
 	archiveVersion.set("0.0.1")
 }
 
+tasks.named<Jar>("jar") {
+	enabled = false
+}
+
 group = "kr.kickon"
 version = "0.0.1-SNAPSHOT"
 
