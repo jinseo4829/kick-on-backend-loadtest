@@ -4,6 +4,7 @@ import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import kr.kickon.api.domain.eventBoard.dto.GetEventBoardDTO;
+import kr.kickon.api.domain.migration.dto.ApiLeagueDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.ActualSeasonRanking;
 import kr.kickon.api.global.common.entities.League;
@@ -33,14 +34,28 @@ public class LeagueService implements BaseService<League> {
         BooleanExpression predicate = QLeague.league.id.eq(uuid).and(QLeague.league.status.eq(DataStatus.ACTIVATED));
         Optional<League> league = leagueRepository.findOne(predicate);
         return league.orElse(null);
-
     }
 
     @Override
     public League findByPk(Long pk) {
         BooleanExpression predicate = QLeague.league.pk.eq(pk).and(QLeague.league.status.eq(DataStatus.ACTIVATED));
         Optional<League> league = leagueRepository.findOne(predicate);
-        if(league.isEmpty()) throw new NotFoundException(ResponseCode.NOT_FOUND_LEAGUE);
-        return league.get();
+        if(league.isPresent()) return league.get();
+        throw new NotFoundException(ResponseCode.NOT_FOUND_LEAGUE);
+    }
+
+    public League findByApiId(Long apiId) {
+        BooleanExpression predicate = QLeague.league.apiId.eq(apiId).and(QLeague.league.status.eq(DataStatus.ACTIVATED));
+        Optional<League> league = leagueRepository.findOne(predicate);
+        if(league.isPresent()) return league.get();
+        throw new NotFoundException(ResponseCode.NOT_FOUND_LEAGUE);
+    }
+
+    public void save(League league) {
+        leagueRepository.save(league);
+    }
+
+    public List<League> findAll(){
+        return leagueRepository.findAll();
     }
 }

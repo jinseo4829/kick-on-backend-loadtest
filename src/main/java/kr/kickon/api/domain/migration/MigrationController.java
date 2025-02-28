@@ -1,9 +1,14 @@
 package kr.kickon.api.domain.migration;
 
 import io.swagger.v3.oas.annotations.Operation;
+import kr.kickon.api.domain.country.CountryService;
+import kr.kickon.api.domain.league.LeagueService;
+import kr.kickon.api.domain.migration.dto.ApiLeagueAndSeasonDTO;
 import kr.kickon.api.domain.migration.dto.ApiTeamDTO;
 import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.global.common.ResponseDTO;
+import kr.kickon.api.global.common.entities.Country;
+import kr.kickon.api.global.common.entities.League;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,20 +25,24 @@ import java.util.List;
 public class MigrationController {
     private final TeamService teamService;
     private final MigrationService migrationService;
+    private final CountryService countryService;
+    private final LeagueService leagueService;
 
     @Operation(summary = "팀 불러오기", description = "각 리그 별로 속한 팀 불러오기")
     @PostMapping("/teams")
-    public ResponseEntity<ResponseDTO<Void>> fetchTeams(@RequestParam String league,@RequestParam String season) {
-        List<ApiTeamDTO> teams = migrationService.fetchTeams(Integer.parseInt(league),Integer.parseInt(season));
+    public ResponseEntity<ResponseDTO<Void>> fetchTeams(@RequestParam String season) {
+        List<League> leagues = leagueService.findAll();
+        List<ApiTeamDTO> teams = migrationService.fetchTeams(leagues,Integer.parseInt(season));
         teamService.saveTeamsByApi(teams);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
     }
 
-//    @Operation(summary = "리그 및 시즌 불러오기", description = "각 리그와 시즌 불러오기")
-//    @PostMapping("/teams")
-//    public ResponseEntity<ResponseDTO<Void>> fetchTeams(@RequestParam String league,@RequestParam String season) {
-//        List<ApiTeamDTO> teams = migrationService.fetchTeams(Integer.parseInt(league),Integer.parseInt(season));
-//        teamService.saveTeamsByApi(teams);
-//        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
-//    }
+    @Operation(summary = "리그 및 시즌 불러오기", description = "각 리그와 시즌 불러오기")
+    @PostMapping("/leagues")
+    public ResponseEntity<ResponseDTO<Void>> fetchLeaguesAndSeasons(@RequestParam String season) {
+        List<Country> countries = countryService.findAll();
+        List<ApiLeagueAndSeasonDTO> leaguesAndSeasons = migrationService.fetchLeaguesAndSeasons(countries,Integer.parseInt(season));
+        migrationService.saveLeagueAndSeason(leaguesAndSeasons);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
+    }
 }

@@ -87,6 +87,7 @@ public class JwtTokenProvider{
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+
         User user = userService.findByPk(Long.parseLong(oAuth2User.getName()));
 
         Map<String, Object> claims = new HashMap<>();

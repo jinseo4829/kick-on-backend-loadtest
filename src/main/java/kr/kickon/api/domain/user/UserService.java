@@ -60,7 +60,8 @@ public class UserService implements BaseService<User> {
     public User findByPk(Long pk){
         BooleanExpression predicate = QUser.user.pk.eq(pk).and(QUser.user.status.eq(DataStatus.ACTIVATED));
         Optional<User> user = userRepository.findOne(predicate);
-        return user.orElse(null);
+        if(user.isPresent()) return user.get();
+        throw new NotFoundException(ResponseCode.NOT_FOUND_USER);
     }
 
     @Transactional

@@ -3,7 +3,9 @@ package kr.kickon.api.global.common.entities;
 import jakarta.persistence.*;
 import kr.kickon.api.global.common.enums.OperatingStatus;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -12,8 +14,10 @@ import java.time.LocalDateTime;
 @Table(name = "ActualSeason")
 @Getter
 @Setter
+@SuperBuilder
+@NoArgsConstructor
 public class ActualSeason extends BaseEntity {
-    @Column(nullable = false, length = 50)
+    @Column(length = 50)
     private String title;
 
     @Column(length = 100)
