@@ -21,6 +21,6 @@ fi
 
 touch $APP_DIR/app.log && chmod 666 $APP_DIR/app.log
 # 새 애플리케이션 실행
-nohup java -jar -Dspring.profiles.active=$SPRING_PROFILES_ACTIVE -Daws.paramstore.enabled=true $JAR_FILE > $APP_DIR/app.log 2>&1 &
+nohup java -Dspring.profiles.active=$SPRING_PROFILES_ACTIVE -Daws.paramstore.enabled=true -jar $JAR_FILE > $APP_DIR/app.log 2>&1 &
 
 echo "Application started: $JAR_FILE with profile: $SPRING_PROFILES_ACTIVE"
