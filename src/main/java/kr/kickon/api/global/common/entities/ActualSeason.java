@@ -5,6 +5,7 @@ import kr.kickon.api.global.common.enums.OperatingStatus;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -19,14 +20,17 @@ public class ActualSeason extends BaseEntity {
     private String description;
 
     @Column(nullable = false)
-    private LocalDateTime startedAt;
+    private LocalDate startedAt;
 
     @Column
-    private LocalDateTime finishedAt;
+    private LocalDate finishedAt;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OperatingStatus operatingStatus;
+
+    @Column
+    private int year;
 
     @ManyToOne
     @JoinColumn(name = "league_pk", foreignKey = @ForeignKey(name = "fk_actual_season_league"))

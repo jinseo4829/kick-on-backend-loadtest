@@ -37,6 +37,7 @@ public class AuthController {
         String authorities = "GUEST, ROLE_OAUTH_FIRST_JOIN";
         Claims claims = jwtTokenProvider.getClaimsFromToken(refreshToken);
         User user = userService.findByPk(Long.parseLong(claims.get(jwtTokenProvider.AUTH_PK).toString()));
+        if(user==null) throw new UnauthorizedException(ResponseCode.INVALID_REFRESH_TOKEN);
         long now = (new Date()).getTime();
 
         Map<String, Object> newClaims = new HashMap<>();

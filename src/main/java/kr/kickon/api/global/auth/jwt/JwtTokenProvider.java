@@ -146,6 +146,7 @@ public class JwtTokenProvider{
                 throw new UnauthorizedException(ResponseCode.INVALID_TOKEN);
             }
             User user = userService.findByPk(Long.parseLong(claims.get(AUTH_PK).toString()));
+            if(user == null) throw new UnauthorizedException(ResponseCode.INVALID_TOKEN);
 
             String authority = getUserAuthorityFromClaims(claims);
             PrincipalUserDetail principal = new PrincipalUserDetail(
@@ -168,11 +169,9 @@ public class JwtTokenProvider{
             principalUserDetail = (PrincipalUserDetail) authentication.getPrincipal();
         }
         if(principalUserDetail==null) throw new UnauthorizedException(ResponseCode.INVALID_TOKEN);
-        try {
-            user = userService.findByPk(Long.parseLong(principalUserDetail.getName()));
-        }catch (NotFoundException e){
-            throw new UnauthorizedException(ResponseCode.INVALID_TOKEN);
-        }
+
+        user = userService.findByPk(Long.parseLong(principalUserDetail.getName()));
+        if(user == null) throw new UnauthorizedException(ResponseCode.INVALID_TOKEN);
 
         return user;
     }

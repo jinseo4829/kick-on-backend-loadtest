@@ -3,18 +3,12 @@ package kr.kickon.api.domain.team;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.transaction.Transactional;
-import kr.kickon.api.domain.user.UserRepository;
-import kr.kickon.api.domain.user.request.PrivacyUpdateRequest;
-import kr.kickon.api.global.auth.oauth.dto.OAuth2UserInfo;
+import kr.kickon.api.domain.migration.dto.ApiTeamDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.QTeam;
-import kr.kickon.api.global.common.entities.QUser;
 import kr.kickon.api.global.common.entities.Team;
-import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.enums.DataStatus;
-import kr.kickon.api.global.common.enums.ProviderType;
 import kr.kickon.api.global.common.enums.ResponseCode;
-import kr.kickon.api.global.common.enums.UserAccountStatus;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
@@ -41,15 +35,63 @@ public class TeamService implements BaseService<Team> {
     public Team findById(String uuid) {
         BooleanExpression predicate = QTeam.team.id.eq(uuid).and(QTeam.team.status.eq(DataStatus.ACTIVATED));
         Optional<Team> team = teamRepository.findOne(predicate);
-        if(team.isEmpty()) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
-        return team.get();
+        return team.orElse(null);
     }
 
     @Override
     public Team findByPk(Long pk) {
         BooleanExpression predicate = QTeam.team.pk.eq(pk).and(QTeam.team.status.eq(DataStatus.ACTIVATED));
         Optional<Team> team = teamRepository.findOne(predicate);
-        if(team.isEmpty()) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
-        return team.get();
+        return team.orElse(null);
+    }
+
+    public Optional<Team> findByApiId(Long apiId) {
+        BooleanExpression predicate = QTeam.team.apiId.eq(apiId).and(QTeam.team.status.eq(DataStatus.ACTIVATED));
+        return teamRepository.findOne(predicate);
+    }
+
+    @Transactional
+    public void saveTeamsByApi(List<ApiTeamDTO> apiTeams) {
+        String[] ids = new String[apiTeams.size()];
+        int index = 0;
+        apiTeams.forEach(apiTeam -> {
+            boolean isDuplicate;
+            String id="";
+            Optional<Team> team = findByApiId(apiTeam.getId());
+            if(team.isPresent()) {
+                Team teamObj = team.get();
+                teamObj.setCode(apiTeam.getCode());
+                teamObj.setNameEn(apiTeam.getName());
+                teamObj.setLogoUrl(apiTeam.getLogo());
+                teamRepository.save(teamObj);
+            }else{
+                // 중복되지 않는 ID를 생성할 때까지 반복
+                do {
+                    try{
+                        id = uuidGenerator.generateUniqueUUID(this::findById);
+                    }catch (NotFoundException ignore){
+                    }
+
+                    isDuplicate = false;
+                    // 이미 생성된 ID가 배열에 있는지 확인
+                    for (int j = 0; j < index; j++) {
+                        if (ids[j].equals(id)) {
+                            isDuplicate = true;
+                            break;
+                        }
+                    }
+                } while (isDuplicate); // 중복이 있을 경우 다시 생성
+                ids[index] = id;
+                Team teamObj = Team.builder()
+                        .id(id)
+                        .nameEn(apiTeam.getName())
+                        .code(apiTeam.getCode())
+                        .logoUrl(apiTeam.getLogo())
+                        .apiId(Long.valueOf(apiTeam.getId()))
+                        .build();
+                teamRepository.save(teamObj);
+            }
+
+        });
     }
 }

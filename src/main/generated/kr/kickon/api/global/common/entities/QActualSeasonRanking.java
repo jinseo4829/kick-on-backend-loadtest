@@ -24,8 +24,6 @@ public class QActualSeasonRanking extends EntityPathBase<ActualSeasonRanking> {
 
     public final QBaseEntity _super = new QBaseEntity(this);
 
-    public final QActualSeason actualSeason;
-
     //inherited
     public final DateTimePath<java.time.LocalDateTime> createdAt = _super.createdAt;
 
@@ -49,6 +47,8 @@ public class QActualSeasonRanking extends EntityPathBase<ActualSeasonRanking> {
     public final NumberPath<Integer> points = createNumber("points", Integer.class);
 
     public final NumberPath<Integer> rankOrder = createNumber("rankOrder", Integer.class);
+
+    public final NumberPath<Integer> season = createNumber("season", Integer.class);
 
     //inherited
     public final EnumPath<kr.kickon.api.global.common.enums.DataStatus> status = _super.status;
@@ -80,8 +80,7 @@ public class QActualSeasonRanking extends EntityPathBase<ActualSeasonRanking> {
 
     public QActualSeasonRanking(Class<? extends ActualSeasonRanking> type, PathMetadata metadata, PathInits inits) {
         super(type, metadata, inits);
-        this.actualSeason = inits.isInitialized("actualSeason") ? new QActualSeason(forProperty("actualSeason"), inits.get("actualSeason")) : null;
-        this.team = inits.isInitialized("team") ? new QTeam(forProperty("team"), inits.get("team")) : null;
+        this.team = inits.isInitialized("team") ? new QTeam(forProperty("team")) : null;
     }
 
 }

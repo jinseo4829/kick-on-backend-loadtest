@@ -31,16 +31,14 @@ public class ActualSeasonService implements BaseService<ActualSeason> {
     public ActualSeason findById(String uuid) {
         BooleanExpression predicate = QActualSeason.actualSeason.id.eq(uuid).and(QActualSeason.actualSeason.status.eq(DataStatus.ACTIVATED));
         Optional<ActualSeason> actualSeason = actualSeasonRepository.findOne(predicate);
-        if(actualSeason.isEmpty()) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_LEAGUE);
-        return actualSeason.get();
+        return actualSeason.orElse(null);
     }
 
     @Override
     public ActualSeason findByPk(Long pk) {
         BooleanExpression predicate = QActualSeason.actualSeason.pk.eq(pk).and(QActualSeason.actualSeason.status.eq(DataStatus.ACTIVATED));
         Optional<ActualSeason> actualSeason = actualSeasonRepository.findOne(predicate);
-        if(actualSeason.isEmpty()) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_LEAGUE);
-        return actualSeason.get();
+        return actualSeason.orElse(null);
     }
 
 
@@ -48,7 +46,6 @@ public class ActualSeasonService implements BaseService<ActualSeason> {
     public ActualSeason findRecentByLeaguePk(Long pk){
         BooleanExpression predicate = QActualSeason.actualSeason.league.pk.eq(pk).and(QLeague.league.status.eq(DataStatus.ACTIVATED));
         Optional<ActualSeason> actualSeason = actualSeasonRepository.findOne(predicate);
-        if(actualSeason.isEmpty()) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_LEAGUE_BY_LEAGUE);
-        return actualSeason.get();
+        return actualSeason.orElse(null);
     }
 }

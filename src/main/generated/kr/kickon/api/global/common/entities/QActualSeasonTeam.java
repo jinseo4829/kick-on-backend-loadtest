@@ -65,7 +65,7 @@ public class QActualSeasonTeam extends EntityPathBase<ActualSeasonTeam> {
     public QActualSeasonTeam(Class<? extends ActualSeasonTeam> type, PathMetadata metadata, PathInits inits) {
         super(type, metadata, inits);
         this.actualSeason = inits.isInitialized("actualSeason") ? new QActualSeason(forProperty("actualSeason"), inits.get("actualSeason")) : null;
-        this.team = inits.isInitialized("team") ? new QTeam(forProperty("team"), inits.get("team")) : null;
+        this.team = inits.isInitialized("team") ? new QTeam(forProperty("team")) : null;
     }
 
 }

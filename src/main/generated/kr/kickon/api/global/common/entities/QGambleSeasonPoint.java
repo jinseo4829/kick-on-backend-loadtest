@@ -70,7 +70,7 @@ public class QGambleSeasonPoint extends EntityPathBase<GambleSeasonPoint> {
         super(type, metadata, inits);
         this.gambleSeason = inits.isInitialized("gambleSeason") ? new QGambleSeason(forProperty("gambleSeason"), inits.get("gambleSeason")) : null;
         this.game = inits.isInitialized("game") ? new QGame(forProperty("game"), inits.get("game")) : null;
-        this.team = inits.isInitialized("team") ? new QTeam(forProperty("team"), inits.get("team")) : null;
+        this.team = inits.isInitialized("team") ? new QTeam(forProperty("team")) : null;
     }
 
 }

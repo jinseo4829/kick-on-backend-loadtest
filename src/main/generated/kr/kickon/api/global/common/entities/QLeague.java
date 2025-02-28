@@ -24,6 +24,8 @@ public class QLeague extends EntityPathBase<League> {
 
     public final QBaseEntity _super = new QBaseEntity(this);
 
+    public final NumberPath<Integer> apiId = createNumber("apiId", Integer.class);
+
     public final QCountry country;
 
     //inherited
@@ -33,11 +35,17 @@ public class QLeague extends EntityPathBase<League> {
 
     public final NumberPath<Integer> division = createNumber("division", Integer.class);
 
+    public final StringPath enName = createString("enName");
+
     //inherited
     public final StringPath etc = _super.etc;
 
     //inherited
     public final StringPath id = _super.id;
+
+    public final StringPath krName = createString("krName");
+
+    public final StringPath logoUrl = createString("logoUrl");
 
     //inherited
     public final NumberPath<Long> pk = _super.pk;
@@ -45,7 +53,7 @@ public class QLeague extends EntityPathBase<League> {
     //inherited
     public final EnumPath<kr.kickon.api.global.common.enums.DataStatus> status = _super.status;
 
-    public final StringPath title = createString("title");
+    public final EnumPath<kr.kickon.api.global.common.enums.LeagueType> type = createEnum("type", kr.kickon.api.global.common.enums.LeagueType.class);
 
     //inherited
     public final DateTimePath<java.time.LocalDateTime> updatedAt = _super.updatedAt;

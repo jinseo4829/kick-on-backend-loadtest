@@ -32,7 +32,7 @@ public class QActualSeason extends EntityPathBase<ActualSeason> {
     //inherited
     public final StringPath etc = _super.etc;
 
-    public final DateTimePath<java.time.LocalDateTime> finishedAt = createDateTime("finishedAt", java.time.LocalDateTime.class);
+    public final DatePath<java.time.LocalDate> finishedAt = createDate("finishedAt", java.time.LocalDate.class);
 
     //inherited
     public final StringPath id = _super.id;
@@ -44,7 +44,7 @@ public class QActualSeason extends EntityPathBase<ActualSeason> {
     //inherited
     public final NumberPath<Long> pk = _super.pk;
 
-    public final DateTimePath<java.time.LocalDateTime> startedAt = createDateTime("startedAt", java.time.LocalDateTime.class);
+    public final DatePath<java.time.LocalDate> startedAt = createDate("startedAt", java.time.LocalDate.class);
 
     //inherited
     public final EnumPath<kr.kickon.api.global.common.enums.DataStatus> status = _super.status;
@@ -53,6 +53,8 @@ public class QActualSeason extends EntityPathBase<ActualSeason> {
 
     //inherited
     public final DateTimePath<java.time.LocalDateTime> updatedAt = _super.updatedAt;
+
+    public final NumberPath<Integer> year = createNumber("year", Integer.class);
 
     public QActualSeason(String variable) {
         this(ActualSeason.class, forVariable(variable), INITS);

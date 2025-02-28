@@ -75,7 +75,7 @@ public class QUserGameGamble extends EntityPathBase<UserGameGamble> {
     public QUserGameGamble(Class<? extends UserGameGamble> type, PathMetadata metadata, PathInits inits) {
         super(type, metadata, inits);
         this.game = inits.isInitialized("game") ? new QGame(forProperty("game"), inits.get("game")) : null;
-        this.supportingTeam = inits.isInitialized("supportingTeam") ? new QTeam(forProperty("supportingTeam"), inits.get("supportingTeam")) : null;
+        this.supportingTeam = inits.isInitialized("supportingTeam") ? new QTeam(forProperty("supportingTeam")) : null;
         this.user = inits.isInitialized("user") ? new QUser(forProperty("user")) : null;
     }
 
