@@ -78,6 +78,7 @@ jwt:
 
 api:
   key: ${API_SPORTS_KEY}
+  slack-key: ${API_SLACK_KEY}
 
 aws:
   paramstore:

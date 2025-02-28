@@ -31,12 +31,12 @@ public class SlackService {
 
             String channelAddress;
 
-            if(env.equals("local")){
+            if(env.equals("dev")){
                 channelAddress = "C08DTASMF6Y";
             }else if (env.equals("prod")){
                 channelAddress = "C08E3F72GG1";
             } else {
-                channelAddress = "";
+                return;
             }
             System.out.println(channelAddress);
             List<LayoutBlock> layoutBlocks = new ArrayList<>();
