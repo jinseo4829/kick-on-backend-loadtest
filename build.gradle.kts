@@ -1,7 +1,15 @@
+import org.springframework.boot.gradle.tasks.bundling.BootJar
+
 plugins {
 	java
 	id("org.springframework.boot") version "3.4.2"
 	id("io.spring.dependency-management") version "1.1.7"
+}
+
+tasks.named<BootJar>("bootJar") {
+	archiveBaseName.set("kick-on")
+	archiveFileName.set("kick-on.jar")
+	archiveVersion.set("0.0.1")
 }
 
 group = "kr.kickon"
