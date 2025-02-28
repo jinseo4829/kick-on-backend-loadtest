@@ -81,3 +81,6 @@ aws:
     prefix: /config
     profile-sparator: _
     name: kickon
+
+api:
+  key: ${API_SPORTS_KEY}
