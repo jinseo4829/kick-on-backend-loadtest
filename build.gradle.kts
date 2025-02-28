@@ -7,8 +7,8 @@ plugins {
 }
 
 tasks.named<BootJar>("bootJar") {
-	archiveBaseName.set("kick-on")
-	archiveFileName.set("kick-on.jar")
+	archiveBaseName.set("kickon")
+	archiveFileName.set("kickon.jar")
 	archiveVersion.set("0.0.1")
 }
 
