@@ -21,9 +21,6 @@ public class Game extends BaseEntity {
     @Column(nullable = false)
     private LocalDateTime startedAt;
 
-    @Column
-    private LocalDateTime finishedAt;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private GameStatus gameStatus;
@@ -38,10 +35,6 @@ public class Game extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "away_team_pk", foreignKey = @ForeignKey(name = "fk_game_away_team"))
     private Team awayTeam;
-
-    @ManyToOne
-    @JoinColumn(name = "gamble_season_pk", foreignKey = @ForeignKey(name = "fk_game_gamble_season"))
-    private GambleSeason gambleSeason;
 
     @ManyToOne
     @JoinColumn(name = "actual_season_pk", foreignKey = @ForeignKey(name = "fk_game_actual_season"))
