@@ -4,8 +4,10 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.League;
+import kr.kickon.api.global.common.entities.QEventBoard;
 import kr.kickon.api.global.common.entities.QLeague;
 import kr.kickon.api.global.common.enums.DataStatus;
+import kr.kickon.api.global.common.enums.LeagueType;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
@@ -50,6 +52,11 @@ public class LeagueService implements BaseService<League> {
         leagueRepository.save(league);
     }
 
+    public List<League> findAllLeagues(){
+        return queryFactory.selectFrom(QLeague.league)
+                .where(QLeague.league.status.eq(DataStatus.ACTIVATED), QLeague.league.type.eq(LeagueType.League))
+                .fetch();
+    }
     public List<League> findAll(){
         return queryFactory.selectFrom(QLeague.league)
                 .where(QLeague.league.status.eq(DataStatus.ACTIVATED))

@@ -3,6 +3,7 @@ package kr.kickon.api.domain.migration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import kr.kickon.api.domain.actualSeason.ActualSeasonService;
+import kr.kickon.api.domain.actualSeasonRanking.ActualSeasonRankingService;
 import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
 import kr.kickon.api.domain.game.GameService;
 import kr.kickon.api.domain.league.LeagueService;
@@ -19,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.net.URI;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 public class MigrationService {
     private final String apiKey;
     private final WebClient webClient;
+    private final ActualSeasonRankingService actualSeasonRankingService;
     private final LeagueService leagueService;
     private final TeamService teamService;
     private final ActualSeasonService actualSeasonService;
@@ -37,7 +38,7 @@ public class MigrationService {
     private final ActualSeasonTeamService actualSeasonTeamService;
     private final GameService gameService;
 
-    public MigrationService(@Value("${api.key}") String apiKey, LeagueService leagueService, TeamService teamService, ActualSeasonService actualSeasonService, UUIDGenerator uuidGenerator, ActualSeasonTeamService actualSeasonTeamService, GameService gameService) {
+    public MigrationService(@Value("${api.key}") String apiKey, LeagueService leagueService, TeamService teamService, ActualSeasonService actualSeasonService, UUIDGenerator uuidGenerator, ActualSeasonTeamService actualSeasonTeamService, GameService gameService, ActualSeasonRankingService actualSeasonRankingService) {
         ExchangeStrategies exchangeStrategies = ExchangeStrategies.builder()
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(-1)) // to unlimited memory size
                 .build();
@@ -54,6 +55,57 @@ public class MigrationService {
         this.uuidGenerator = uuidGenerator;
         this.actualSeasonTeamService = actualSeasonTeamService;
         this.gameService = gameService;
+        this.actualSeasonRankingService = actualSeasonRankingService;
+    }
+
+    @Transactional
+    public void saveRankings(List<ApiRankingDTO> list) {
+        // 랭킹 아이디 체크
+        List<String> rankingIds = new ArrayList<>();
+        list.forEach(apiData -> {
+            ActualSeasonRanking existActualSeasonRanking = actualSeasonRankingService.findByActualSeasonAndTeam(apiData.getActualSeason().getPk(),apiData.getTeam().getPk());
+            ActualSeasonRanking actualSeasonRanking;
+            if(existActualSeasonRanking == null) {
+                String rankingId = "";
+                do {
+                    try{
+                        rankingId = uuidGenerator.generateUniqueUUID(leagueService::findById);
+                    }catch (NotFoundException ignore2){
+                    }
+                    // 이미 생성된 ID가 배열에 있는지 확인
+                    if(!rankingIds.contains(rankingId)) {
+                        break;
+                    }
+                } while (true); // 중복이 있을 경우 다시 생성
+                rankingIds.add(rankingId);
+                actualSeasonRanking = ActualSeasonRanking.builder()
+                        .id(rankingId)
+                        .actualSeason(apiData.getActualSeason())
+                        .season(apiData.getSeason())
+                        .loses(apiData.getLoses())
+                        .wins(apiData.getWins())
+                        .draws(apiData.getDraws())
+                        .gameNum(apiData.getGameNum())
+                        .lostScores(apiData.getLostScores())
+                        .wonScores(apiData.getWonScores())
+                        .rankOrder(apiData.getRankOrder())
+                        .team(apiData.getTeam())
+                        .points(apiData.getPoints())
+                        .build();
+            }else {
+                actualSeasonRanking = existActualSeasonRanking;
+                actualSeasonRanking.setLoses(apiData.getLoses());
+                actualSeasonRanking.setWins(apiData.getWins());
+                actualSeasonRanking.setDraws(apiData.getDraws());
+                actualSeasonRanking.setGameNum(apiData.getGameNum());
+                actualSeasonRanking.setLostScores(apiData.getLostScores());
+                actualSeasonRanking.setWonScores(apiData.getWonScores());
+                actualSeasonRanking.setRankOrder(apiData.getRankOrder());
+                actualSeasonRanking.setPoints(apiData.getPoints());
+            }
+
+            actualSeasonRankingService.save(actualSeasonRanking);
+        });
     }
 
     @Transactional
@@ -66,8 +118,8 @@ public class MigrationService {
                 gameService.findByApiId(apiData.getId());
             }catch (NotFoundException ignore){
                 Optional<Team> homeTeam, awayTeam;
-                homeTeam = teamService.findByApiId(apiData.getHomeTeamId());
-                awayTeam = teamService.findByApiId(apiData.getAwayTeamId());
+                homeTeam = Optional.ofNullable(teamService.findByApiId(apiData.getHomeTeamId()));
+                awayTeam = Optional.ofNullable(teamService.findByApiId(apiData.getAwayTeamId()));
                 if(homeTeam.isEmpty() || awayTeam.isEmpty()){}
                 else{
                     Game game;
@@ -215,11 +267,11 @@ public class MigrationService {
         apiTeams.forEach(apiTeam -> {
             String id="";
 
-            Optional<Team> team = teamService.findByApiId(apiTeam.getId());
+            Team team = teamService.findByApiId(apiTeam.getId());
             Team teamObj;
 
-            if(team.isPresent()) {
-                teamObj = team.get();
+            if(team != null) {
+                teamObj = team;
                 teamObj.setCode(apiTeam.getCode());
                 teamObj.setNameEn(apiTeam.getName());
                 teamObj.setLogoUrl(apiTeam.getLogo());
@@ -270,6 +322,60 @@ public class MigrationService {
                 actualSeasonTeamService.save(actualSeasonObj);
             }
         });
+    }
+
+    public List<ApiRankingDTO> fetchRankings(List<League> leagues){
+        List<ApiRankingDTO> list = new ArrayList<>();
+        for(League league : leagues) {
+            ActualSeason actualSeason = actualSeasonService.findRecentByLeaguePk(league.getPk());
+            if(actualSeason == null) continue;
+            Map<String, Object> response = webClient.get().uri(uriBuilder ->
+                            uriBuilder.path("/standings")
+                                    .queryParam("league",league.getApiId())
+                                    .queryParam("season",actualSeason.getYear())
+                                    .build())
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
+            List<Map<String, Object>> responseData = (List<Map<String, Object>>) response.get("response");
+            // "fixture" 데이터 추출
+
+            if(responseData.isEmpty()) continue;
+            Map<String, Object> leagueData = (Map<String, Object>) responseData.get(0).get("league");
+            List<List<Map<String, Object>>> rankingDatas = (List<List<Map<String, Object>>>) leagueData.get("standings");
+            if(league.getEnName().equals("K League 1")){
+                rankingDatas.remove(0);
+                rankingDatas.remove(0);
+            }
+            List<Map<String, Object>> flattenedList = rankingDatas.stream().flatMap(List::stream)
+                            .collect(Collectors.toList());
+            list.addAll(flattenedList.stream()
+                    .map(rankingData -> {
+                        // DTO 객체 생성
+                        Map<String, Object> teamData = (Map<String, Object>) rankingData.get("team");
+                        Map<String, Object> metaData = (Map<String, Object>) rankingData.get("all");
+                        Map<String, Object> goalData = (Map<String, Object>) metaData.get("goals");
+                        log.error(rankingData.toString());
+
+                        Team team = teamService.findByApiId(Long.valueOf((Integer) teamData.get("id")));
+
+                        if(team == null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
+                        return ApiRankingDTO.builder()
+                                .rankOrder((Integer) rankingData.get("rank"))
+                                .team(team)
+                                .actualSeason(actualSeason)
+                                .draws((Integer) metaData.get("draw"))
+                                .wins((Integer) metaData.get("win"))
+                                .loses((Integer) metaData.get("lose"))
+                                .gameNum((Integer) metaData.get("played"))
+                                .lostScores((Integer) goalData.get("against"))
+                                .wonScores((Integer) goalData.get("for"))
+                                .points((Integer) rankingData.get("points"))
+                                .season(actualSeason.getYear())
+                                .build();
+                    }).toList());
+        }
+        return list;
     }
 
     public List<ApiGamesDTO> fetchGames(List<League> leagues, String season){
