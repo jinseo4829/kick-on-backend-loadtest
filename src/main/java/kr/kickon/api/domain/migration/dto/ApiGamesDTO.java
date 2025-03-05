@@ -2,13 +2,16 @@ package kr.kickon.api.domain.migration.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import kr.kickon.api.global.common.entities.ActualSeason;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDateTime;
 
-@Data
 @Builder
+@Data
 public class ApiGamesDTO {
     private Long id;
     private String round;
@@ -18,16 +21,7 @@ public class ApiGamesDTO {
     private Integer awayScore;
     private Long homeTeamId;
     private Long awayTeamId;
-    private Long actualSeasonPk;
-
-    @JsonCreator
-    public ApiGamesDTO(
-            @JsonProperty("id") String id,
-            @JsonProperty("round") String round,
-            @JsonProperty("date") String date
-    ) {
-        this.id = Long.valueOf(id);
-        this.round = round;
-        this.date = LocalDateTime.parse(date);
-    }
+    private ActualSeason actualSeason;
+    private Integer homePenaltyScore;
+    private Integer awayPenaltyScore;
 }

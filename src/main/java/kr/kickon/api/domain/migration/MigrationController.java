@@ -3,6 +3,7 @@ package kr.kickon.api.domain.migration;
 import io.swagger.v3.oas.annotations.Operation;
 import kr.kickon.api.domain.country.CountryService;
 import kr.kickon.api.domain.league.LeagueService;
+import kr.kickon.api.domain.migration.dto.ApiGamesDTO;
 import kr.kickon.api.domain.migration.dto.ApiLeagueAndSeasonDTO;
 import kr.kickon.api.domain.migration.dto.ApiTeamDTO;
 import kr.kickon.api.domain.team.TeamService;
@@ -52,12 +53,12 @@ public class MigrationController {
 
     @Operation(summary = "리그 경기 불러오기", description = "각 리그의 경기를 불러오며, 상태값 및 경기 결과를 자동 업데이트")
     @PostMapping("/games")
-    public ResponseEntity<ResponseDTO<Void>> fetchGames(@RequestParam String season) {
+    public ResponseEntity<ResponseDTO<Void>> fetchGames(@RequestParam String league, @RequestParam String season) {
 //        List<League> leagues = leagueService.findAll();
         List<League> leagues = new ArrayList<>();
-        leagues.add(leagueService.findByPk(14L));
-        List<?> gamesFromApi = migrationService.fetchGames(leagues, Integer.parseInt(season));
-        log.error(Arrays.toString(gamesFromApi.toArray()));
+        leagues.add(leagueService.findByPk(Long.parseLong(league)));
+        List<ApiGamesDTO> gamesFromApi = migrationService.fetchGames(leagues, season);
+        migrationService.saveGames(gamesFromApi);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
     }
 }
