@@ -15,14 +15,14 @@ import java.util.List;
 @Getter
 @NoArgsConstructor
 @Slf4j
-@Schema(description = "Response DTO for API responses")
+@Schema(name = "ResponseDTO", description = "Response DTO for API responses")
 public class ResponseDTO<T> {
     @Schema(example = "SUCCESS", description = "API CODE")
     private String code;
     @Schema(example = "성공", description = "API에 대한 메시지")
     private String message;
     @Schema(description = "응답 데이터, 객체일수도, 배열일수도 있음", nullable = true)
-    private Object data;
+    private T data;
     @Schema(description = "메타 데이터",nullable = true)
     private Object meta;
 
