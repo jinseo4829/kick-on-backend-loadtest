@@ -1,10 +1,15 @@
 package kr.kickon.api.domain.user;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import kr.kickon.api.domain.user.dto.GetUserMeDTO;
 import kr.kickon.api.domain.user.request.PatchUserRequest;
 import kr.kickon.api.domain.user.request.PrivacyUpdateRequest;
+import kr.kickon.api.domain.user.response.GetUserMeResponse;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
 import kr.kickon.api.global.common.ResponseDTO;
@@ -38,6 +43,10 @@ public class UserController {
     }
 
     @Operation(summary = "내 정보 조회", description = "jwt 기반으로 내 정보 조회, jwt 없으면 접근 제한")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공",
+                    content = @Content(schema = @Schema(implementation = GetUserMeResponse.class)))
+    })
     @GetMapping("/me")
     public ResponseEntity<ResponseDTO<GetUserMeDTO>> getUserMe() {
         User user = jwtTokenProvider.getUserFromSecurityContext();

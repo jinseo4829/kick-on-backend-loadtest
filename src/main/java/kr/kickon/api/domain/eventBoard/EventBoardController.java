@@ -1,8 +1,13 @@
 package kr.kickon.api.domain.eventBoard;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.kickon.api.domain.eventBoard.dto.GetEventBoardDTO;
+import kr.kickon.api.domain.eventBoard.response.GetEventBoardsResponse;
 import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.User;
@@ -24,6 +29,10 @@ public class EventBoardController {
     private final JwtTokenProvider jwtTokenProvider;
 
     @Operation(summary = "배너 게시글 리스트 조회")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공",
+                    content = @Content(schema = @Schema(implementation = GetEventBoardsResponse.class))),
+    })
     @GetMapping()
     public ResponseEntity<ResponseDTO<List<GetEventBoardDTO>>> getEventBoards() {
         User user = jwtTokenProvider.getUserFromSecurityContext();
