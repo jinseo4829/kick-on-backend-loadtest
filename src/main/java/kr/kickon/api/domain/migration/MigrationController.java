@@ -1,24 +1,31 @@
 package kr.kickon.api.domain.migration;
 
 import io.swagger.v3.oas.annotations.Operation;
+import kr.kickon.api.domain.actualSeason.ActualSeasonService;
 import kr.kickon.api.domain.country.CountryService;
 import kr.kickon.api.domain.league.LeagueService;
 import kr.kickon.api.domain.migration.dto.ApiGamesDTO;
 import kr.kickon.api.domain.migration.dto.ApiLeagueAndSeasonDTO;
+import kr.kickon.api.domain.migration.dto.ApiRankingDTO;
 import kr.kickon.api.domain.migration.dto.ApiTeamDTO;
 import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.global.common.ResponseDTO;
+import kr.kickon.api.global.common.entities.ActualSeason;
 import kr.kickon.api.global.common.entities.Country;
 import kr.kickon.api.global.common.entities.League;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -32,6 +39,7 @@ public class MigrationController {
     private final MigrationService migrationService;
     private final CountryService countryService;
     private final LeagueService leagueService;
+    private final ActualSeasonService actualSeasonService;
 
     @Operation(summary = "팀 불러오기", description = "각 리그 별로 속한 팀 불러오기")
     @PostMapping("/teams")
@@ -59,6 +67,20 @@ public class MigrationController {
         leagues.add(leagueService.findByPk(Long.parseLong(league)));
         List<ApiGamesDTO> gamesFromApi = migrationService.fetchGames(leagues, season);
         migrationService.saveGames(gamesFromApi);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
+    }
+
+    @Operation(summary = "랭킹 불러오기", description = "각 리그의 랭킹을 불러오며, 하루하루 업데이트")
+    @PostMapping("/rankings")
+    @Scheduled(cron = "0 10 * * * *")
+    public ResponseEntity<ResponseDTO<Void>> fetchRanking() {
+        log.info("Scheduling: 랭킹 불러오기 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));
+        List<League> leagues = leagueService.findAllLeagues();
+//        List<League> leagues = new ArrayList<>();
+//        leagues.add(leagueService.findByPk(Long.parseLong(league)));
+
+        List<ApiRankingDTO> rankingsFromApi = migrationService.fetchRankings(leagues);
+        migrationService.saveRankings(rankingsFromApi);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
     }
 }

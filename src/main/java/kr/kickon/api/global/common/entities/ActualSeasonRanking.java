@@ -2,12 +2,16 @@ package kr.kickon.api.global.common.entities;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "ActualSeasonRanking")
 @Getter
 @Setter
+@SuperBuilder
+@NoArgsConstructor
 public class ActualSeasonRanking extends BaseEntity {
     @Column(nullable = false)
     private Integer rankOrder;
@@ -39,4 +43,8 @@ public class ActualSeasonRanking extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "team_pk", foreignKey = @ForeignKey(name = "fk_actual_season_ranking_team"))
     private Team team;
+
+    @ManyToOne
+    @JoinColumn(name = "actual_season_pk", foreignKey = @ForeignKey(name = "fk_actual_season_ranking_actual_season"))
+    private ActualSeason actualSeason;
 }
