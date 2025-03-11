@@ -45,7 +45,7 @@ public class ActualSeasonRankingService implements BaseService<ActualSeasonRanki
         return actualSeasonRanking.orElse(null);
     }
 
-    public List<GetActualSeasonRankingDTO> findRecentSeasonRankingByLeague(Long leaguePk) {
+    public List<GetActualSeasonRankingDTO> findRecentSeasonRankingByLeague(Long actualSeasonPk) {
         QActualSeasonRanking actualSeasonRanking = QActualSeasonRanking.actualSeasonRanking;
         QTeam team = QTeam.team;
 
@@ -61,7 +61,7 @@ public class ActualSeasonRankingService implements BaseService<ActualSeasonRanki
                 ))
                 .from(actualSeasonRanking)
                 .join(actualSeasonRanking.team, team)
-                .where(actualSeasonRanking.status.eq(DataStatus.ACTIVATED))
+                .where(actualSeasonRanking.status.eq(DataStatus.ACTIVATED).and(actualSeasonRanking.actualSeason.pk.eq(actualSeasonPk)))
                 .orderBy(actualSeasonRanking.rankOrder.asc())
                 .fetch();
     }

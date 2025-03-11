@@ -63,6 +63,7 @@ public class MigrationService {
         // 랭킹 아이디 체크
         List<String> rankingIds = new ArrayList<>();
         list.forEach(apiData -> {
+            log.error("apiData: {} {} {}", apiData.getTeam().getPk(), apiData.getTeam().getNameEn(), apiData.getActualSeason().getYear());
             ActualSeasonRanking existActualSeasonRanking = actualSeasonRankingService.findByActualSeasonAndTeam(apiData.getActualSeason().getPk(),apiData.getTeam().getPk());
             ActualSeasonRanking actualSeasonRanking;
             if(existActualSeasonRanking == null) {
@@ -327,8 +328,14 @@ public class MigrationService {
     public List<ApiRankingDTO> fetchRankings(List<League> leagues){
         List<ApiRankingDTO> list = new ArrayList<>();
         for(League league : leagues) {
-            ActualSeason actualSeason = actualSeasonService.findRecentByLeaguePk(league.getPk());
-            if(actualSeason == null) continue;
+            ActualSeason actualSeason;
+            try {
+                actualSeason = actualSeasonService.findRecentByLeaguePk(league.getPk());
+                log.error(Integer.toString(actualSeason.getYear()));
+                log.error(league.getEnName());
+            }catch (NotFoundException ignore){
+                continue;
+            }
             Map<String, Object> response = webClient.get().uri(uriBuilder ->
                             uriBuilder.path("/standings")
                                     .queryParam("league",league.getApiId())
@@ -343,13 +350,13 @@ public class MigrationService {
             if(responseData.isEmpty()) continue;
             Map<String, Object> leagueData = (Map<String, Object>) responseData.get(0).get("league");
             List<List<Map<String, Object>>> rankingDatas = (List<List<Map<String, Object>>>) leagueData.get("standings");
-            if(league.getEnName().equals("K League 1")){
-                rankingDatas.remove(0);
-                rankingDatas.remove(0);
-            }
             List<Map<String, Object>> flattenedList = rankingDatas.stream().flatMap(List::stream)
                             .collect(Collectors.toList());
             list.addAll(flattenedList.stream()
+                    .filter(rankingData -> {
+                        String group = (String) rankingData.get("group");
+                        return group != null && group.contains("Regular Season");
+                    })
                     .map(rankingData -> {
                         // DTO 객체 생성
                         Map<String, Object> teamData = (Map<String, Object>) rankingData.get("team");
@@ -393,6 +400,12 @@ public class MigrationService {
             List<Map<String, Object>> responseList = (List<Map<String, Object>>) response.get("response");
             list.addAll(
                     responseList.stream()
+                            .filter(responseData -> {
+                                // "league" 데이터에서 round 가져오기
+                                Map<String, Object> leagueData = (Map<String, Object>) responseData.get("league");
+                                String round = (String) leagueData.get("round");
+                                return round.contains("Regular Season"); // Regular Season만 필터링
+                            })
                             .map(responseData -> {
                                 // "fixture" 데이터 추출
                                 Map<String, Object> fixtureData = (Map<String, Object>) responseData.get("fixture");

@@ -47,8 +47,8 @@ public class ActualSeasonRankingController {
     @GetMapping()
     public ResponseEntity<ResponseDTO<List<GetActualSeasonRankingDTO>>> getEventBoards(@Valid GetActualSeasonRankingRequestDTO paramDto) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        ActualSeason league = actualSeasonService.findRecentByLeaguePk(paramDto.getLeague());
-        List<GetActualSeasonRankingDTO> actualSeasonRankingDTOS = actualSeasonRankingService.findRecentSeasonRankingByLeague(league.getPk());
+        ActualSeason actualSeason = actualSeasonService.findRecentByLeaguePk(paramDto.getLeague());
+        List<GetActualSeasonRankingDTO> actualSeasonRankingDTOS = actualSeasonRankingService.findRecentSeasonRankingByLeague(actualSeason.getPk());
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, actualSeasonRankingDTOS));
     }
 

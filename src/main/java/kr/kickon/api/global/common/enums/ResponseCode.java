@@ -38,6 +38,7 @@ public enum ResponseCode {
     NOT_FOUND_ACTUAL_LEAGUE_BY_LEAGUE(HttpStatus.NOT_FOUND,"NOT_FOUND_ACTUAL_LEAGUE_BY_LEAGUE", "해당 리그 PK값에 맞는 시즌을 찾을 수 없습니다."),
     NOT_FOUND_COUNTRY(HttpStatus.NOT_FOUND,"NOT_FOUND_COUNTRY", "해당 국가를 찾을 수 없습니다."),
     NOT_FOUND_GAME(HttpStatus.NOT_FOUND,"NOT_FOUND_GAME", "해당 경기를 찾을 수 없습니다."),
+    NOT_FOUND_USER_GAME_GAMBLE(HttpStatus.NOT_FOUND,"NOT_FOUND_USER_GAME_GAMBLE", "해당 유저 참여 승부예측 경기를 찾을 수 없습니다."),
     NOT_FOUND_ACTUAL_SEASON_TEAM(HttpStatus.NOT_FOUND,"NOT_FOUND_ACTUAL_SEASON_TEAM", "해당 시즌의 팀을 찾을 수 없습니다."),
 
     // ✅ 500 Internal Server Error
