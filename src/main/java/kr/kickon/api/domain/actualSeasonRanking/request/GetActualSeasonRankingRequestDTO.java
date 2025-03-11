@@ -12,5 +12,5 @@ import lombok.Setter;
 public class GetActualSeasonRankingRequestDTO {
     @NotNull
     @Positive
-    private long league;
+    private Long league;
 }

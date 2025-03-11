@@ -1,6 +1,7 @@
 package kr.kickon.api.global.common.entities;
 
 import jakarta.persistence.*;
+import kr.kickon.api.domain.game.dto.GameDTO;
 import kr.kickon.api.global.common.enums.GameStatus;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

@@ -1,10 +1,12 @@
 package kr.kickon.api.domain.game;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
+import kr.kickon.api.global.common.enums.GameStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
@@ -52,9 +54,39 @@ public class GameService implements BaseService<Game> {
         gameRepository.save(game);
     }
 
-    public List<Game> findAll(){
-        return queryFactory.selectFrom(QGame.game)
-                .where(QGame.game.status.eq(DataStatus.ACTIVATED))
-                .fetch();
+    public List<Game> findByActualSeason(Long actualSeasonPk, String gameStatus){
+        JPAQuery<Game> query = queryFactory.selectFrom(QGame.game)
+                .where(QGame.game.status.eq(DataStatus.ACTIVATED).and(QGame.game.actualSeason.pk.eq(actualSeasonPk)));
+
+        if (gameStatus.equals("finished")) {
+            query.where(QGame.game.gameStatus.in(GameStatus.PROCEEDING, GameStatus.CANCELED, GameStatus.HOME,
+                    GameStatus.AWAY, GameStatus.DRAW))
+                    .orderBy(QGame.game.startedAt.desc());
+        } else {
+            query.where(QGame.game.gameStatus.in(GameStatus.POSTPONED, GameStatus.PENDING))
+                    .orderBy(QGame.game.startedAt.asc());
+        }
+
+        return query.limit(2).fetch();
     }
+
+    public List<Game> findByActualSeasonByFavoriteTeam(Long actualSeasonPk, String gameStatus, Long favoriteTeamPk) {
+        JPAQuery<Game> query = queryFactory.selectFrom(QGame.game)
+                .where(QGame.game.status.eq(DataStatus.ACTIVATED)
+                        .and(QGame.game.actualSeason.pk.eq(actualSeasonPk))
+                        .and(QGame.game.homeTeam.pk.eq(favoriteTeamPk)
+                                .or(QGame.game.awayTeam.pk.eq(favoriteTeamPk))));
+
+        if (gameStatus.equals("finished")) {
+            query.where(QGame.game.gameStatus.in(GameStatus.PROCEEDING, GameStatus.CANCELED, GameStatus.HOME,
+                            GameStatus.AWAY, GameStatus.DRAW))
+                    .orderBy(QGame.game.startedAt.desc());
+        } else {
+            query.where(QGame.game.gameStatus.in(GameStatus.POSTPONED, GameStatus.PENDING))
+                    .orderBy(QGame.game.startedAt.asc());
+        }
+
+        return query.limit(2).fetch();
+    }
+
 }
