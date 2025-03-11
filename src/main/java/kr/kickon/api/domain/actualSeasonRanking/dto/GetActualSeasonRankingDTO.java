@@ -4,7 +4,7 @@ package kr.kickon.api.domain.actualSeasonRanking.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.Setter;
-import kr.kickon.api.global.common.ExampleConstant;
+import kr.kickon.api.global.common.ExampleConstants;
 
 @Getter
 @Setter
@@ -12,10 +12,10 @@ public class GetActualSeasonRankingDTO {
     @Schema(example = "1", description = "순위")
     private Integer rankOrder;
 
-    @Schema(example = ExampleConstant.teamLogoUrl, description = "팀 로고 url")
+    @Schema(example = ExampleConstants.teamLogoUrl, description = "팀 로고 url")
     private String teamLogoUrl;
 
-    @Schema(example = ExampleConstant.teamName, description = "팀 이름")
+    @Schema(example = ExampleConstants.teamName, description = "팀 이름")
     private String teamName;
 
     @Schema(example = "1", description = "게임 수")

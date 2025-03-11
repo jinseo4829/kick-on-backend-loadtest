@@ -11,8 +11,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableJpaAuditing
 @EnableScheduling
 public class ApiApplication {
-
-	public static void main(String[] args) {
+    public static void main(String[] args) {
 		ApplicationContext ctx = SpringApplication.run(ApiApplication.class, args);
 	}
 

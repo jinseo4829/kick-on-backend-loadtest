@@ -10,10 +10,11 @@ import kr.kickon.api.domain.migration.dto.ApiRankingDTO;
 import kr.kickon.api.domain.migration.dto.ApiTeamDTO;
 import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.global.common.ResponseDTO;
-import kr.kickon.api.global.common.entities.ActualSeason;
 import kr.kickon.api.global.common.entities.Country;
 import kr.kickon.api.global.common.entities.League;
 import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.error.exceptions.NotFoundException;
+import kr.kickon.api.global.util.slack.SlackService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -23,11 +24,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 @AllArgsConstructor
@@ -39,6 +38,7 @@ public class MigrationController {
     private final MigrationService migrationService;
     private final CountryService countryService;
     private final LeagueService leagueService;
+    private final SlackService slackService;
     private final ActualSeasonService actualSeasonService;
 
     @Operation(summary = "팀 불러오기", description = "각 리그 별로 속한 팀 불러오기")
@@ -57,6 +57,11 @@ public class MigrationController {
         List<ApiLeagueAndSeasonDTO> leaguesAndSeasons = migrationService.fetchLeaguesAndSeasons(countries,Integer.parseInt(season));
         migrationService.saveLeagueAndSeason(leaguesAndSeasons);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
+    }
+
+    @PostMapping("/test")
+    public void fetchTest(){
+        throw new NotFoundException(ResponseCode.NOT_FOUND_USER);
     }
 
     @Operation(summary = "리그 경기 불러오기", description = "각 리그의 경기를 불러오며, 상태값 및 경기 결과를 자동 업데이트")

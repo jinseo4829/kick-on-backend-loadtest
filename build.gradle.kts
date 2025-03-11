@@ -55,6 +55,8 @@ dependencies {
 
 	// Spring Boot 설정 프로세서 (자동 완성 지원)
 	annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+	implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.1")
+
 
 	// QueryDSL (JPA + 코어)
 	implementation("com.querydsl:querydsl-jpa:5.0.0:jakarta")
@@ -87,6 +89,13 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.security:spring-security-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+	// slack
+	implementation("com.slack.api:bolt-socket-mode:1.45.3")
+	implementation("javax.websocket:javax.websocket-api:1.1")
+	implementation("org.glassfish.tyrus.bundles:tyrus-standalone-client:1.20")
+	implementation("org.slf4j:slf4j-simple:1.7.36")
+	implementation("com.slack.api:bolt-jetty:1.45.3")
 }
 
 tasks.withType<Test> {
