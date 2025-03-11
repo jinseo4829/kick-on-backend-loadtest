@@ -166,14 +166,21 @@ public class JwtTokenProvider{
     public User getUserFromSecurityContext() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         PrincipalUserDetail principalUserDetail = null;
-        User user;
+        User user = null;
         if (authentication != null) {
             principalUserDetail = (PrincipalUserDetail) authentication.getPrincipal();
         }
         if(principalUserDetail==null) throw new UnauthorizedException(ResponseCode.INVALID_TOKEN);
 
-        user = userService.findByPk(Long.parseLong(principalUserDetail.getName()));
-        if(user == null) throw new UnauthorizedException(ResponseCode.INVALID_TOKEN);
+        if(principalUserDetail.getName().equals(String.valueOf(-1))){
+            
+        }else {
+            try{
+                user = userService.findByPk(Long.parseLong(principalUserDetail.getName()));    
+            } catch (NotFoundException ignore){
+                throw new UnauthorizedException(ResponseCode.INVALID_TOKEN);
+            }
+        }
 
         return user;
     }

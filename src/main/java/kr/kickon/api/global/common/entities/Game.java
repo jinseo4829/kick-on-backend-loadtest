@@ -1,9 +1,12 @@
 package kr.kickon.api.global.common.entities;
 
 import jakarta.persistence.*;
+import kr.kickon.api.domain.game.dto.GameDTO;
 import kr.kickon.api.global.common.enums.GameStatus;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
@@ -11,7 +14,12 @@ import java.time.LocalDateTime;
 @Table(name = "Game")
 @Getter
 @Setter
+@SuperBuilder
+@NoArgsConstructor
 public class Game extends BaseEntity {
+    @Column
+    private Long apiId;
+
     @Column
     private Integer homeScore;
 
@@ -20,9 +28,6 @@ public class Game extends BaseEntity {
 
     @Column(nullable = false)
     private LocalDateTime startedAt;
-
-    @Column
-    private LocalDateTime finishedAt;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -40,10 +45,12 @@ public class Game extends BaseEntity {
     private Team awayTeam;
 
     @ManyToOne
-    @JoinColumn(name = "gamble_season_pk", foreignKey = @ForeignKey(name = "fk_game_gamble_season"))
-    private GambleSeason gambleSeason;
-
-    @ManyToOne
     @JoinColumn(name = "actual_season_pk", foreignKey = @ForeignKey(name = "fk_game_actual_season"))
     private ActualSeason actualSeason;
+
+    @Column
+    private Integer homePenaltyScore;
+
+    @Column
+    private Integer awayPenaltyScore;
 }

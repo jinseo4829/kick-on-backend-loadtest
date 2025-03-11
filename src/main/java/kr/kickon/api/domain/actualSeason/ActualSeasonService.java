@@ -1,6 +1,7 @@
 package kr.kickon.api.domain.actualSeason;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -45,16 +47,18 @@ public class ActualSeasonService implements BaseService<ActualSeason> {
     public ActualSeason findByYearAndLeague(Integer year, Long league){
         BooleanExpression predicate = QActualSeason.actualSeason.year.eq(year)
                 .and(QActualSeason.actualSeason.status.eq(DataStatus.ACTIVATED))
-                .and(QActualSeason.actualSeason.league.pk.eq(league));
+                .and(QActualSeason.actualSeason.league.pk.eq(league).and(QActualSeason.actualSeason.league.status.eq(DataStatus.ACTIVATED)));
         Optional<ActualSeason> actualSeason = actualSeasonRepository.findOne(predicate);
         if (actualSeason.isPresent()) return actualSeason.get();
         throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON,"year : " + year + ", league pk : " + league);
     }
 
     public ActualSeason findRecentByLeaguePk(Long pk){
-        BooleanExpression predicate = QActualSeason.actualSeason.league.pk.eq(pk).and(QLeague.league.status.eq(DataStatus.ACTIVATED));
-        Optional<ActualSeason> actualSeason = actualSeasonRepository.findOne(predicate);
-        if (actualSeason.isPresent()) return actualSeason.get();
+        JPAQuery<ActualSeason> query = queryFactory.selectFrom(QActualSeason.actualSeason)
+                .where(QActualSeason.actualSeason.league.pk.eq(pk).and(QLeague.league.status.eq(DataStatus.ACTIVATED)))
+                .orderBy(QActualSeason.actualSeason.year.desc());
+        List<ActualSeason> actualSeason = query.fetch();
+        if (!actualSeason.isEmpty()) return actualSeason.get(0);
         throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
     }
 

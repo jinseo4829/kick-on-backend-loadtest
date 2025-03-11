@@ -1,16 +1,13 @@
 package kr.kickon.api.domain.league;
 
-import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import kr.kickon.api.domain.eventBoard.dto.GetEventBoardDTO;
-import kr.kickon.api.domain.migration.dto.ApiLeagueDTO;
 import kr.kickon.api.global.common.BaseService;
-import kr.kickon.api.global.common.entities.ActualSeasonRanking;
 import kr.kickon.api.global.common.entities.League;
-import kr.kickon.api.global.common.entities.QActualSeasonRanking;
+import kr.kickon.api.global.common.entities.QEventBoard;
 import kr.kickon.api.global.common.entities.QLeague;
 import kr.kickon.api.global.common.enums.DataStatus;
+import kr.kickon.api.global.common.enums.LeagueType;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
@@ -55,7 +52,14 @@ public class LeagueService implements BaseService<League> {
         leagueRepository.save(league);
     }
 
+    public List<League> findAllLeagues(){
+        return queryFactory.selectFrom(QLeague.league)
+                .where(QLeague.league.status.eq(DataStatus.ACTIVATED), QLeague.league.type.eq(LeagueType.League))
+                .fetch();
+    }
     public List<League> findAll(){
-        return leagueRepository.findAll();
+        return queryFactory.selectFrom(QLeague.league)
+                .where(QLeague.league.status.eq(DataStatus.ACTIVATED))
+                .fetch();
     }
 }

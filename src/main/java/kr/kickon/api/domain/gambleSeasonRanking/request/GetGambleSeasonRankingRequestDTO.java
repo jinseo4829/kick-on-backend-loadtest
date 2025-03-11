@@ -1,4 +1,4 @@
-package kr.kickon.api.domain.actualSeasonRanking.request;
+package kr.kickon.api.domain.gambleSeasonRanking.request;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -9,8 +9,8 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class GetActualSeasonRankingRequestDTO {
+public class GetGambleSeasonRankingRequestDTO {
     @NotNull
     @Positive
-    private Long league;
+    private long league;
 }
