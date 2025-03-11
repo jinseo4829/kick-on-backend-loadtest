@@ -331,8 +331,6 @@ public class MigrationService {
             ActualSeason actualSeason;
             try {
                 actualSeason = actualSeasonService.findRecentByLeaguePk(league.getPk());
-                log.error(Integer.toString(actualSeason.getYear()));
-                log.error(league.getEnName());
             }catch (NotFoundException ignore){
                 continue;
             }
