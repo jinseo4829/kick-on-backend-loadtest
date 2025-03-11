@@ -31,6 +31,7 @@ public abstract class BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private DataStatus status = DataStatus.ACTIVATED;
 
     @CreatedDate

@@ -31,6 +31,7 @@ public class User extends BaseEntity{
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     @ColumnDefault(UserAccountStatus.VALUE.DEFAULT)
     private UserAccountStatus userStatus = UserAccountStatus.DEFAULT;
 

@@ -2,6 +2,7 @@ package kr.kickon.api.global.auth;
 
 import com.nimbusds.oauth2.sdk.TokenRequest;
 import io.jsonwebtoken.Claims;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.kickon.api.domain.user.UserService;
 import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
 import kr.kickon.api.global.auth.jwt.dto.TokenDto;
@@ -24,6 +25,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
+@Tag(name = "인증 관련")
 public class AuthController {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserService userService;

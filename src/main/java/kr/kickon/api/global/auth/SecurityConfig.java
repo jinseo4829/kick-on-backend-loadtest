@@ -56,7 +56,7 @@ public class SecurityConfig {
                                     "/api/gamble-user-ranking"
                             ).hasRole("USER")
                             .requestMatchers(HttpMethod.POST,
-                                    "/api/user-match-gamble",
+                                    "/api/user-game-gamble",
                                     "/api/board",
                                     "/api/news",
                                     "/api/board-reply",
@@ -65,11 +65,11 @@ public class SecurityConfig {
                                     "/api/report-board"
                             ).hasRole("USER")
                             .requestMatchers(HttpMethod.PATCH,
-                                    "/api/user-match-gamble"
+                                    "/api/user-game-gamble"
                             )
                             .hasRole("USER")
                             .requestMatchers(HttpMethod.DELETE,
-                                    "/api/user-match-gamble"
+                                    "/api/user-game-gamble"
                             ).hasRole("USER")
 
                             .requestMatchers(HttpMethod.PATCH,"/api/user").hasAnyRole("OAUTH_FIRST_JOIN", "USER")

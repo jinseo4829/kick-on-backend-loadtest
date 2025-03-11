@@ -1,6 +1,7 @@
 package kr.kickon.api.domain.migration;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.kickon.api.domain.actualSeason.ActualSeasonService;
 import kr.kickon.api.domain.country.CountryService;
 import kr.kickon.api.domain.league.LeagueService;
@@ -32,6 +33,7 @@ import java.util.List;
 @AllArgsConstructor
 @RestController
 @RequestMapping("/migration")
+@Tag(name = "마이그레이션 관련")
 @Slf4j
 public class MigrationController {
     private final TeamService teamService;

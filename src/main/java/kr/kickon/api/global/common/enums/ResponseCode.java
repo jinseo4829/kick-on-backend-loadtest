@@ -16,6 +16,8 @@ public enum ResponseCode {
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Validation failed"),
     PARAMETER_NOT_EXIST(HttpStatus.BAD_REQUEST, "PARAMETER_NOT_EXIST", "파라미터가 존재 하지 않습니다."),
     INVALID_PARSING_INPUT(HttpStatus.BAD_REQUEST, "INVALID_PARSING_INPUT", "입력값 형식이 잘못 되었습니다. (parsing 오류)"),
+    GAMBLE_CLOSED(HttpStatus.BAD_REQUEST, "GAMBLE_CLOSED", "게임 시작 30분 전까지만 승부 예측이 가능합니다."),
+    DUPLICATED_USER_GAME_GAMBLE(HttpStatus.BAD_REQUEST, "DUPLICATED_USER_GAME_GAMBLE", "이미 게임에 대한 승부예측이 진행중입니다."),
 
     // ✅ 401 Unauthorized
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "인증이 필요합니다. 로그인 후 이용해주세요."),

@@ -74,4 +74,8 @@ public class UserGameGambleService implements BaseService<UserGameGamble> {
         if(userGameGamble.isPresent()) return userGameGamble.get();
         throw new NotFoundException(ResponseCode.NOT_FOUND_USER_GAME_GAMBLE);
     }
+
+    public void save(UserGameGamble userGameGamble) {
+        userGameGambleRepository.save(userGameGamble);
+    }
 }

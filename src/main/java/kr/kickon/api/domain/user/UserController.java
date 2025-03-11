@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import kr.kickon.api.domain.user.dto.GetUserMeDTO;
 import kr.kickon.api.domain.user.request.PatchUserRequest;
@@ -28,6 +29,7 @@ import java.time.format.DateTimeParseException;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/user")
+@Tag(name = "유저 관련")
 @Slf4j
 public class UserController {
     private final UserService userService;
