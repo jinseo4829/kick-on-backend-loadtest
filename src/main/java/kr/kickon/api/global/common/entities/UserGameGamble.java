@@ -3,13 +3,20 @@ package kr.kickon.api.global.common.entities;
 import jakarta.persistence.*;
 import kr.kickon.api.global.common.enums.GambleStatus;
 import kr.kickon.api.global.common.enums.PredictedResult;
+import kr.kickon.api.global.common.enums.UserAccountStatus;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.ColumnDefault;
 
 @Entity
 @Table(name = "UserGameGamble")
 @Getter
 @Setter
+@SuperBuilder
+@NoArgsConstructor
 public class UserGameGamble extends BaseEntity {
     @Column(nullable = false)
     private Integer predictedHomeScore;
@@ -23,7 +30,9 @@ public class UserGameGamble extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private GambleStatus gambleStatus;
+    @Builder.Default
+    @ColumnDefault(GambleStatus.VALUE.COMPLETED)
+    private GambleStatus gambleStatus = GambleStatus.COMPLETED;
 
     @ManyToOne
     @JoinColumn(name = "user_pk", foreignKey = @ForeignKey(name = "fk_user_game_gamble_user"))

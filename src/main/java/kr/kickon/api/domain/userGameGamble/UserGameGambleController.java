@@ -1,0 +1,82 @@
+package kr.kickon.api.domain.userGameGamble;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import kr.kickon.api.domain.game.GameService;
+import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
+import kr.kickon.api.domain.userGameGamble.request.UserGameGamblePostRequest;
+import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
+import kr.kickon.api.global.common.ResponseDTO;
+import kr.kickon.api.global.common.entities.Game;
+import kr.kickon.api.global.common.entities.User;
+import kr.kickon.api.global.common.entities.UserFavoriteTeam;
+import kr.kickon.api.global.common.entities.UserGameGamble;
+import kr.kickon.api.global.common.enums.GambleStatus;
+import kr.kickon.api.global.common.enums.PredictedResult;
+import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.error.exceptions.BadRequestException;
+import kr.kickon.api.global.error.exceptions.NotFoundException;
+import kr.kickon.api.global.util.UUIDGenerator;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/api/user-game-gamble")
+@Tag(name = "유저 승부예측 참여")
+@Slf4j
+public class UserGameGambleController {
+    private final UserGameGambleService userGameGambleService;
+    private final UserFavoriteTeamService userFavoriteTeamService;
+    private final GameService gameService;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final UUIDGenerator uuidGenerator;
+
+    @PostMapping()
+    @Operation(summary = "승부예측 생성", description = "게임과 유저를 기반으로 승부예측 생성")
+    public ResponseEntity<ResponseDTO<Void>> updatePrivacy(@Valid @RequestBody UserGameGamblePostRequest request) {
+        User user = jwtTokenProvider.getUserFromSecurityContext();
+        Game game = gameService.findByPk(request.getGame());
+        try {
+            userGameGambleService.findByUserAndGame(user.getPk(), game.getPk());
+            throw new BadRequestException(ResponseCode.DUPLICATED_USER_GAME_GAMBLE);
+        }catch (NotFoundException ignore) {
+
+        }
+
+        // 게임 시작 30분 전까지만 허용
+        // 현재 시간과 게임 시작 시간 비교
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime gameStartTime = game.getStartedAt();
+
+        if (gameStartTime.isBefore(now.plusMinutes(30))) {
+            throw new BadRequestException(ResponseCode.GAMBLE_CLOSED);
+        }
+
+        String id = uuidGenerator.generateUniqueUUID(userGameGambleService::findById);
+        // 승부예측 생성 로직
+        PredictedResult result;
+        if(request.getPredictedAwayScore().equals(request.getPredictedHomeScore())) result = PredictedResult.DRAW;
+        else if(request.getPredictedHomeScore()>request.getPredictedAwayScore()) result = PredictedResult.HOME;
+        else result = PredictedResult.AWAY;
+        UserGameGamble gamble = UserGameGamble.builder()
+                .user(user)
+                .game(game)
+                .id(id)
+                .predictedAwayScore(request.getPredictedAwayScore())
+                .predictedHomeScore(request.getPredictedHomeScore())
+                .predictedResult(result)
+                .build();
+
+        UserFavoriteTeam userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
+        if(userFavoriteTeam!=null) gamble.setSupportingTeam(userFavoriteTeam.getTeam());
+        userGameGambleService.save(gamble);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
+    }
+
+}
