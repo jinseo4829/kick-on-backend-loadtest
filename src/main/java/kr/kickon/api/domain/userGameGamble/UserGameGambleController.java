@@ -85,8 +85,9 @@ public class UserGameGambleController {
     public ResponseEntity<ResponseDTO<Void>> updateUserGameGamble(@Valid @RequestBody UserGameGamblePatchRequest request) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         UserGameGamble userGameGamble = userGameGambleService.findByPk(Long.parseLong(request.getGamble()));
-        if(!userGameGamble.getUser().getPk().equals(user.getPk())) throw new ForbiddenException(ResponseCode.FORBIDDEN);
         if(userGameGamble == null) throw new NotFoundException(ResponseCode.NOT_FOUND_USER_GAME_GAMBLE);
+        if(!userGameGamble.getUser().getPk().equals(user.getPk())) throw new ForbiddenException(ResponseCode.FORBIDDEN);
+
         // 게임 시작 30분 전까지만 허용
         // 현재 시간과 게임 시작 시간 비교
         LocalDateTime now = LocalDateTime.now();
@@ -109,11 +110,26 @@ public class UserGameGambleController {
         UserFavoriteTeam userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
         if(userFavoriteTeam!=null) userGameGamble.setSupportingTeam(userFavoriteTeam.getTeam());
         userGameGambleService.save(userGameGamble);
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
 
-//    @DeleteMapping()
-//    @Operation(summary = "승부예측 수정", description = "승부예측 ID를 기반으로 승부예측 생성")
-//    public ResponseEntity<ResponseDTO<Void>> deleteUserGameGamble(@Valid @RequestParam UserGameGamblePatchRequest request) {
-//    }
+    @DeleteMapping()
+    @Operation(summary = "승부예측 삭제", description = "승부예측 ID를 기반으로 승부예측 데이터 hard delete")
+    public ResponseEntity<ResponseDTO<Void>> deleteUserGameGamble(@Valid @RequestParam String id) {
+        User user = jwtTokenProvider.getUserFromSecurityContext();
+        UserGameGamble userGameGamble = userGameGambleService.findById(id);
+        if(userGameGamble==null) throw new NotFoundException(ResponseCode.NOT_FOUND_USER_GAME_GAMBLE);
+        if(!userGameGamble.getUser().getPk().equals(user.getPk())) throw new ForbiddenException(ResponseCode.FORBIDDEN);
+        if(!userGameGamble.getGambleStatus().equals(GambleStatus.COMPLETED)) throw new BadRequestException(ResponseCode.ALREADY_FINISHED_GAMBLE);
+        // 게임 시작 30분 전까지만 허용
+        // 현재 시간과 게임 시작 시간 비교
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime gameStartTime = userGameGamble.getGame().getStartedAt();
+
+        if (gameStartTime.isBefore(now.plusMinutes(30))) {
+            throw new BadRequestException(ResponseCode.GAMBLE_CLOSED);
+        }
+        userGameGambleService.delete(userGameGamble);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
+    }
 }
