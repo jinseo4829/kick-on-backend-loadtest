@@ -24,7 +24,6 @@ public class ApiSeasonDTO {
             @JsonProperty("end") String end,
             @JsonProperty("current") Boolean operatingStatus
     ) {
-//        log.error(year + " " + start + " " + end + " " + operatingStatus);
         // year를 int로 변환
         this.year = year;
 

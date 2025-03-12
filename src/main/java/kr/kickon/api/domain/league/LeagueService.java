@@ -37,8 +37,7 @@ public class LeagueService implements BaseService<League> {
     public League findByPk(Long pk) {
         BooleanExpression predicate = QLeague.league.pk.eq(pk).and(QLeague.league.status.eq(DataStatus.ACTIVATED));
         Optional<League> league = leagueRepository.findOne(predicate);
-        if(league.isPresent()) return league.get();
-        throw new NotFoundException(ResponseCode.NOT_FOUND_LEAGUE);
+        return league.orElse(null);
     }
 
     public League findByApiId(Long apiId) {

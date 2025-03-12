@@ -71,7 +71,9 @@ public class MigrationController {
     public ResponseEntity<ResponseDTO<Void>> fetchGames(@RequestParam String league, @RequestParam String season) {
 //        List<League> leagues = leagueService.findAll();
         List<League> leagues = new ArrayList<>();
-        leagues.add(leagueService.findByPk(Long.parseLong(league)));
+        League leagueByPk = leagueService.findByPk(Long.parseLong(league));
+        if(leagueByPk == null) throw new NotFoundException(ResponseCode.NOT_FOUND_LEAGUE);
+        leagues.add(leagueByPk);
         List<ApiGamesDTO> gamesFromApi = migrationService.fetchGames(leagues, season);
         migrationService.saveGames(gamesFromApi);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));

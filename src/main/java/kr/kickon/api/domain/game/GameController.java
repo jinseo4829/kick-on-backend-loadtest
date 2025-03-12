@@ -58,6 +58,7 @@ public class GameController {
     public ResponseEntity<ResponseDTO<LeagueDTO>> getGames(@Valid GetGamesRequestDTO paramDto) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         ActualSeason actualSeason = actualSeasonService.findByYearAndLeague(paramDto.getSeason(),paramDto.getLeague());
+        if(actualSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
         LeagueDTO leagueDTO = new LeagueDTO();
         leagueDTO.setPk(actualSeason.getLeague().getPk());
         leagueDTO.setName(actualSeason.getLeague().getKrName());
@@ -65,17 +66,11 @@ public class GameController {
         List<Game> games = null;
         if(user!=null) userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
 
-        if(userFavoriteTeam==null) {
+        ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findByActualSeason(actualSeason,userFavoriteTeam.getTeam().getPk());
+        if(userFavoriteTeam==null || actualSeasonTeam==null) {
             games = gameService.findByActualSeason(actualSeason.getPk(), paramDto.getStatus());
-        }
-        else{
-            ActualSeasonTeam actualSeasonTeam = null;
-            try{
-                actualSeasonTeam = actualSeasonTeamService.findByActualSeason(actualSeason,userFavoriteTeam.getTeam().getPk());
-                games = gameService.findByActualSeasonByFavoriteTeam(actualSeason.getPk(), paramDto.getStatus(), userFavoriteTeam.getTeam().getPk());
-            }catch (NotFoundException ignore){
-                games = gameService.findByActualSeason(actualSeason.getPk(), paramDto.getStatus());
-            }
+        } else{
+            games = gameService.findByActualSeasonByFavoriteTeam(actualSeason.getPk(), paramDto.getStatus(), userFavoriteTeam.getTeam().getPk());
         }
 
         // 게임 DTO 리스트 변환
@@ -88,7 +83,6 @@ public class GameController {
             homeTeamDTO.setName(game.getHomeTeam().getNameKr());
             homeTeamDTO.setLogoUrl(game.getHomeTeam().getLogoUrl());
             gameDTO.setHomeTeam(homeTeamDTO);
-            log.error(game.getPk().toString()+ " " + game.getHomeTeam().getNameKr());
 
             TeamDTO awayTeamDTO = new TeamDTO();
             awayTeamDTO.setPk(game.getAwayTeam().getPk());
@@ -129,19 +123,15 @@ public class GameController {
             if(user != null && user.getPk() > 0){
                 // 유저 승부 예측 결과
                 MyGambleResultDTO myGambleResultDTO = null;
-                UserGameGamble myUserGameGamble;
-                try{
-                    myUserGameGamble = userGameGambleService.findByUserAndGame(user.getPk(),game.getPk());
-                }catch (NotFoundException ignore){
-                    myUserGameGamble = null;
-                }
+                UserGameGamble myUserGameGamble = userGameGambleService.findByUserAndGame(user.getPk(),game.getPk());;
                 if (myUserGameGamble != null) {
-                    myGambleResultDTO = new MyGambleResultDTO();
-                    myGambleResultDTO.setId(myUserGameGamble.getId());
-                    myGambleResultDTO.setHomeScore(myUserGameGamble.getPredictedHomeScore());
-                    myGambleResultDTO.setAwayScore(myUserGameGamble.getPredictedAwayScore());
-                    myGambleResultDTO.setResult(myUserGameGamble.getPredictedResult());
-                    myGambleResultDTO.setGambleStatus(myUserGameGamble.getGambleStatus());
+                    myGambleResultDTO = MyGambleResultDTO
+                            .builder()
+                            .id(myUserGameGamble.getId())
+                            .homeScore(myUserGameGamble.getPredictedHomeScore())
+                            .awayScore(myUserGameGamble.getPredictedAwayScore())
+                            .result(myUserGameGamble.getPredictedResult())
+                            .gambleStatus(myUserGameGamble.getGambleStatus()).build();
                 }
                 gameDTO.setMyGambleResult(myGambleResultDTO);
             }

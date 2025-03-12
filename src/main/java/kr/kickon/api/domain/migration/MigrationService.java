@@ -63,7 +63,6 @@ public class MigrationService {
         // 랭킹 아이디 체크
         List<String> rankingIds = new ArrayList<>();
         list.forEach(apiData -> {
-            log.error("apiData: {} {} {}", apiData.getTeam().getPk(), apiData.getTeam().getNameEn(), apiData.getActualSeason().getYear());
             ActualSeasonRanking existActualSeasonRanking = actualSeasonRankingService.findByActualSeasonAndTeam(apiData.getActualSeason().getPk(),apiData.getTeam().getPk());
             ActualSeasonRanking actualSeasonRanking;
             if(existActualSeasonRanking == null) {
@@ -225,16 +224,8 @@ public class MigrationService {
                         .build();
                 leagueService.save(league);
             }
-
-            try {
-                actualSeason = actualSeasonService.findByYearAndLeague(apiSeason.getYear(),league.getPk());
-                actualSeason.setYear(apiSeason.getYear());
-                actualSeason.setStartedAt(apiSeason.getStart());
-                actualSeason.setFinishedAt(apiSeason.getEnd());
-                actualSeason.setFinishedAt(apiSeason.getEnd());
-                apiSeason.setOperatingStatus(apiSeason.getOperatingStatus());
-                actualSeasonService.save(actualSeason);
-            }catch (NotFoundException e) {
+            actualSeason = actualSeasonService.findByYearAndLeague(apiSeason.getYear(),league.getPk());
+            if(actualSeason == null) {
                 // 중복되지 않는 ID를 생성할 때까지 반복
                 do {
                     try{
@@ -255,6 +246,13 @@ public class MigrationService {
                         .startedAt(apiSeason.getStart())
                         .finishedAt(apiSeason.getEnd())
                         .build();
+                actualSeasonService.save(actualSeason);
+            }else{
+                actualSeason.setYear(apiSeason.getYear());
+                actualSeason.setStartedAt(apiSeason.getStart());
+                actualSeason.setFinishedAt(apiSeason.getEnd());
+                actualSeason.setFinishedAt(apiSeason.getEnd());
+                apiSeason.setOperatingStatus(apiSeason.getOperatingStatus());
                 actualSeasonService.save(actualSeason);
             }
         });
@@ -300,6 +298,7 @@ public class MigrationService {
                 teamObj = teamService.save(teamObj);
             }
             ActualSeason actualSeason = actualSeasonService.findByYearAndLeague(apiTeam.getYear(),apiTeam.getLeaguePk());
+            if(actualSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
             try {
                 actualSeasonTeamService.findByActualSeason(actualSeason,teamObj.getPk());
             }catch (NotFoundException e){
@@ -329,11 +328,8 @@ public class MigrationService {
         List<ApiRankingDTO> list = new ArrayList<>();
         for(League league : leagues) {
             ActualSeason actualSeason;
-            try {
-                actualSeason = actualSeasonService.findRecentByLeaguePk(league.getPk());
-            }catch (NotFoundException ignore){
-                continue;
-            }
+            actualSeason = actualSeasonService.findRecentByLeaguePk(league.getPk());
+            if(actualSeason != null) continue;
             Map<String, Object> response = webClient.get().uri(uriBuilder ->
                             uriBuilder.path("/standings")
                                     .queryParam("league",league.getApiId())
@@ -387,6 +383,7 @@ public class MigrationService {
         List<ApiGamesDTO> list = new ArrayList<>();
         for(League league : leagues) {
             ActualSeason actualSeason = actualSeasonService.findByYearAndLeague(Integer.parseInt(season),league.getPk());
+            if(actualSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
             Map<String, Object> response = webClient.get().uri(uriBuilder ->
                     uriBuilder.path("/fixtures")
                             .queryParam("league",league.getApiId())

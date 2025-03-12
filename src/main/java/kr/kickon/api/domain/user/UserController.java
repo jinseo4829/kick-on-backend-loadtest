@@ -54,9 +54,7 @@ public class UserController {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         UserFavoriteTeam userFavoriteTeam = null;
         GetUserMeDTO userDto = new GetUserMeDTO(user);;
-        try {
-            userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
-        }catch (NotFoundException ignore){}
+        userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
 
         if(userFavoriteTeam != null && userFavoriteTeam.getTeam().getStatus() == DataStatus.ACTIVATED) {
             userDto.setTeamLogoUrl(userFavoriteTeam.getTeam().getLogoUrl());

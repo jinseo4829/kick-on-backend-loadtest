@@ -48,6 +48,7 @@ public class ActualSeasonRankingController {
     public ResponseEntity<ResponseDTO<List<GetActualSeasonRankingDTO>>> getEventBoards(@Valid GetActualSeasonRankingRequestDTO paramDto) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         ActualSeason actualSeason = actualSeasonService.findRecentByLeaguePk(paramDto.getLeague());
+        if(actualSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
         List<GetActualSeasonRankingDTO> actualSeasonRankingDTOS = actualSeasonRankingService.findRecentSeasonRankingByLeague(actualSeason.getPk());
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, actualSeasonRankingDTOS));
     }
