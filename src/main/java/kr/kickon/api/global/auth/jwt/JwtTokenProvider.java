@@ -90,6 +90,7 @@ public class JwtTokenProvider{
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
 
         User user = userService.findByPk(Long.parseLong(oAuth2User.getName()));
+        if(user==null) throw new NotFoundException(ResponseCode.NOT_FOUND_USER);
 
         Map<String, Object> claims = new HashMap<>();
         claims.put(AUTH_PK, user.getPk());
@@ -173,13 +174,10 @@ public class JwtTokenProvider{
         if(principalUserDetail==null) throw new UnauthorizedException(ResponseCode.INVALID_TOKEN);
 
         if(principalUserDetail.getName().equals(String.valueOf(-1))){
-            
+            // principalUserDetail에 UserPk가 -1이면 익명 사용자임
         }else {
-            try{
-                user = userService.findByPk(Long.parseLong(principalUserDetail.getName()));    
-            } catch (NotFoundException ignore){
-                throw new UnauthorizedException(ResponseCode.INVALID_TOKEN);
-            }
+            user = userService.findByPk(Long.parseLong(principalUserDetail.getName()));
+            if(user==null) throw new UnauthorizedException(ResponseCode.INVALID_TOKEN);
         }
 
         return user;

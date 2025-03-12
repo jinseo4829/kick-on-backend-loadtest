@@ -71,8 +71,7 @@ public class UserGameGambleService implements BaseService<UserGameGamble> {
     public UserGameGamble findByUserAndGame(Long userPk, Long gamePk) {
         BooleanExpression predicate = QUserGameGamble.userGameGamble.user.pk.eq(userPk).and(QUserGameGamble.userGameGamble.status.eq(DataStatus.ACTIVATED).and(QUserGameGamble.userGameGamble.game.pk.eq(gamePk)));
         Optional<UserGameGamble> userGameGamble = userGameGambleRepository.findOne(predicate);
-        if(userGameGamble.isPresent()) return userGameGamble.get();
-        throw new NotFoundException(ResponseCode.NOT_FOUND_USER_GAME_GAMBLE);
+        return userGameGamble.orElse(null);
     }
 
     public void save(UserGameGamble userGameGamble) {

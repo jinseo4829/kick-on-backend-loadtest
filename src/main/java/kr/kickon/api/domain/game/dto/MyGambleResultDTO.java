@@ -3,9 +3,11 @@ package kr.kickon.api.domain.game.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import kr.kickon.api.global.common.enums.GambleStatus;
 import kr.kickon.api.global.common.enums.PredictedResult;
+import lombok.Builder;
 import lombok.Data;
 
 @Data
+@Builder
 @Schema(description = "내 승부예측 DTO")
 public class MyGambleResultDTO {
     @Schema(description = "내 예측 ID", example = "53fd4230-615b-4a11-8a55-7c6ed833c641")

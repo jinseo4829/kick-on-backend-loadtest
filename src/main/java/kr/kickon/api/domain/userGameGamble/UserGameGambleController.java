@@ -1,6 +1,7 @@
 package kr.kickon.api.domain.userGameGamble;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import kr.kickon.api.domain.game.GameService;
@@ -44,12 +45,10 @@ public class UserGameGambleController {
     public ResponseEntity<ResponseDTO<Void>> createUserGameGamble(@Valid @RequestBody UserGameGamblePostRequest request) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         Game game = gameService.findByPk(request.getGame());
-        try {
-            userGameGambleService.findByUserAndGame(user.getPk(), game.getPk());
-            throw new BadRequestException(ResponseCode.DUPLICATED_USER_GAME_GAMBLE);
-        }catch (NotFoundException ignore) {
+        if(game == null) throw new NotFoundException(ResponseCode.NOT_FOUND_GAME);
 
-        }
+        UserGameGamble userGameGamble = userGameGambleService.findByUserAndGame(user.getPk(), game.getPk());
+        if(userGameGamble != null) throw new BadRequestException(ResponseCode.DUPLICATED_USER_GAME_GAMBLE);
 
         // 게임 시작 30분 전까지만 허용
         // 현재 시간과 게임 시작 시간 비교
@@ -82,7 +81,7 @@ public class UserGameGambleController {
     }
 
     @PatchMapping()
-    @Operation(summary = "승부예측 수정", description = "승부예측 ID를 기반으로 승부예측 생성")
+    @Operation(summary = "승부예측 수정", description = "승부예측 ID를 기반으로 승부예측 수정")
     public ResponseEntity<ResponseDTO<Void>> updateUserGameGamble(@Valid @RequestBody UserGameGamblePatchRequest request) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         UserGameGamble userGameGamble = userGameGambleService.findByPk(Long.parseLong(request.getGamble()));
@@ -113,4 +112,8 @@ public class UserGameGambleController {
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
     }
 
+    @DeleteMapping()
+    @Operation(summary = "승부예측 수정", description = "승부예측 ID를 기반으로 승부예측 생성")
+    public ResponseEntity<ResponseDTO<Void>> deleteUserGameGamble(@Valid @RequestParam UserGameGamblePatchRequest request) {
+    }
 }

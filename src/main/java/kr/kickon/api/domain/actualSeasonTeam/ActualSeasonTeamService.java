@@ -41,15 +41,13 @@ public class ActualSeasonTeamService implements BaseService<ActualSeasonTeam> {
     public ActualSeasonTeam findByPk(Long pk) {
         BooleanExpression predicate = QActualSeasonTeam.actualSeasonTeam.pk.eq(pk).and(QActualSeasonTeam.actualSeasonTeam.status.eq(DataStatus.ACTIVATED));
         Optional<ActualSeasonTeam> actualSeasonTeam = actualSeasonTeamRepository.findOne(predicate);
-        if (actualSeasonTeam.isPresent()) return actualSeasonTeam.get();
-        throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON_TEAM);
+        return actualSeasonTeam.orElse(null);
     }
 
     public ActualSeasonTeam findByActualSeason(ActualSeason actualSeason,Long teamPk) {
         BooleanExpression predicate = QActualSeasonTeam.actualSeasonTeam.actualSeason.pk.eq(actualSeason.getPk()).and(QActualSeasonTeam.actualSeasonTeam.status.eq(DataStatus.ACTIVATED).and(QActualSeasonTeam.actualSeasonTeam.team.pk.eq(teamPk)));
         Optional<ActualSeasonTeam> actualSeasonTeam = actualSeasonTeamRepository.findOne(predicate);
-        if (actualSeasonTeam.isPresent()) return actualSeasonTeam.get();
-        throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON_TEAM);
+        return actualSeasonTeam.orElse(null);
     }
 
     public ActualSeasonTeam save(ActualSeasonTeam actualSeasonTeam) {

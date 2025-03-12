@@ -39,8 +39,7 @@ public class GameService implements BaseService<Game> {
     public Game findByPk(Long pk) {
         BooleanExpression predicate = QGame.game.pk.eq(pk).and(QGame.game.status.eq(DataStatus.ACTIVATED));
         Optional<Game> game = gameRepository.findOne(predicate);
-        if(game.isPresent()) return game.get();
-        throw new NotFoundException(ResponseCode.NOT_FOUND_GAME);
+        return game.orElse(null);
     }
 
     public Game findByApiId(Long apiId){
