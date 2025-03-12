@@ -10,6 +10,10 @@ public class UnauthorizedException extends BaseException {
         super(responseCode);
     }
 
+    public UnauthorizedException(ResponseCode responseCode, String message) {
+        super(responseCode, message);
+    }
+
     public AuthenticationException toAuthenticationException() {
         return new AuthenticationException(getMessage()) {}; // 익명 클래스로 변환
     }

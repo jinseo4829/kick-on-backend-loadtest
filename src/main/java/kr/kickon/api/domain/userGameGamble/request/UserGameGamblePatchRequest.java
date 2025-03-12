@@ -14,12 +14,12 @@ public class UserGameGamblePatchRequest {
     @Schema(example = ExampleConstants.id, description = "승부예측 ID")
     private String gamble;
 
-    @Nullable()
+    @NotNull(message = "홈 점수 예측값은 필수 요소입니다.")
     @PositiveOrZero
     @Schema(example = "1", description = "홈 점수 예측값")
     private Integer predictedHomeScore;
 
-    @Nullable()
+    @NotNull(message = "어웨이 점수 예측값은 필수 요소입니다.")
     @PositiveOrZero
     @Schema(example = "1", description = "어웨이 점수 예측값")
     private Integer predictedAwayScore;

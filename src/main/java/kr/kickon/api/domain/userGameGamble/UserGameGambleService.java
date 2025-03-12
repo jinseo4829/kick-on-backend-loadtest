@@ -77,4 +77,8 @@ public class UserGameGambleService implements BaseService<UserGameGamble> {
     public void save(UserGameGamble userGameGamble) {
         userGameGambleRepository.save(userGameGamble);
     }
+
+    public void delete(UserGameGamble userGameGamble) {
+        userGameGambleRepository.delete(userGameGamble);
+    }
 }

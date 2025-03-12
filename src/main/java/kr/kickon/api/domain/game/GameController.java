@@ -66,11 +66,12 @@ public class GameController {
         List<Game> games = null;
         if(user!=null) userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
 
-        ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findByActualSeason(actualSeason,userFavoriteTeam.getTeam().getPk());
-        if(userFavoriteTeam==null || actualSeasonTeam==null) {
+        if(userFavoriteTeam==null) {
             games = gameService.findByActualSeason(actualSeason.getPk(), paramDto.getStatus());
         } else{
-            games = gameService.findByActualSeasonByFavoriteTeam(actualSeason.getPk(), paramDto.getStatus(), userFavoriteTeam.getTeam().getPk());
+            ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findByActualSeason(actualSeason,userFavoriteTeam.getTeam().getPk());
+            if(actualSeasonTeam==null) games = gameService.findByActualSeason(actualSeason.getPk(), paramDto.getStatus());
+            else games = gameService.findByActualSeasonByFavoriteTeam(actualSeason.getPk(), paramDto.getStatus(), userFavoriteTeam.getTeam().getPk());
         }
 
         // 게임 DTO 리스트 변환

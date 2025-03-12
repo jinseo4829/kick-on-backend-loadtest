@@ -1,6 +1,5 @@
 package kr.kickon.api.global.auth;
 
-import com.nimbusds.oauth2.sdk.TokenRequest;
 import io.jsonwebtoken.Claims;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.kickon.api.domain.user.UserService;

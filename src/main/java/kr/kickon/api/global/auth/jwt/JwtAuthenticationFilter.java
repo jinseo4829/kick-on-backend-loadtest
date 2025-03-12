@@ -1,6 +1,5 @@
 package kr.kickon.api.global.auth.jwt;
 
-import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,7 +9,6 @@ import kr.kickon.api.global.auth.oauth.dto.PrincipalUserDetail;
 import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.ForbiddenException;
-import kr.kickon.api.global.error.exceptions.JwtAuthenticationException;
 import kr.kickon.api.global.error.exceptions.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -74,8 +72,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
             filterChain.doFilter(request, response);
         }catch (Exception e) {
-            log.error(e.getMessage(), e);
-            throw new UnauthorizedException(ResponseCode.UNAUTHORIZED);
+            throw new UnauthorizedException(ResponseCode.UNAUTHORIZED, e.getMessage());
         }
     }
 

@@ -3,20 +3,15 @@ package kr.kickon.api.global.auth.jwt;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.security.SecurityException;
 import kr.kickon.api.domain.user.UserService;
 import kr.kickon.api.global.auth.jwt.dto.TokenDto;
 import kr.kickon.api.global.auth.oauth.dto.PrincipalUserDetail;
 import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.enums.ResponseCode;
-import kr.kickon.api.global.error.exceptions.JwtAuthenticationException;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.error.exceptions.UnauthorizedException;
-import kr.kickon.api.global.error.exceptions.UserNotFoundException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -110,8 +105,7 @@ public class JwtTokenProvider{
                     .parseSignedClaims(token);
             return true;
         } catch (Exception e) {
-            log.error(e.getMessage());
-            return false;
+            throw new UnauthorizedException(ResponseCode.INVALID_TOKEN,e.getMessage());
         }
     }
 
