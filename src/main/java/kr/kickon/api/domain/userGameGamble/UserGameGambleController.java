@@ -112,8 +112,8 @@ public class UserGameGambleController {
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
     }
 
-    @DeleteMapping()
-    @Operation(summary = "승부예측 수정", description = "승부예측 ID를 기반으로 승부예측 생성")
-    public ResponseEntity<ResponseDTO<Void>> deleteUserGameGamble(@Valid @RequestParam UserGameGamblePatchRequest request) {
-    }
+//    @DeleteMapping()
+//    @Operation(summary = "승부예측 수정", description = "승부예측 ID를 기반으로 승부예측 생성")
+//    public ResponseEntity<ResponseDTO<Void>> deleteUserGameGamble(@Valid @RequestParam UserGameGamblePatchRequest request) {
+//    }
 }
