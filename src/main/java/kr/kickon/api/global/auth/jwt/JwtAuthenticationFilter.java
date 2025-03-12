@@ -1,19 +1,24 @@
 package kr.kickon.api.global.auth.jwt;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import kr.kickon.api.domain.user.UserService;
 import kr.kickon.api.global.auth.oauth.dto.PrincipalUserDetail;
+import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.ForbiddenException;
+import kr.kickon.api.global.error.exceptions.JwtAuthenticationException;
 import kr.kickon.api.global.error.exceptions.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -70,10 +75,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(principal,null, authorities));
 
             }
-            filterChain.doFilter(request, response);
+
         }catch (Exception e) {
-            throw new UnauthorizedException(ResponseCode.UNAUTHORIZED, e.getMessage());
+//            throw new UnauthorizedException(ResponseCode.UNAUTHORIZED).toAuthenticationException();
         }
+        filterChain.doFilter(request, response);
     }
 
     // 특정 URI가 JWT 인증을 요구하는지 확인

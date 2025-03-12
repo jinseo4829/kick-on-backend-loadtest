@@ -1,7 +1,9 @@
 package kr.kickon.api.global.common;
 
 public class ExampleConstants {
+    public static final String datetime = "2025-03-12T07:45:20";
     public static final String id = "cd4ac5a9-ad4f-4225-8f6d-d7e55505bf60";
+    public static final String title = "[충격] 손흥민 리버풀 이적 선택...?";
     public static final String eventBoardImageUrl = "https://img.coupangstreaming.com/events/75b081b3-14d7-49f4-befc-4de073508eff/sports-hero-web/206c076d-69df-4cd8-a3d3-20ee5a2c2cc2.jpg?imwidth=1440";
     public static final String profileImageUrl = "https://scontent-gmp1-1.cdninstagram.com/v/t51.2885-19/96747700_242807346823618_4767736924913795072_n.jpg?stp=dst-jpg_s150x150_tt6&_nc_ht=scontent-gmp1-1.cdninstagram.com&_nc_cat=110&_nc_oc=Q6cZ2AH23lfb_9ziJaI-UjVnaL8kngzdpd4RfLsdSgpbaKT-AoloLJFF_-egp2v1zZFaQ70&_nc_ohc=4H4FTKbi77oQ7kNvgEv3iFD&_nc_gid=1858f42478bb4540a7af1ab7563a7d37&edm=AP4sbd4BAAAA&ccb=7-5&oh=00_AYAC8WG6DTdWtF9MewgFRhJQBblAhq1W16B5wHQAGEVvmw&oe=67C581FE&_nc_sid=7a9f4b";
     public static final String nickname = "하늘천사랑";

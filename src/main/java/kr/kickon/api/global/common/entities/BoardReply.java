@@ -19,4 +19,8 @@ public class BoardReply extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "user_pk", foreignKey = @ForeignKey(name = "fk_board_reply_user"))
     private User user;
+
+    @ManyToOne
+    @JoinColumn(name = "board_pk", foreignKey = @ForeignKey(name = "fk_board_reply_board"))
+    private Board board;
 }
