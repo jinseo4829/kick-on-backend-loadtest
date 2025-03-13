@@ -6,7 +6,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import kr.kickon.api.domain.actualSeasonRanking.response.GetActualSeasonRankingResponse;
 import kr.kickon.api.domain.news.dto.HotNewsListDTO;
 import kr.kickon.api.domain.news.dto.NewsListDTO;
 import kr.kickon.api.domain.news.response.GetHomeNewsResponse;
