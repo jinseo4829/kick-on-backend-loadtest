@@ -6,18 +6,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
-import kr.kickon.api.domain.actualSeason.ActualSeasonService;
-import kr.kickon.api.domain.actualSeasonRanking.dto.GetActualSeasonRankingDTO;
-import kr.kickon.api.domain.actualSeasonRanking.request.GetActualSeasonRankingRequestDTO;
-import kr.kickon.api.domain.actualSeasonRanking.response.GetActualSeasonRankingResponse;
 import kr.kickon.api.domain.board.dto.BoardListDTO;
+import kr.kickon.api.domain.board.response.GetHomeBoardsResponse;
 import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
 import kr.kickon.api.global.common.ResponseDTO;
-import kr.kickon.api.global.common.entities.ActualSeason;
 import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.enums.ResponseCode;
-import kr.kickon.api.global.error.exceptions.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -39,7 +33,7 @@ public class BoardController {
     @Operation(summary = "홈화면 함께 볼만한 게시글 리스트 조회", description = "응원팀 여부에 상관없이 최신 게시글 기준으로 10개 리스트 반환")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공",
-                    content = @Content(schema = @Schema(implementation = GetActualSeasonRankingResponse.class))),
+                    content = @Content(schema = @Schema(implementation = GetHomeBoardsResponse.class))),
     })
     @GetMapping("/home")
     public ResponseEntity<ResponseDTO<List<BoardListDTO>>> getEventBoards() {
