@@ -3,6 +3,7 @@ package kr.kickon.api.domain.news;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import kr.kickon.api.domain.news.dto.HotNewsListDTO;
 import kr.kickon.api.domain.news.dto.NewsListDTO;
 import kr.kickon.api.domain.news.dto.UserDTO;
 import kr.kickon.api.global.common.BaseService;
@@ -13,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -126,4 +128,33 @@ public class NewsService implements BaseService<News> {
                     .build();
         }).toList();
     }
+
+    public List<HotNewsListDTO> findTop5HotNews() {
+        QNews news = QNews.news;
+        QNewsViewHistory newsViewHistory = QNewsViewHistory.newsViewHistory;
+
+        List<Tuple> results = queryFactory.select(news,
+                        newsViewHistory.pk.count().coalesce(0L).as("viewCount"))
+                .from(news)
+                .leftJoin(newsViewHistory).on(news.pk.eq(newsViewHistory.news.pk)
+                        .and(newsViewHistory.status.eq(DataStatus.ACTIVATED)))
+                .where(news.status.eq(DataStatus.ACTIVATED)
+                        .and(news.createdAt.goe(LocalDateTime.now().minusDays(1)))) // 최근 24시간 이내 뉴스만 조회
+                .groupBy(news.pk)
+                .orderBy(newsViewHistory.pk.count().coalesce(0L).desc()) // 조회수 기준 내림차순 정렬
+                .limit(5)
+                .fetch();
+
+        return results.stream().map(tuple -> {
+            News newsEntity = tuple.get(news);
+            return HotNewsListDTO.builder()
+                    .pk(newsEntity.getPk())
+                    .title(newsEntity.getTitle())
+                    .thumbnailUrl(newsEntity.getThumbnailUrl())
+                    .category(newsEntity.getCategory())
+                    .views(tuple.get(1, Long.class).intValue()) // 조회수 가져오기
+                    .build();
+        }).toList();
+    }
+
 }

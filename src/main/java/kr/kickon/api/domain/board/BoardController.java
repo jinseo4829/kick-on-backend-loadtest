@@ -36,7 +36,7 @@ public class BoardController {
                     content = @Content(schema = @Schema(implementation = GetHomeBoardsResponse.class))),
     })
     @GetMapping("/home")
-    public ResponseEntity<ResponseDTO<List<BoardListDTO>>> getEventBoards() {
+    public ResponseEntity<ResponseDTO<List<BoardListDTO>>> getHomeBoards() {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         List<BoardListDTO> boards = boardService.findTop10Boards();
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, boards));

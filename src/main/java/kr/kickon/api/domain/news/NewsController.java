@@ -7,8 +7,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.kickon.api.domain.actualSeasonRanking.response.GetActualSeasonRankingResponse;
+import kr.kickon.api.domain.news.dto.HotNewsListDTO;
 import kr.kickon.api.domain.news.dto.NewsListDTO;
 import kr.kickon.api.domain.news.response.GetHomeNewsResponse;
+import kr.kickon.api.domain.news.response.GetHotNewsResponse;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
 import kr.kickon.api.global.common.ResponseDTO;
@@ -41,7 +43,7 @@ public class NewsController {
                     content = @Content(schema = @Schema(implementation = GetHomeNewsResponse.class))),
     })
     @GetMapping("/home")
-    public ResponseEntity<ResponseDTO<List<NewsListDTO>>> getEventBoards() {
+    public ResponseEntity<ResponseDTO<List<NewsListDTO>>> getHomeNews() {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         List<NewsListDTO>news=null;
         if(user==null){
@@ -55,6 +57,18 @@ public class NewsController {
             }
         }
 
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, news));
+    }
+
+    @Operation(summary = "조회수 Top 5 뉴스 리스트 조회", description = "24시간 이내 생성된 게시글 중 조회수가 가장 높은 뉴스 5개 반환")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공",
+                    content = @Content(schema = @Schema(implementation = GetHotNewsResponse.class))),
+    })
+    @GetMapping("/hot")
+    public ResponseEntity<ResponseDTO<List<HotNewsListDTO>>> getHotNews() {
+        User user = jwtTokenProvider.getUserFromSecurityContext();
+        List<HotNewsListDTO> news = newsService.findTop5HotNews();
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, news));
     }
 }
