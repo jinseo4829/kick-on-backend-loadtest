@@ -41,7 +41,7 @@ public class UserFavoriteTeamService implements BaseService<UserFavoriteTeam> {
 
     public UserFavoriteTeam findByUserPk(long pk){
         BooleanExpression predicate = qUserFavoriteTeam.user.pk.eq(pk)
-                .and(qUserFavoriteTeam.status.eq(DataStatus.ACTIVATED));
+                .and(qUserFavoriteTeam.status.eq(DataStatus.ACTIVATED)).and(qUserFavoriteTeam.team.status.eq(DataStatus.ACTIVATED));
         Optional<UserFavoriteTeam> userFavoriteTeam =userFavoriteTeamRepository.findOne(predicate);
         return userFavoriteTeam.orElse(null);
     }

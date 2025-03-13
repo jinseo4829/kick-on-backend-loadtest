@@ -109,20 +109,6 @@ public class JwtTokenProvider{
         }
     }
 
-    // token이 만료되었는지 검사
-    public boolean validateExpire(String token) {
-        try {
-            Jwts.parser()
-                    .verifyWith(getSignInKey())
-                    .build()
-                    .parseSignedClaims(token);
-            return true;
-        } catch (Exception e) {
-            log.error(e.getMessage());
-            return false;
-        }
-    }
-
     public Claims getClaimsFromToken(String token) {
         return Jwts.parser()
                 .verifyWith(getSignInKey())

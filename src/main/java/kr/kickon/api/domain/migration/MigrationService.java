@@ -329,7 +329,7 @@ public class MigrationService {
         for(League league : leagues) {
             ActualSeason actualSeason;
             actualSeason = actualSeasonService.findRecentByLeaguePk(league.getPk());
-            if(actualSeason != null) continue;
+            if(actualSeason == null) continue;
             Map<String, Object> response = webClient.get().uri(uriBuilder ->
                             uriBuilder.path("/standings")
                                     .queryParam("league",league.getApiId())
@@ -356,7 +356,7 @@ public class MigrationService {
                         Map<String, Object> teamData = (Map<String, Object>) rankingData.get("team");
                         Map<String, Object> metaData = (Map<String, Object>) rankingData.get("all");
                         Map<String, Object> goalData = (Map<String, Object>) metaData.get("goals");
-                        log.error(rankingData.toString());
+//                        log.error(rankingData.toString());
 
                         Team team = teamService.findByApiId(Long.valueOf((Integer) teamData.get("id")));
 

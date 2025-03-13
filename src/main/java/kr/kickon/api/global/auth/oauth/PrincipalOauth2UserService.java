@@ -48,6 +48,7 @@ public class PrincipalOauth2UserService extends DefaultOAuth2UserService {
             user = userEntity.get();
             userService.saveUser(user);
             if(user.getPrivacyAgreedAt()!=null) role="USER";
+//            log.error("jwt role 확인 {}", role);
             // jwt 생성
         } else {
             user = userService.saveSocialUser(oAuth2UserInfo);

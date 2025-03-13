@@ -20,6 +20,9 @@ public class News extends BaseEntity {
     @Column(nullable = false)
     private NewsCategory category;
 
+    @Column(columnDefinition = "TEXT")
+    private String thumbnailUrl;
+
     @ManyToOne
     @JoinColumn(name = "user_pk", foreignKey = @ForeignKey(name = "fk_news_user"))
     private User user;

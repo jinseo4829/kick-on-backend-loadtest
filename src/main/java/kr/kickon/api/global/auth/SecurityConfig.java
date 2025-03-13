@@ -8,6 +8,7 @@ import kr.kickon.api.global.auth.oauth.CustomAuthorizationRequestResolver;
 import kr.kickon.api.global.auth.oauth.OAuth2SuccessHandler;
 import kr.kickon.api.global.auth.oauth.PrincipalOauth2UserService;
 import kr.kickon.api.global.common.enums.Role;
+import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -23,8 +24,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
 @Slf4j
+@AllArgsConstructor
 public class SecurityConfig {
     private final PrincipalOauth2UserService principalOauth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
@@ -41,8 +42,6 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
 
                 .csrf(AbstractHttpConfigurer::disable) // CSRF 보안 비활성화
-
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .sessionManagement((sessionConfig)->{
                     sessionConfig.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
                 }) // 세션 관리 정책
@@ -52,8 +51,8 @@ public class SecurityConfig {
                             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                             .requestMatchers(HttpMethod.GET,
-                                    "/api/auth/jwt/me",
-                                    "/api/gamble-user-ranking"
+                                    "/api/user/me",
+                                    "/api/user-point-event/ranking"
                             ).hasRole("USER")
                             .requestMatchers(HttpMethod.POST,
                                     "/api/user-game-gamble",
@@ -85,6 +84,7 @@ public class SecurityConfig {
                             .authorizationRequestResolver(customAuthorizationRequestResolver));
                         }
                 )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 // JWT 인증 실패 (401) → Custom EntryPoint
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(authenticationEntryPoint)

@@ -19,4 +19,8 @@ public class NewsReply extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "user_pk", foreignKey = @ForeignKey(name = "fk_news_reply_user"))
     private User user;
+
+    @ManyToOne
+    @JoinColumn(name = "news_pk", foreignKey = @ForeignKey(name = "fk_news_reply_news"))
+    private News news;
 }

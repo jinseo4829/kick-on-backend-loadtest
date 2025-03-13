@@ -46,7 +46,6 @@ public class AuthController {
 
         newClaims.put(jwtTokenProvider.AUTH_PK, user.getPk());
         newClaims.put(jwtTokenProvider.AUTHORITIES_KEY, authorities);
-        refreshToken = jwtTokenProvider.createRefreshToken(claims, user.getPk());
         String accessToken = jwtTokenProvider.createAccessToken(claims, user.getPk(), authorities);
 
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS,
