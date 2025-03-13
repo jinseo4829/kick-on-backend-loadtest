@@ -43,6 +43,7 @@ public enum ResponseCode {
     NOT_FOUND_GAME(HttpStatus.NOT_FOUND,"NOT_FOUND_GAME", "해당 경기를 찾을 수 없습니다."),
     NOT_FOUND_USER_GAME_GAMBLE(HttpStatus.NOT_FOUND,"NOT_FOUND_USER_GAME_GAMBLE", "해당 유저 참여 승부예측 경기를 찾을 수 없습니다."),
     NOT_FOUND_ACTUAL_SEASON_TEAM(HttpStatus.NOT_FOUND,"NOT_FOUND_ACTUAL_SEASON_TEAM", "해당 시즌의 팀을 찾을 수 없습니다."),
+    NOT_FOUND_USER_POINT_RANKING(HttpStatus.NOT_FOUND,"NOT_FOUND_USER_POINT_RANKING", "해당 시즌의 유저 포인트 랭킹을 찾을 수 없습니다."),
 
     // ✅ 500 Internal Server Error
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다."),

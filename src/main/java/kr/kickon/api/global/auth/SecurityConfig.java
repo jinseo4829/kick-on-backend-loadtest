@@ -51,8 +51,8 @@ public class SecurityConfig {
                             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                             .requestMatchers(HttpMethod.GET,
-                                    "/api/auth/jwt/me",
-                                    "/api/gamble-user-ranking"
+                                    "/api/user/me",
+                                    "/api/user-point-event/ranking"
                             ).hasRole("USER")
                             .requestMatchers(HttpMethod.POST,
                                     "/api/user-game-gamble",

@@ -8,6 +8,7 @@ import kr.kickon.api.global.common.entities.ActualSeasonTeam;
 import kr.kickon.api.global.common.entities.QActualSeason;
 import kr.kickon.api.global.common.entities.QActualSeasonTeam;
 import kr.kickon.api.global.common.enums.DataStatus;
+import kr.kickon.api.global.common.enums.OperatingStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
@@ -15,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -24,12 +26,6 @@ public class ActualSeasonTeamService implements BaseService<ActualSeasonTeam> {
     private final ActualSeasonTeamRepository actualSeasonTeamRepository;
     private final JPAQueryFactory queryFactory;
     private final UUIDGenerator uuidGenerator;
-//    public List<User> findUserByEmail(String email){
-//        // JPAQueryFactory
-//        return queryFactory.selectFrom(QUser.user)
-//                .where(QUser.user.email.eq(email))
-//                .fetch();
-//    }
     @Override
     public ActualSeasonTeam findById(String uuid) {
         BooleanExpression predicate = QActualSeasonTeam.actualSeasonTeam.id.eq(uuid).and(QActualSeasonTeam.actualSeasonTeam.status.eq(DataStatus.ACTIVATED));
@@ -48,6 +44,21 @@ public class ActualSeasonTeamService implements BaseService<ActualSeasonTeam> {
         BooleanExpression predicate = QActualSeasonTeam.actualSeasonTeam.actualSeason.pk.eq(actualSeason.getPk()).and(QActualSeasonTeam.actualSeasonTeam.status.eq(DataStatus.ACTIVATED).and(QActualSeasonTeam.actualSeasonTeam.team.pk.eq(teamPk)));
         Optional<ActualSeasonTeam> actualSeasonTeam = actualSeasonTeamRepository.findOne(predicate);
         return actualSeasonTeam.orElse(null);
+    }
+
+    public ActualSeasonTeam findLatestByTeam(Long teamPk) {
+        QActualSeasonTeam actualSeasonTeam = QActualSeasonTeam.actualSeasonTeam;
+
+        return queryFactory
+                .selectFrom(actualSeasonTeam)
+                .where(
+                        actualSeasonTeam.team.pk.eq(teamPk),
+                        actualSeasonTeam.status.eq(DataStatus.ACTIVATED),
+                        actualSeasonTeam.team.status.eq(DataStatus.ACTIVATED),
+                        actualSeasonTeam.actualSeason.operatingStatus.eq(OperatingStatus.PROCEEDING)
+                )
+                .orderBy(actualSeasonTeam.createdAt.desc()) // 최신 순 정렬
+                .fetchFirst(); // 가장 최신 1개만 조회
     }
 
     public ActualSeasonTeam save(ActualSeasonTeam actualSeasonTeam) {

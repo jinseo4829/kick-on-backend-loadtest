@@ -23,7 +23,8 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException)
             throws IOException, ServletException {
-        log.error("CustomAuthenticationEntryPoint 호출됨: {}", accessDeniedException.getMessage());
+//        log.error("CustomAuthenticationEntryPoint 호출됨: {}", accessDeniedException.getMessage());
+//        log.error(request.getAuthType());
         response.setStatus(HttpStatus.FORBIDDEN.value()); // 403 상태 코드
         response.setContentType("application/json; charset=UTF-8");
 
