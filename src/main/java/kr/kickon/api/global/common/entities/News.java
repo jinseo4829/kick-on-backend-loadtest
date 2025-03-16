@@ -3,12 +3,16 @@ package kr.kickon.api.global.common.entities;
 import jakarta.persistence.*;
 import kr.kickon.api.global.common.enums.NewsCategory;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "News")
 @Getter
 @Setter
+@SuperBuilder
+@NoArgsConstructor
 public class News extends BaseEntity {
     @Column(nullable = false, length = 100)
     private String title;

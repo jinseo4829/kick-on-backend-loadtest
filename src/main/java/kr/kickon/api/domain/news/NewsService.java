@@ -157,4 +157,7 @@ public class NewsService implements BaseService<News> {
         }).toList();
     }
 
+    public void save(News news){
+        newsRepository.save(news);
+    }
 }

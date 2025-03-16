@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -40,5 +41,11 @@ public class BoardController {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         List<BoardListDTO> boards = boardService.findTop10Boards();
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, boards));
+    }
+
+    @Operation(summary = "게시글 생성", description = "회원가입한 유저만 게시글 생성 가능")
+    @PostMapping()
+    public ResponseEntity<ResponseDTO<Void>> createBoard(){
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
 }
