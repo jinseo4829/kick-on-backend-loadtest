@@ -1,7 +1,6 @@
 package kr.kickon.api.domain.news.request;
 
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import kr.kickon.api.global.common.annotations.ValidEnum;
 import kr.kickon.api.global.common.enums.NewsCategory;
@@ -11,7 +10,7 @@ import org.hibernate.validator.constraints.Length;
 
 @Data
 @NoArgsConstructor
-public class CreateNewsDTO {
+public class CreateNewsRequestDTO {
     @Positive
     private Long team;
 

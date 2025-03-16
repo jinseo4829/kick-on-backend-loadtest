@@ -9,7 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import kr.kickon.api.domain.news.dto.HotNewsListDTO;
 import kr.kickon.api.domain.news.dto.NewsListDTO;
-import kr.kickon.api.domain.news.request.CreateNewsDTO;
+import kr.kickon.api.domain.news.request.CreateNewsRequestDTO;
 import kr.kickon.api.domain.news.response.GetHomeNewsResponse;
 import kr.kickon.api.domain.news.response.GetHotNewsResponse;
 import kr.kickon.api.domain.team.TeamService;
@@ -79,7 +79,7 @@ public class NewsController {
 
     @Operation(summary = "뉴스 생성", description = "회원가입한 유저만 뉴스 생성 가능")
     @PostMapping()
-    public ResponseEntity<ResponseDTO<Void>> createNews(@Valid @RequestBody CreateNewsDTO request){
+    public ResponseEntity<ResponseDTO<Void>> createNews(@Valid @RequestBody CreateNewsRequestDTO request){
         User user = jwtTokenProvider.getUserFromSecurityContext();
 
         String id = uuidGenerator.generateUniqueUUID(newsService::findById);

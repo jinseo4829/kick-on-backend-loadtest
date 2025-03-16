@@ -2,12 +2,16 @@ package kr.kickon.api.global.common.entities;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "Board")
 @Getter
 @Setter
+@SuperBuilder
+@NoArgsConstructor
 public class Board extends BaseEntity {
     @Column(nullable = false, length = 100)
     private String title;

@@ -79,4 +79,8 @@ public class BoardService implements BaseService<Board> {
                     .build();
         }).toList();
     }
+
+    public void save(Board board) {
+        boardRepository.save(board);
+    }
 }

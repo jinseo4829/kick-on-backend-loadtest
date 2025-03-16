@@ -6,19 +6,23 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import kr.kickon.api.domain.board.dto.BoardListDTO;
+import kr.kickon.api.domain.board.request.CreateBoardRequestDTO;
 import kr.kickon.api.domain.board.response.GetHomeBoardsResponse;
+import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
 import kr.kickon.api.global.common.ResponseDTO;
+import kr.kickon.api.global.common.entities.Board;
+import kr.kickon.api.global.common.entities.Team;
 import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.error.exceptions.NotFoundException;
+import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -30,6 +34,8 @@ import java.util.List;
 public class BoardController {
     private final BoardService boardService;
     private final JwtTokenProvider jwtTokenProvider;
+    private final TeamService teamService;
+    private final UUIDGenerator uuidGenerator;
 
     @Operation(summary = "홈화면 함께 볼만한 게시글 리스트 조회", description = "응원팀 여부에 상관없이 최신 게시글 기준으로 10개 리스트 반환")
     @ApiResponses({
@@ -45,7 +51,22 @@ public class BoardController {
 
     @Operation(summary = "게시글 생성", description = "회원가입한 유저만 게시글 생성 가능")
     @PostMapping()
-    public ResponseEntity<ResponseDTO<Void>> createBoard(){
+    public ResponseEntity<ResponseDTO<Void>> createBoard(@Valid @RequestBody CreateBoardRequestDTO request){
+        User user = jwtTokenProvider.getUserFromSecurityContext();
+        String id = uuidGenerator.generateUniqueUUID(boardService::findById);
+        Board board = Board.builder()
+                .id(id)
+                .user(user)
+                .contents(request.getContents())
+                .title(request.getTitle())
+                .build();
+
+        if(request.getTeam()!=null){
+            Team team  = teamService.findByPk(request.getTeam());
+            if(team==null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
+            board.setTeam(team);
+        }
+        boardService.save(board);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
 }
