@@ -52,9 +52,9 @@ public class NewsService implements BaseService<News> {
         QNewsReply newsReply = QNewsReply.newsReply;
         QUser user = QUser.user;
         return queryFactory.select(news, user,
-                        newsKick.pk.count().coalesce(0L).as("kickCount"),
-                        newsViewHistory.pk.count().coalesce(0L).as("viewCount"),
-                        newsReply.pk.count().coalesce(0L).as("replyCount"))
+                        newsKick.pk.countDistinct().coalesce(0L).as("kickCount"),
+                        newsViewHistory.pk.countDistinct().coalesce(0L).as("viewCount"),
+                        newsReply.pk.countDistinct().coalesce(0L).as("replyCount"))
                 .from(news)
                 .join(user).on(news.user.pk.eq(user.pk))
                 .leftJoin(newsKick).on(news.pk.eq(newsKick.news.pk).and(newsKick.status.eq(DataStatus.ACTIVATED)))
@@ -81,8 +81,8 @@ public class NewsService implements BaseService<News> {
                         .profileImageUrl(userEntity.getProfileImageUrl())
                         .build())
                 .createdAt(newsEntity.getCreatedAt())
-                .views(tuple.get(2, Long.class).intValue())
-                .likes(tuple.get(3, Long.class).intValue())
+                .likes(tuple.get(2, Long.class).intValue())
+                .views(tuple.get(3, Long.class).intValue())
                 .replies(tuple.get(4, Long.class).intValue())
                 .build();
     }
@@ -99,6 +99,8 @@ public class NewsService implements BaseService<News> {
         NewsKick newsKick = newsKickService.findByBoardAndUser(result.get(news).getPk(),userPk);
         News newsEntity = result.get(news);
         User userEntity = result.get(user);
+
+        System.out.println(result);
         return NewsDetailDTO.builder()
                 .pk(newsEntity.getPk())
                 .title(newsEntity.getTitle())
@@ -130,23 +132,10 @@ public class NewsService implements BaseService<News> {
 
     public List<NewsListDTO> findRecent3NewsWithUserTeam(Long teamPk) {
         QNews news = QNews.news;
-        QNewsKick newsKick = QNewsKick.newsKick;
-        QNewsViewHistory newsViewHistory = QNewsViewHistory.newsViewHistory;
-        QNewsReply newsReply = QNewsReply.newsReply;
         QUser user = QUser.user;
 
-        List<Tuple> results = queryFactory.select(news, user,
-                        newsKick.pk.count().coalesce(0L).as("kickCount"),
-                        newsViewHistory.pk.count().coalesce(0L).as("viewCount"),
-                        newsReply.pk.count().coalesce(0L).as("replyCount"))
-                .from(news)
-                .join(user).on(news.user.pk.eq(user.pk))
-                .leftJoin(newsKick).on(news.pk.eq(newsKick.news.pk).and(newsKick.status.eq(DataStatus.ACTIVATED)))
-                .leftJoin(newsViewHistory).on(news.pk.eq(newsViewHistory.news.pk).and(newsViewHistory.status.eq(DataStatus.ACTIVATED)))
-                .leftJoin(newsReply).on(news.pk.eq(newsReply.news.pk).and(newsReply.status.eq(DataStatus.ACTIVATED)))
-                .where(news.status.eq(DataStatus.ACTIVATED)
-                        .and(user.status.eq(DataStatus.ACTIVATED))
-                        .and(news.team.pk.eq(teamPk)))
+        List<Tuple> results = createNewsListDTOQuery()
+                .where(news.team.pk.eq(teamPk))
                 .groupBy(news.pk, user.pk)
                 .orderBy(news.createdAt.desc())
                 .limit(3)

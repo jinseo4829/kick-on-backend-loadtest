@@ -1,13 +1,18 @@
 package kr.kickon.api.global.common.entities;
 
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "NewsReply")
 @Getter
 @Setter
+@SuperBuilder
+@NoArgsConstructor
 public class NewsReply extends BaseEntity {
     @Column(nullable = false, length = 1000)
     private String contents;

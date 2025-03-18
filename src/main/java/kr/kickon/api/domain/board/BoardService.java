@@ -53,9 +53,9 @@ public class BoardService implements BaseService<Board> {
         QBoardReply boardReply = QBoardReply.boardReply;
         QUser user = QUser.user;
         return queryFactory.select(board, user,
-                        boardKick.pk.count().coalesce(0L).as("kickCount"),
-                        boardViewHistory.pk.count().coalesce(0L).as("viewCount"),
-                        boardReply.pk.count().coalesce(0L).as("replyCount"))
+                        boardKick.pk.countDistinct().coalesce(0L).as("kickCount"),
+                        boardViewHistory.pk.countDistinct().coalesce(0L).as("viewCount"),
+                        boardReply.pk.countDistinct().coalesce(0L).as("replyCount"))
                 .from(board)
                 .join(user).on(board.user.pk.eq(user.pk))
                 .leftJoin(boardKick).on(board.pk.eq(boardKick.board.pk).and(boardKick.status.eq(DataStatus.ACTIVATED)))

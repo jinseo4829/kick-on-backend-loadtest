@@ -39,6 +39,7 @@ public enum ResponseCode {
     NOT_FOUND_LEAGUE(HttpStatus.NOT_FOUND,"NOT_FOUND_LEAGUE", "해당 리그를 찾을 수 없습니다."),
     NOT_FOUND_BOARD(HttpStatus.NOT_FOUND,"NOT_FOUND_BOARD", "해당 게시글을 찾을 수 없습니다."),
     NOT_FOUND_NEWS(HttpStatus.NOT_FOUND,"NOT_FOUND_NEWS", "해당 뉴스를 찾을 수 없습니다."),
+    NOT_FOUND_PARENT_NEWS(HttpStatus.NOT_FOUND,"NOT_FOUND_PARENT_NEWS", "해당 부모 뉴스를 찾을 수 없습니다."),
     NOT_FOUND_ACTUAL_SEASON(HttpStatus.NOT_FOUND,"NOT_FOUND_ACTUAL_SEASON", "해당 실제 시즌을 찾을 수 없습니다."),
     NOT_FOUND_ACTUAL_LEAGUE_BY_LEAGUE(HttpStatus.NOT_FOUND,"NOT_FOUND_ACTUAL_LEAGUE_BY_LEAGUE", "해당 리그 PK 값에 맞는 시즌을 찾을 수 없습니다."),
     NOT_FOUND_COUNTRY(HttpStatus.NOT_FOUND,"NOT_FOUND_COUNTRY", "해당 국가를 찾을 수 없습니다."),
