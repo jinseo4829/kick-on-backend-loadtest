@@ -19,7 +19,7 @@ public class EventBoard extends BaseEntity {
     private String thumbnailUrl;
 
     @Column(nullable = false, columnDefinition = "TEXT")
-    private String embededUrl;
+    private String embeddedUrl;
 
     @Column
     private Integer orderNum;

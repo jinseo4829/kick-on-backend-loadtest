@@ -3,13 +3,17 @@ package kr.kickon.api.domain.user;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.transaction.Transactional;
-import kr.kickon.api.global.auth.oauth.OAuth2UserInfo;
+import kr.kickon.api.domain.user.request.PatchUserRequest;
+import kr.kickon.api.domain.user.request.PrivacyUpdateRequest;
+import kr.kickon.api.global.auth.oauth.dto.OAuth2UserInfo;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.QUser;
 import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.ProviderType;
+import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.common.enums.UserAccountStatus;
+import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,16 +49,18 @@ public class UserService implements BaseService<User> {
     }
 
     public Optional<User> findUserByProviderAndProviderId(ProviderType provider, String providerId){
-        BooleanExpression predicate = QUser.user.provider.eq(provider);
+        BooleanExpression predicate = QUser.user.provider.eq(provider).and(QUser.user.status.eq(DataStatus.ACTIVATED));
         return userRepository.findOne(predicate);
     }
+
     public void saveUser(User user){
         userRepository.save(user);
     }
 
-    public Optional<User> findByPk(Long pk){
-        BooleanExpression predicate = QUser.user.pk.eq(pk);
-        return userRepository.findOne(predicate);
+    public User findByPk(Long pk){
+        BooleanExpression predicate = QUser.user.pk.eq(pk).and(QUser.user.status.eq(DataStatus.ACTIVATED));
+        Optional<User> user = userRepository.findOne(predicate);
+        return user.orElse(null);
     }
 
     @Transactional
@@ -73,8 +79,21 @@ public class UserService implements BaseService<User> {
     }
 
     @Override
-    public Optional<User> findById(String uuid) {
-        BooleanExpression predicate = QUser.user.id.eq(uuid);
-        return userRepository.findOne(predicate);
+    public User findById(String uuid) {
+        BooleanExpression predicate = QUser.user.id.eq(uuid).and(QUser.user.status.eq(DataStatus.ACTIVATED));
+        Optional<User> user = userRepository.findOne(predicate);
+        return user.orElse(null);
+    }
+
+    public void updatePrivacy(User user, PrivacyUpdateRequest request) {
+        user.setPrivacyAgreedAt(request.getPrivacyAgreedAt());
+        user.setMarketingAgreedAt(request.getMarketingAgreedAt());
+
+        userRepository.save(user);
+    }
+
+    public void updateUser(User user, PatchUserRequest request){
+        user.setNickname(request.getNickname());
+        userRepository.save(user);
     }
 }

@@ -24,6 +24,9 @@ public class UserPointEvent extends BaseEntity {
     @Column(nullable = false)
     private LocalDateTime expiredAt;
 
+    @Column(nullable = false)
+    private Integer point = 0;
+
     @ManyToOne
     @JoinColumn(name = "user_pk", foreignKey = @ForeignKey(name = "fk_user_point_event_user"))
     private User user;

@@ -1,5 +1,6 @@
 package kr.kickon.api.global.common.entities;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import kr.kickon.api.global.common.enums.DataStatus;
 import lombok.*;
@@ -22,6 +23,7 @@ import java.util.UUID;
 public abstract class BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Schema(description = "각 데이터의 PK값", example = "1")
     private Long pk;
 
     @Column(unique = true, nullable = false)
@@ -29,6 +31,7 @@ public abstract class BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private DataStatus status = DataStatus.ACTIVATED;
 
     @CreatedDate

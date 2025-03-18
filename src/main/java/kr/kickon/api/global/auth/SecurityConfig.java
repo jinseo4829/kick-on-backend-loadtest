@@ -1,10 +1,14 @@
 package kr.kickon.api.global.auth;
 
 import jakarta.servlet.http.HttpServletResponse;
+import kr.kickon.api.global.auth.jwt.CustomAccessDeniedHandler;
+import kr.kickon.api.global.auth.jwt.CustomAuthenticationEntryPoint;
 import kr.kickon.api.global.auth.jwt.JwtAuthenticationFilter;
+import kr.kickon.api.global.auth.oauth.CustomAuthorizationRequestResolver;
 import kr.kickon.api.global.auth.oauth.OAuth2SuccessHandler;
 import kr.kickon.api.global.auth.oauth.PrincipalOauth2UserService;
 import kr.kickon.api.global.common.enums.Role;
+import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -20,12 +24,15 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
 @Slf4j
+@AllArgsConstructor
 public class SecurityConfig {
     private final PrincipalOauth2UserService principalOauth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CustomAuthorizationRequestResolver customAuthorizationRequestResolver;
+    private final CustomAuthenticationEntryPoint authenticationEntryPoint;
+    private final CustomAccessDeniedHandler accessDeniedHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -35,8 +42,6 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
 
                 .csrf(AbstractHttpConfigurer::disable) // CSRF 보안 비활성화
-
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .sessionManagement((sessionConfig)->{
                     sessionConfig.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
                 }) // 세션 관리 정책
@@ -46,11 +51,11 @@ public class SecurityConfig {
                             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                             .requestMatchers(HttpMethod.GET,
-                                    "/api/auth/jwt/me",
-                                    "/api/gamble-user-ranking"
+                                    "/api/user/me",
+                                    "/api/user-point-event/ranking"
                             ).hasRole("USER")
                             .requestMatchers(HttpMethod.POST,
-                                    "/api/user-match-gamble",
+                                    "/api/user-game-gamble",
                                     "/api/board",
                                     "/api/news",
                                     "/api/board-reply",
@@ -59,15 +64,15 @@ public class SecurityConfig {
                                     "/api/report-board"
                             ).hasRole("USER")
                             .requestMatchers(HttpMethod.PATCH,
-                                    "/api/user-match-gamble"
+                                    "/api/user-game-gamble"
                             )
                             .hasRole("USER")
                             .requestMatchers(HttpMethod.DELETE,
-                                    "/api/user-match-gamble"
+                                    "/api/user-game-gamble"
                             ).hasRole("USER")
 
                             .requestMatchers(HttpMethod.PATCH,"/api/user").hasAnyRole("OAUTH_FIRST_JOIN", "USER")
-                            .requestMatchers(HttpMethod.POST,"/api/user/privacy").hasAnyRole("OAUTH_FIRST_JOIN", "USER")
+                            .requestMatchers(HttpMethod.PATCH,"/api/user/privacy").hasAnyRole("OAUTH_FIRST_JOIN", "USER")
 
                             .requestMatchers("/api/**").hasAnyRole("GUEST", "OAUTH_FIRST_JOIN", "USER") // "GUEST"는 내부적으로 "ROLE_GUEST"로 변환됨
 
@@ -75,13 +80,15 @@ public class SecurityConfig {
                             .anyRequest().authenticated(); // ✅ 인증 필요
                 })
                 .oauth2Login(oAuth2Login -> {
-                    oAuth2Login.userInfoEndpoint(userInfoEndpointConfig -> userInfoEndpointConfig.userService(principalOauth2UserService)).successHandler(oAuth2SuccessHandler);
+                    oAuth2Login.userInfoEndpoint(userInfoEndpointConfig -> userInfoEndpointConfig.userService(principalOauth2UserService)).successHandler(oAuth2SuccessHandler).authorizationEndpoint(endpoint -> endpoint
+                            .authorizationRequestResolver(customAuthorizationRequestResolver));
                         }
                 )
-                .exceptionHandling(exception ->
-                        exception.authenticationEntryPoint((request, response, authException) ->
-                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized with" + authException.getMessage())
-                        )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                // JWT 인증 실패 (401) → Custom EntryPoint
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler)
                 );
 
 

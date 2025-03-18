@@ -22,6 +22,9 @@ public class UserPointDetail extends BaseEntity {
     @JoinColumn(name = "parent_user_point_detail_pk", foreignKey = @ForeignKey(name = "fk_user_point_detail_parent"))
     private UserPointDetail parentUserPointDetail;
 
+    @Column(nullable = false)
+    private Integer point = 0;
+
     @ManyToOne
     @JoinColumn(name = "user_point_event_pk", foreignKey = @ForeignKey(name = "fk_user_point_detail_event"))
     private UserPointEvent userPointEvent;

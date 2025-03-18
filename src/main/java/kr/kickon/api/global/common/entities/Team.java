@@ -1,21 +1,31 @@
 package kr.kickon.api.global.common.entities;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "Team")
 @Getter
 @Setter
+@SuperBuilder
+@NoArgsConstructor
 public class Team extends BaseEntity {
-    @Column(nullable = false, length = 50)
+    @Column(length = 50)
     private String nameKr;
 
     @Column(nullable = false, length = 100)
     private String nameEn;
 
-    @ManyToOne
-    @JoinColumn(name = "league_pk", foreignKey = @ForeignKey(name = "fk_team_league"))
-    private League league;
+    @Column()
+    private String logoUrl;
+
+    @Column(length = 3)
+    private String code;
+
+    @Column(nullable = false)
+    private Long apiId;
 }
