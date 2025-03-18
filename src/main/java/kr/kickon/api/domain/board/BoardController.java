@@ -88,7 +88,7 @@ public class BoardController {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         UserFavoriteTeam userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
         if(query.getTeam()!=null && !userFavoriteTeam.getTeam().getPk().equals(query.getTeam())) throw new ForbiddenException(ResponseCode.FORBIDDEN);
-        PaginatedBoardListDTO boards = boardService.findBoardsWithPagination(query.getTeam() != null ? userFavoriteTeam.getTeam().getPk() : null, query.getPage(), query.getSize());
+        PaginatedBoardListDTO boards = boardService.findBoardsWithPagination(query.getTeam() != null ? userFavoriteTeam.getTeam().getPk() : null, query.getPage(), query.getSize(), query.getOrder());
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, boards.getBoardList(), new PagedMetaDTO(boards.getCurrentPage(), boards.getPageSize(), boards.getTotalItems())));
     }
 }

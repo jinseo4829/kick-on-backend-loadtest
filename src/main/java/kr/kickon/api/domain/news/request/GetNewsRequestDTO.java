@@ -1,13 +1,15 @@
-package kr.kickon.api.domain.board.request;
+package kr.kickon.api.domain.news.request;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.intellij.lang.annotations.RegExp;
+
 @Data
 @NoArgsConstructor
-public class GetBoardsRequestDTO {
+public class GetNewsRequestDTO {
     @Positive
     private Long team;
 

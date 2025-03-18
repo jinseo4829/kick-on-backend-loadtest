@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -84,14 +85,16 @@ public class BoardService implements BaseService<Board> {
         }).toList();
     }
 
-    public PaginatedBoardListDTO findBoardsWithPagination(Long teamPk, int page, int size) {
+    public PaginatedBoardListDTO findBoardsWithPagination(Long teamPk, Integer page, Integer size, String sortBy) {
         QBoard board = QBoard.board;
         QBoardKick boardKick = QBoardKick.boardKick;
         QBoardViewHistory boardViewHistory = QBoardViewHistory.boardViewHistory;
         QBoardReply boardReply = QBoardReply.boardReply;
         QUser user = QUser.user;
 
-        int offset = (page - 1) * size;
+        Integer offset = (page - 1) * size;
+        LocalDateTime hotThreshold = LocalDateTime.now().minusHours(48); // 최근 48시간 기준
+
 
         // ✅ 전체 게시글 수 계산
         JPAQuery<Long> totalQuery = queryFactory.select(board.pk.count())
@@ -100,6 +103,8 @@ public class BoardService implements BaseService<Board> {
                 .where(board.status.eq(DataStatus.ACTIVATED)
                         .and(user.status.eq(DataStatus.ACTIVATED)));
         if (teamPk != null) totalQuery.where(board.team.pk.eq(teamPk));
+        if ("hot".equalsIgnoreCase(sortBy)) totalQuery.where(board.createdAt.goe(hotThreshold)); // hot일 때 48시간 내 필터링
+
         Long totalCount = totalQuery.fetchOne();
 
         // ✅ 게시글 목록 조회 (페이지네이션 적용)
@@ -115,13 +120,19 @@ public class BoardService implements BaseService<Board> {
                 .where(board.status.eq(DataStatus.ACTIVATED)
                         .and(user.status.eq(DataStatus.ACTIVATED)))
                 .groupBy(board.pk, user.pk)
-                .orderBy(board.createdAt.desc())
                 .offset(offset)
                 .limit(size);
         if (teamPk != null) dataQuery.where(board.team.pk.eq(teamPk));
+
+        // ✅ 정렬 기준에 따른 동적 처리
+        if ("hot".equalsIgnoreCase(sortBy)) {
+            dataQuery.where(board.createdAt.goe(hotThreshold)); // hot일 때 48시간 내 필터링
+            dataQuery.orderBy(boardViewHistory.pk.count().coalesce(0L).desc(), board.createdAt.desc()); // 조회수 + 최신순
+        } else {
+            dataQuery.orderBy(board.createdAt.desc()); // 기본값: 최신순
+        }
         List<Tuple> results = dataQuery.fetch();
 
-        System.out.println(Arrays.toString(results.toArray()));
 
         // ✅ DTO 변환
         List<BoardListDTO> boardList = results.stream().map(tuple -> {
