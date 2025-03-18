@@ -1,15 +1,19 @@
 package kr.kickon.api.domain.board.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.persistence.MappedSuperclass;
 import kr.kickon.api.global.common.ExampleConstants;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
 @Data
-@Builder
 @Schema(description = "게시글 리스트 조회를 위한 게시글 DTO")
+@SuperBuilder
+@MappedSuperclass
+@NoArgsConstructor
+@AllArgsConstructor
 public class BoardListDTO {
     @Schema(example = "1", description = "게시글 pk값")
     private Long pk;
