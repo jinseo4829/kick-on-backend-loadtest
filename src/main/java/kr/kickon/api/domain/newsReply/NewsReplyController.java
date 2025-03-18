@@ -49,7 +49,7 @@ public class NewsReplyController {
 
     @Operation(summary = "뉴스 댓글 생성", description = "회원가입한 유저만 뉴스 댓글 생성 가능")
     @PostMapping()
-    public ResponseEntity<ResponseDTO<Void>> createBoard(@Valid @RequestBody CreateNewsReplyRequestDTO request){
+    public ResponseEntity<ResponseDTO<Void>> createNewsReply(@Valid @RequestBody CreateNewsReplyRequestDTO request){
         User user = jwtTokenProvider.getUserFromSecurityContext();
         News news = newsService.findByPk(request.getNews());
         if(news == null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS);
