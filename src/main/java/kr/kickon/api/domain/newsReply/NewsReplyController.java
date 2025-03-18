@@ -53,6 +53,10 @@ public class NewsReplyController {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         News news = newsService.findByPk(request.getNews());
         if(news == null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS);
+        if(news.getTeam()!= null){
+            UserFavoriteTeam userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
+            if(!userFavoriteTeam.getTeam().getPk().equals(news.getTeam().getPk())) throw new ForbiddenException(ResponseCode.FORBIDDEN);
+        }
         String id = uuidGenerator.generateUniqueUUID(newsReplyService::findById);
         NewsReply.NewsReplyBuilder newsReplyBuilder = NewsReply.builder()
                 .id(id)
@@ -60,8 +64,8 @@ public class NewsReplyController {
                 .contents(request.getContents())
                 .news(news);
 
-        if(request.getParentNews()!=null) {
-            NewsReply parentNewsReply = newsReplyService.findByPk(request.getParentNews());
+        if(request.getParentReply()!=null) {
+            NewsReply parentNewsReply = newsReplyService.findByPk(request.getParentReply());
             if(parentNewsReply == null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS);
             newsReplyBuilder.parentNewsReply(parentNewsReply);
         }

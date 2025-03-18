@@ -1,4 +1,4 @@
-package kr.kickon.api.domain.BoardReply.request;
+package kr.kickon.api.domain.boardReply.request;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -14,7 +14,7 @@ public class CreateBoardReplyRequestDTO {
     private Long board;
 
     @Positive
-    private Long parentBoard;
+    private Long parentReply;
 
     @NotNull(message = "댓글 본문은 필수값입니다.")
     @Length(min = 1, max = 1000,message = "댓글은 1000자 이하로 작성해주세요.")

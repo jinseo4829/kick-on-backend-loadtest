@@ -1,4 +1,4 @@
-package kr.kickon.api.domain.BoardReply;
+package kr.kickon.api.domain.boardReply;
 import kr.kickon.api.global.common.entities.BoardReply;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.querydsl.QuerydslPredicateExecutor;
