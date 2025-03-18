@@ -69,7 +69,6 @@ public class BoardService implements BaseService<Board> {
         QUser user = QUser.user;
         Board boardEntity = tuple.get(board);
         User userEntity = tuple.get(user);
-        System.out.println(boardEntity.getContents());
         return BoardListDTO.builder()
                 .pk(boardEntity.getPk())
                 .title(boardEntity.getTitle())
@@ -107,7 +106,6 @@ public class BoardService implements BaseService<Board> {
 
         BoardKick boardKick = boardKickService.findByBoardAndUser(result.get(board).getPk(),userPk);
         Board boardEntity = result.get(board);
-        log.error("{}", boardEntity.getContents());
         User userEntity = result.get(user);
         return BoardDetailDTO.builder()
                 .pk(boardEntity.getPk())
@@ -129,9 +127,7 @@ public class BoardService implements BaseService<Board> {
 
     public PaginatedBoardListDTO findBoardsWithPagination(Long teamPk, Integer page, Integer size, String sortBy) {
         QBoard board = QBoard.board;
-        QBoardKick boardKick = QBoardKick.boardKick;
         QBoardViewHistory boardViewHistory = QBoardViewHistory.boardViewHistory;
-        QBoardReply boardReply = QBoardReply.boardReply;
         QUser user = QUser.user;
 
         Integer offset = (page - 1) * size;

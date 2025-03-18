@@ -93,7 +93,7 @@ public class BoardController {
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, boards.getBoardList(), new PagedMetaDTO(boards.getCurrentPage(), boards.getPageSize(), boards.getTotalItems())));
     }
 
-    @Operation(summary = "게시글 조회", description = "게시글 PK값으로 게시글 조회")
+    @Operation(summary = "게시글 상세 조회", description = "게시글 PK 값으로 게시글 조회")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공",
                     content = @Content(schema = @Schema(implementation = GetBoardDetailResponse.class))),

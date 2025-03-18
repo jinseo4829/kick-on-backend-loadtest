@@ -1,16 +1,23 @@
 package kr.kickon.api.domain.news.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.persistence.MappedSuperclass;
 import kr.kickon.api.global.common.ExampleConstants;
 import kr.kickon.api.global.common.enums.NewsCategory;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
 @Data
-@Builder
 @Schema(description = "뉴스 리스트 조회를 위한 뉴스 DTO")
+@SuperBuilder
+@MappedSuperclass
+@NoArgsConstructor
+@AllArgsConstructor
 public class NewsListDTO {
     @Schema(example = "1", description = "뉴스 pk값")
     private Long pk;

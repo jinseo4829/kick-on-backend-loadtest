@@ -4,12 +4,11 @@ import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import kr.kickon.api.domain.board.dto.BoardDetailDTO;
 import kr.kickon.api.domain.board.dto.BoardListDTO;
 import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
-import kr.kickon.api.domain.news.dto.HotNewsListDTO;
-import kr.kickon.api.domain.news.dto.NewsListDTO;
-import kr.kickon.api.domain.news.dto.PaginatedNewsListDTO;
-import kr.kickon.api.domain.news.dto.UserDTO;
+import kr.kickon.api.domain.news.dto.*;
+import kr.kickon.api.domain.newsKick.NewsKickService;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
@@ -30,6 +29,7 @@ public class NewsService implements BaseService<News> {
     private final NewsRepository newsRepository;
     private final JPAQueryFactory queryFactory;
     private final UUIDGenerator uuidGenerator;
+    private final NewsKickService newsKickService;
 
     @Override
     public News findById(String uuid) {
@@ -45,14 +45,13 @@ public class NewsService implements BaseService<News> {
         return news.orElse(null);
     }
 
-    public List<NewsListDTO> findRecent3News() {
+    public JPAQuery<Tuple> createNewsListDTOQuery(){
         QNews news = QNews.news;
         QNewsKick newsKick = QNewsKick.newsKick;
         QNewsViewHistory newsViewHistory = QNewsViewHistory.newsViewHistory;
         QNewsReply newsReply = QNewsReply.newsReply;
         QUser user = QUser.user;
-
-        List<Tuple> results = queryFactory.select(news, user,
+        return queryFactory.select(news, user,
                         newsKick.pk.count().coalesce(0L).as("kickCount"),
                         newsViewHistory.pk.count().coalesce(0L).as("viewCount"),
                         newsReply.pk.count().coalesce(0L).as("replyCount"))
@@ -62,31 +61,71 @@ public class NewsService implements BaseService<News> {
                 .leftJoin(newsViewHistory).on(news.pk.eq(newsViewHistory.news.pk).and(newsViewHistory.status.eq(DataStatus.ACTIVATED)))
                 .leftJoin(newsReply).on(news.pk.eq(newsReply.news.pk).and(newsReply.status.eq(DataStatus.ACTIVATED)))
                 .where(news.status.eq(DataStatus.ACTIVATED)
-                        .and(user.status.eq(DataStatus.ACTIVATED)))
+                        .and(user.status.eq(DataStatus.ACTIVATED)));
+    }
+
+    public NewsListDTO tupleToNewsListDTO(Tuple tuple){
+        QNews news = QNews.news;
+        QUser user = QUser.user;
+        News newsEntity = tuple.get(news);
+        User userEntity = tuple.get(user);
+        return NewsListDTO.builder()
+                .pk(newsEntity.getPk())
+                .title(newsEntity.getTitle())
+                .content(newsEntity.getContents())
+                .thumbnailUrl(newsEntity.getThumbnailUrl())
+                .category(newsEntity.getCategory())
+                .user(UserDTO.builder()
+                        .id(userEntity.getId())
+                        .nickname(userEntity.getNickname())
+                        .profileImageUrl(userEntity.getProfileImageUrl())
+                        .build())
+                .createdAt(newsEntity.getCreatedAt())
+                .views(tuple.get(2, Long.class).intValue())
+                .likes(tuple.get(3, Long.class).intValue())
+                .replies(tuple.get(4, Long.class).intValue())
+                .build();
+    }
+
+    public NewsDetailDTO findNewsDeatailDTOByPk(Long boardPk, Long userPk) {
+        QNews news = QNews.news;
+        QUser user = QUser.user;
+        Tuple result = createNewsListDTOQuery()
+                .where(news.pk.eq(boardPk))
+                .groupBy(news.pk, user.pk)
+                .fetchOne();
+        if(result == null) return null;
+
+        NewsKick newsKick = newsKickService.findByBoardAndUser(result.get(news).getPk(),userPk);
+        News newsEntity = result.get(news);
+        User userEntity = result.get(user);
+        return NewsDetailDTO.builder()
+                .pk(newsEntity.getPk())
+                .title(newsEntity.getTitle())
+                .user(UserDTO.builder()
+                        .id(userEntity.getId())
+                        .nickname(userEntity.getNickname())
+                        .profileImageUrl(userEntity.getProfileImageUrl())
+                        .build())
+                .createdAt(result.get(news.createdAt))
+                .createdAt(newsEntity.getCreatedAt())
+                .likes(result.get(2, Long.class).intValue())
+                .views(result.get(3, Long.class).intValue())
+                .replies(result.get(4, Long.class).intValue())
+                .isKicked(newsKick!=null)
+                .content(newsEntity.getContents())
+                .build();
+    }
+
+    public List<NewsListDTO> findRecent3News() {
+        QNews news = QNews.news;
+        QUser user = QUser.user;
+        List<Tuple> results = createNewsListDTOQuery()
                 .groupBy(news.pk, user.pk)
                 .orderBy(news.createdAt.desc())
                 .limit(3)
                 .fetch();
-        return results.stream().map(tuple -> {
-            News newsEntity = tuple.get(news);
-            User userEntity = tuple.get(user);
-            return NewsListDTO.builder()
-                    .pk(newsEntity.getPk())
-                    .title(newsEntity.getTitle())
-                    .content(newsEntity.getContents())
-                    .thumbnailUrl(newsEntity.getThumbnailUrl())
-                    .category(newsEntity.getCategory())
-                    .user(UserDTO.builder()
-                            .id(userEntity.getId())
-                            .nickname(userEntity.getNickname())
-                            .profileImageUrl(userEntity.getProfileImageUrl())
-                            .build())
-                    .createdAt(newsEntity.getCreatedAt())
-                    .views(tuple.get(2, Long.class).intValue())
-                    .likes(tuple.get(3, Long.class).intValue())
-                    .replies(tuple.get(4, Long.class).intValue())
-                    .build();
-        }).toList();
+        return results.stream().map(this::tupleToNewsListDTO).toList();
     }
 
     public List<NewsListDTO> findRecent3NewsWithUserTeam(Long teamPk) {
@@ -112,26 +151,7 @@ public class NewsService implements BaseService<News> {
                 .orderBy(news.createdAt.desc())
                 .limit(3)
                 .fetch();
-        return results.stream().map(tuple -> {
-            News newsEntity = tuple.get(news);
-            User userEntity = tuple.get(user);
-            return NewsListDTO.builder()
-                    .pk(newsEntity.getPk())
-                    .title(newsEntity.getTitle())
-                    .content(newsEntity.getContents())
-                    .thumbnailUrl(newsEntity.getThumbnailUrl())
-                    .category(newsEntity.getCategory())
-                    .user(UserDTO.builder()
-                            .id(userEntity.getId())
-                            .nickname(userEntity.getNickname())
-                            .profileImageUrl(userEntity.getProfileImageUrl())
-                            .build())
-                    .createdAt(newsEntity.getCreatedAt())
-                    .views(tuple.get(2, Long.class).intValue())
-                    .likes(tuple.get(3, Long.class).intValue())
-                    .replies(tuple.get(4, Long.class).intValue())
-                    .build();
-        }).toList();
+        return results.stream().map(this::tupleToNewsListDTO).toList();
     }
 
     public List<HotNewsListDTO> findTop5HotNews() {
@@ -168,9 +188,7 @@ public class NewsService implements BaseService<News> {
 
     public PaginatedNewsListDTO findNewsWithPagination(Long teamPk, int page, int size, String sortBy) {
         QNews news = QNews.news;
-        QNewsKick newsKick = QNewsKick.newsKick;
         QNewsViewHistory newsViewHistory = QNewsViewHistory.newsViewHistory;
-        QNewsReply newsReply = QNewsReply.newsReply;
         QUser user = QUser.user;
 
         Integer offset = (page - 1) * size;
@@ -187,17 +205,7 @@ public class NewsService implements BaseService<News> {
 
         Long totalCount = totalQuery.fetchOne();
 
-        JPAQuery<Tuple> dataQuery = queryFactory.select(news, user,
-                        newsKick.pk.count().coalesce(0L).as("kickCount"),
-                        newsViewHistory.pk.count().coalesce(0L).as("viewCount"),
-                        newsReply.pk.count().coalesce(0L).as("replyCount"))
-                .from(news)
-                .join(user).on(news.user.pk.eq(user.pk))
-                .leftJoin(newsKick).on(news.pk.eq(newsKick.news.pk).and(newsKick.status.eq(DataStatus.ACTIVATED)))
-                .leftJoin(newsViewHistory).on(news.pk.eq(newsViewHistory.news.pk).and(newsViewHistory.status.eq(DataStatus.ACTIVATED)))
-                .leftJoin(newsReply).on(news.pk.eq(newsReply.news.pk).and(newsReply.status.eq(DataStatus.ACTIVATED)))
-                .where(news.status.eq(DataStatus.ACTIVATED)
-                        .and(user.status.eq(DataStatus.ACTIVATED)))
+        JPAQuery<Tuple> dataQuery = createNewsListDTOQuery()
                 .groupBy(news.pk, user.pk)
                 .offset(offset)
                 .limit(size);
@@ -215,26 +223,7 @@ public class NewsService implements BaseService<News> {
         List<Tuple> results = dataQuery.fetch();
 
         // ✅ DTO 변환
-        List<NewsListDTO> newsList = results.stream().map(tuple -> {
-            News newsEntity = tuple.get(news);
-            User userEntity = tuple.get(user);
-            return NewsListDTO.builder()
-                    .pk(newsEntity.getPk())
-                    .title(newsEntity.getTitle())
-                    .content(newsEntity.getContents())
-                    .thumbnailUrl(newsEntity.getThumbnailUrl())
-                    .category(newsEntity.getCategory())
-                    .user(UserDTO.builder()
-                            .id(userEntity.getId())
-                            .nickname(userEntity.getNickname())
-                            .profileImageUrl(userEntity.getProfileImageUrl())
-                            .build())
-                    .createdAt(newsEntity.getCreatedAt())
-                    .views(tuple.get(2, Long.class).intValue())
-                    .likes(tuple.get(3, Long.class).intValue())
-                    .replies(tuple.get(4, Long.class).intValue())
-                    .build();
-        }).toList();
+        List<NewsListDTO> newsList = results.stream().map(this::tupleToNewsListDTO).toList();
 
         // ✅ 메타데이터 포함한 결과 반환
         return new PaginatedNewsListDTO(page, size, totalCount, newsList);
