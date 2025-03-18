@@ -8,15 +8,22 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import kr.kickon.api.domain.board.dto.BoardListDTO;
+import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
 import kr.kickon.api.domain.board.request.CreateBoardRequestDTO;
+import kr.kickon.api.domain.board.request.GetBoardsRequestDTO;
 import kr.kickon.api.domain.board.response.GetHomeBoardsResponse;
 import kr.kickon.api.domain.team.TeamService;
+import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
+import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.Board;
 import kr.kickon.api.global.common.entities.Team;
 import kr.kickon.api.global.common.entities.User;
+import kr.kickon.api.global.common.entities.UserFavoriteTeam;
 import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.error.exceptions.BadRequestException;
+import kr.kickon.api.global.error.exceptions.ForbiddenException;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +42,7 @@ public class BoardController {
     private final BoardService boardService;
     private final JwtTokenProvider jwtTokenProvider;
     private final TeamService teamService;
+    private final UserFavoriteTeamService userFavoriteTeamService;
     private final UUIDGenerator uuidGenerator;
 
     @Operation(summary = "홈화면 함께 볼만한 게시글 리스트 조회", description = "응원팀 여부에 상관없이 최신 게시글 기준으로 10개 리스트 반환")
@@ -68,5 +76,19 @@ public class BoardController {
         }
         boardService.save(board);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
+    }
+
+    @Operation(summary = "게시글 리스트 조회", description = "페이징 처리 적용하여 게시글 리스트 조회")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공",
+                    content = @Content(schema = @Schema(implementation = GetHomeBoardsResponse.class))),
+    })
+    @GetMapping("")
+    public ResponseEntity<ResponseDTO<List<BoardListDTO>>> getBoards(@Valid @ModelAttribute GetBoardsRequestDTO query){
+        User user = jwtTokenProvider.getUserFromSecurityContext();
+        UserFavoriteTeam userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
+        if(query.getTeam()!=null && !userFavoriteTeam.getTeam().getPk().equals(query.getTeam())) throw new ForbiddenException(ResponseCode.FORBIDDEN);
+        PaginatedBoardListDTO boards = boardService.findBoardsWithPagination(query.getTeam() != null ? userFavoriteTeam.getTeam().getPk() : null, query.getPage(), query.getSize());
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, boards.getBoardList(), new PagedMetaDTO(boards.getCurrentPage(), boards.getPageSize(), boards.getTotalItems())));
     }
 }
