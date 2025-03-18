@@ -24,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -45,7 +46,7 @@ public class ActualSeasonRankingController {
                     content = @Content(schema = @Schema(implementation = GetActualSeasonRankingResponse.class))),
     })
     @GetMapping()
-    public ResponseEntity<ResponseDTO<List<GetActualSeasonRankingDTO>>> getEventBoards(@Valid GetActualSeasonRankingRequestDTO paramDto) {
+    public ResponseEntity<ResponseDTO<List<GetActualSeasonRankingDTO>>> getEventBoards(@Valid @ModelAttribute GetActualSeasonRankingRequestDTO paramDto) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         ActualSeason actualSeason = actualSeasonService.findRecentByLeaguePk(paramDto.getLeague());
         if(actualSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);

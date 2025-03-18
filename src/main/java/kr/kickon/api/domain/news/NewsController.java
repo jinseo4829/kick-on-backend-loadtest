@@ -7,20 +7,30 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import kr.kickon.api.domain.board.dto.BoardDetailDTO;
+import kr.kickon.api.domain.board.response.GetBoardDetailResponse;
+import kr.kickon.api.domain.board.response.GetHomeBoardsResponse;
 import kr.kickon.api.domain.news.dto.HotNewsListDTO;
+import kr.kickon.api.domain.news.dto.NewsDetailDTO;
 import kr.kickon.api.domain.news.dto.NewsListDTO;
+import kr.kickon.api.domain.news.dto.PaginatedNewsListDTO;
 import kr.kickon.api.domain.news.request.CreateNewsRequestDTO;
+import kr.kickon.api.domain.news.request.GetNewsRequestDTO;
 import kr.kickon.api.domain.news.response.GetHomeNewsResponse;
 import kr.kickon.api.domain.news.response.GetHotNewsResponse;
+import kr.kickon.api.domain.news.response.GetNewsDetailResponse;
+import kr.kickon.api.domain.news.response.GetNewsResponse;
 import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
+import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.News;
 import kr.kickon.api.global.common.entities.Team;
 import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.entities.UserFavoriteTeam;
 import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.error.exceptions.ForbiddenException;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
@@ -101,6 +111,32 @@ public class NewsController {
 
         newsService.save(news);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
+    }
+
+    @Operation(summary = "뉴스 리스트 조회", description = "페이징 처리 적용하여 뉴스 리스트 조회")
+    @GetMapping()
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공",
+                    content = @Content(schema = @Schema(implementation = GetNewsResponse.class))),
+    })
+    public ResponseEntity<ResponseDTO<List<NewsListDTO>>> getNews(@Valid @ModelAttribute GetNewsRequestDTO query) {
+        User user = jwtTokenProvider.getUserFromSecurityContext();
+        UserFavoriteTeam userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
+        if(query.getTeam()!=null && !userFavoriteTeam.getTeam().getPk().equals(query.getTeam())) throw new ForbiddenException(ResponseCode.FORBIDDEN);
+        PaginatedNewsListDTO news = newsService.findNewsWithPagination(query.getTeam() != null ? userFavoriteTeam.getTeam().getPk() : null, query.getPage(), query.getSize(),query.getOrder());
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, news.getNewsList(), new PagedMetaDTO(news.getCurrentPage(), news.getPageSize(), news.getTotalItems())));
+    }
+    @Operation(summary = "뉴스 상세 조회", description = "뉴스 PK 값으로 게시글 조회")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공",
+                    content = @Content(schema = @Schema(implementation = GetNewsDetailResponse.class))),
+    })
+    @GetMapping("/{newsPk}")
+    public ResponseEntity<ResponseDTO<NewsDetailDTO>> getBoardDetail(@PathVariable Long newsPk){
+        User user = jwtTokenProvider.getUserFromSecurityContext();
+        NewsDetailDTO newsDetailDTO = newsService.findNewsDeatailDTOByPk(newsPk,user.getPk());
+        if(newsDetailDTO==null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, newsDetailDTO));
     }
 }
 
