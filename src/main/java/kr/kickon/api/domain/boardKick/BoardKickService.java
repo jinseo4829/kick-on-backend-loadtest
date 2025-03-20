@@ -38,4 +38,8 @@ public class BoardKickService implements BaseService<BoardKick> {
         Optional<BoardKick> boardKick = boardKickRepository.findOne(predicate);
         return boardKick.orElse(null);
     }
+
+    public void save(BoardKick boardKick) {
+        boardKickRepository.save(boardKick);
+    }
 }

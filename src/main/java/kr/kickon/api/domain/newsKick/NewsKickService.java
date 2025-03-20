@@ -42,4 +42,8 @@ public class NewsKickService implements BaseService<NewsKick> {
         Optional<NewsKick> newsKick = newsKickRepository.findOne(predicate);
         return newsKick.orElse(null);
     }
+
+    public void save(NewsKick newsKick) {
+        newsKickRepository.save(newsKick);
+    }
 }
