@@ -61,7 +61,11 @@ public class SecurityConfig {
                                     "/api/board-reply",
                                     "/api/news-reply",
                                     "/api/report-news",
-                                    "/api/report-board"
+                                    "/api/report-board",
+                                    "/api/board-reply-kick",
+                                    "/api/news-reply-kick",
+                                    "/api/news-kick",
+                                    "/api/board-kick"
                             ).hasRole("USER")
                             .requestMatchers(HttpMethod.PATCH,
                                     "/api/user-game-gamble"
