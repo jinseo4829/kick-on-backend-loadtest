@@ -40,10 +40,25 @@ public class ActualSeasonTeamService implements BaseService<ActualSeasonTeam> {
         return actualSeasonTeam.orElse(null);
     }
 
-    public ActualSeasonTeam findByActualSeason(ActualSeason actualSeason,Long teamPk) {
+    public ActualSeasonTeam findByActualSeasonTeam(ActualSeason actualSeason,Long teamPk) {
         BooleanExpression predicate = QActualSeasonTeam.actualSeasonTeam.actualSeason.pk.eq(actualSeason.getPk()).and(QActualSeasonTeam.actualSeasonTeam.status.eq(DataStatus.ACTIVATED).and(QActualSeasonTeam.actualSeasonTeam.team.pk.eq(teamPk)));
         Optional<ActualSeasonTeam> actualSeasonTeam = actualSeasonTeamRepository.findOne(predicate);
         return actualSeasonTeam.orElse(null);
+    }
+
+    public List<ActualSeasonTeam> findByActualSeason(Long actualSeasonPk){
+        QActualSeasonTeam actualSeasonTeam = QActualSeasonTeam.actualSeasonTeam;
+
+        return queryFactory
+                .selectFrom(actualSeasonTeam)
+                .where(
+                        actualSeasonTeam.actualSeason.pk.eq(actualSeasonPk),
+                        actualSeasonTeam.status.eq(DataStatus.ACTIVATED),
+                        actualSeasonTeam.team.status.eq(DataStatus.ACTIVATED),
+                        actualSeasonTeam.actualSeason.operatingStatus.eq(OperatingStatus.PROCEEDING)
+                )
+                .orderBy(actualSeasonTeam.createdAt.desc())
+                .fetch();
     }
 
     public ActualSeasonTeam findLatestByTeam(Long teamPk) {

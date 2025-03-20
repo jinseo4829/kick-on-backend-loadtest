@@ -59,14 +59,14 @@ public class NewsController {
                     content = @Content(schema = @Schema(implementation = GetHomeNewsResponse.class))),
     })
     @GetMapping("/home")
-    public ResponseEntity<ResponseDTO<List<NewsListDTO>>> getHomeNews() {
+    public ResponseEntity<ResponseDTO<List<NewsListDTO>>> getHomeNews(@RequestParam String type) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         List<NewsListDTO>news=null;
         if(user==null){
             news = newsService.findRecent3News();
         }else{
             UserFavoriteTeam userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
-            if(userFavoriteTeam==null){
+            if(userFavoriteTeam==null || (type!=null && type.equals("all"))){
                 news = newsService.findRecent3News();
             }else{
                 news = newsService.findRecent3NewsWithUserTeam(userFavoriteTeam.getTeam().getPk());
@@ -123,7 +123,7 @@ public class NewsController {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         UserFavoriteTeam userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
         if(query.getTeam()!=null && !userFavoriteTeam.getTeam().getPk().equals(query.getTeam())) throw new ForbiddenException(ResponseCode.FORBIDDEN);
-        PaginatedNewsListDTO news = newsService.findNewsWithPagination(query.getTeam() != null ? userFavoriteTeam.getTeam().getPk() : null, query.getPage(), query.getSize(),query.getOrder());
+        PaginatedNewsListDTO news = newsService.findNewsWithPagination(query.getTeam() != null ? userFavoriteTeam.getTeam().getPk() : null, query.getPage(), query.getSize(),query.getOrder(), query.getLeague());
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, news.getNewsList(), new PagedMetaDTO(news.getCurrentPage(), news.getPageSize(), news.getTotalItems())));
     }
     @Operation(summary = "뉴스 상세 조회", description = "뉴스 PK 값으로 게시글 조회")

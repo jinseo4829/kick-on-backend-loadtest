@@ -175,14 +175,13 @@ public class NewsService implements BaseService<News> {
         newsRepository.save(news);
     }
 
-    public PaginatedNewsListDTO findNewsWithPagination(Long teamPk, int page, int size, String sortBy) {
+    public PaginatedNewsListDTO findNewsWithPagination(Long teamPk, int page, int size, String sortBy, Long leaguePk) {
         QNews news = QNews.news;
         QNewsViewHistory newsViewHistory = QNewsViewHistory.newsViewHistory;
         QUser user = QUser.user;
-
         Integer offset = (page - 1) * size;
         LocalDateTime hotThreshold = LocalDateTime.now().minusHours(48); // 최근 48시간 기준
-
+        List<Long> teamPks = List.of();
         // ✅ 전체 게시글 수 계산
         JPAQuery<Long> totalQuery = queryFactory.select(news.pk.count())
                 .from(news)
@@ -191,15 +190,26 @@ public class NewsService implements BaseService<News> {
                         .and(user.status.eq(DataStatus.ACTIVATED)));
         if (teamPk != null) totalQuery.where(news.team.pk.eq(teamPk));
         if ("hot".equalsIgnoreCase(sortBy)) totalQuery.where(news.createdAt.goe(hotThreshold)); // hot일 때 48시간 내 필터링
+        // ✅ 리그 기준 팀 필터링
+        if (leaguePk != null) {
+            QActualSeason actualSeason = QActualSeason.actualSeason;
+            QActualSeasonTeam actualSeasonTeam = QActualSeasonTeam.actualSeasonTeam;
 
+            teamPks = queryFactory.select(actualSeasonTeam.team.pk)
+                    .from(actualSeasonTeam)
+                    .join(actualSeason).on(actualSeasonTeam.actualSeason.pk.eq(actualSeason.pk))
+                    .where(actualSeason.league.pk.eq(leaguePk).and(actualSeasonTeam.status.eq(DataStatus.ACTIVATED)).and(actualSeason.status.eq(DataStatus.ACTIVATED)).and(actualSeasonTeam.team.status.eq(DataStatus.ACTIVATED)))
+                    .fetch();
+
+            totalQuery.where(news.team.pk.in(teamPks));
+        }
         Long totalCount = totalQuery.fetchOne();
 
         JPAQuery<Tuple> dataQuery = createNewsListDTOQuery()
                 .groupBy(news.pk, user.pk)
                 .offset(offset)
                 .limit(size);
-
-        if (teamPk != null) dataQuery.where(news.team.pk.eq(teamPk));
+        if (leaguePk != null) dataQuery.where(news.team.pk.in(teamPks));
 
         // ✅ 정렬 기준에 따른 동적 처리
         if ("hot".equalsIgnoreCase(sortBy)) {
@@ -208,6 +218,8 @@ public class NewsService implements BaseService<News> {
         } else {
             dataQuery.orderBy(news.createdAt.desc()); // 기본값: 최신순
         }
+
+
 
         List<Tuple> results = dataQuery.fetch();
 

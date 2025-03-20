@@ -16,6 +16,7 @@ import kr.kickon.api.domain.gambleSeasonRanking.dto.GetGambleSeasonRankingDTO;
 import kr.kickon.api.domain.gambleSeasonRanking.response.GetGambleSeasonRankingResponse;
 import kr.kickon.api.domain.game.dto.*;
 import kr.kickon.api.domain.game.request.GetGamesRequestDTO;
+import kr.kickon.api.domain.game.response.GetGamesResponse;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.domain.userGameGamble.UserGameGambleService;
 import kr.kickon.api.domain.userGameGamble.dto.GambleCountDTO;
@@ -52,7 +53,7 @@ public class GameController {
     @Operation(summary = "매치 리스트 조회", description = "상태값, 리그 pk 기준으로 매치 리스트 조회 / 유저 참여 여부도 포함하여 전달")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공",
-                    content = @Content(schema = @Schema(implementation = GetGambleSeasonRankingResponse.class))),
+                    content = @Content(schema = @Schema(implementation = GetGamesResponse.class))),
     })
     @GetMapping()
     public ResponseEntity<ResponseDTO<LeagueDTO>> getGames(@Valid GetGamesRequestDTO paramDto) {
@@ -69,7 +70,7 @@ public class GameController {
         if(userFavoriteTeam==null) {
             games = gameService.findByActualSeason(actualSeason.getPk(), paramDto.getStatus());
         } else{
-            ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findByActualSeason(actualSeason,userFavoriteTeam.getTeam().getPk());
+            ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findByActualSeasonTeam(actualSeason,userFavoriteTeam.getTeam().getPk());
             if(actualSeasonTeam==null) games = gameService.findByActualSeason(actualSeason.getPk(), paramDto.getStatus());
             else games = gameService.findByActualSeasonByFavoriteTeam(actualSeason.getPk(), paramDto.getStatus(), userFavoriteTeam.getTeam().getPk());
         }
