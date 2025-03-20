@@ -59,14 +59,14 @@ public class NewsController {
                     content = @Content(schema = @Schema(implementation = GetHomeNewsResponse.class))),
     })
     @GetMapping("/home")
-    public ResponseEntity<ResponseDTO<List<NewsListDTO>>> getHomeNews() {
+    public ResponseEntity<ResponseDTO<List<NewsListDTO>>> getHomeNews(@RequestParam String type) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         List<NewsListDTO>news=null;
         if(user==null){
             news = newsService.findRecent3News();
         }else{
             UserFavoriteTeam userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
-            if(userFavoriteTeam==null){
+            if(userFavoriteTeam==null || (type!=null && type.equals("all"))){
                 news = newsService.findRecent3News();
             }else{
                 news = newsService.findRecent3NewsWithUserTeam(userFavoriteTeam.getTeam().getPk());
