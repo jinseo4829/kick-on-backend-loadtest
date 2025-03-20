@@ -55,4 +55,8 @@ public class BoardReplyKickService implements BaseService<BoardReplyKick> {
                 .fetchOne();  // 해당 조건에 맞는 레코드 개수를 반환
         return  num;
     }
+
+    public void save(BoardReplyKick boardReplyKick) {
+        boardReplyKickRepository.save(boardReplyKick);
+    }
 }

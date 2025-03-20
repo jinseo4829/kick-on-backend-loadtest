@@ -3,7 +3,7 @@ package kr.kickon.api.domain.boardViewHistory;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.kickon.api.domain.board.BoardService;
-import kr.kickon.api.domain.boardViewHistory.request.CreateBoardViewHistory;
+import kr.kickon.api.domain.boardViewHistory.request.CreateBoardViewHistoryDTO;
 import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.Board;
@@ -30,7 +30,7 @@ public class BoardViewHistoryController {
 
     @Operation(summary = "게시글 뷰 생성", description = "비회원도 생성 가능")
     @PostMapping()
-    public ResponseEntity<ResponseDTO<Void>> createBoardView(@RequestBody CreateBoardViewHistory body){
+    public ResponseEntity<ResponseDTO<Void>> createBoardView(@RequestBody CreateBoardViewHistoryDTO body){
         User user = jwtTokenProvider.getUserFromSecurityContext();
 
         Board board = boardService.findByPk(body.getBoard());
