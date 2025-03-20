@@ -3,12 +3,16 @@ package kr.kickon.api.global.common.entities;
 import jakarta.persistence.*;
 import kr.kickon.api.global.common.enums.ReportStatus;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "ReportNews")
 @Getter
 @Setter
+@NoArgsConstructor
+@SuperBuilder
 public class ReportNews extends BaseEntity {
     @Column(length = 500)
     private String reason;
