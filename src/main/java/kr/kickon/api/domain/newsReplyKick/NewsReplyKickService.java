@@ -53,4 +53,8 @@ public class NewsReplyKickService implements BaseService<NewsReplyKick> {
                 .fetchOne();  // 해당 조건에 맞는 레코드 개수를 반환
         return  num;
     }
+
+    public void save(NewsReplyKick newsReplyKick) {
+        newsReplyKickRepository.save(newsReplyKick);
+    }
 }

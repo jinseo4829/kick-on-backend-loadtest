@@ -1,4 +1,4 @@
-package kr.kickon.api.domain.boardViewHistory.request;
+package kr.kickon.api.domain.boardReplyKick.request;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -7,8 +7,8 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class CreateBoardViewHistory {
+public class CreateBoardReplyKickRequestDTO {
     @Positive
-    @NotNull(message = "게시글 pk 값은 필수값입니다.")
-    private Long board;
+    @NotNull(message = "댓글 pk 값은 필수값입니다.")
+    private Long reply;
 }
