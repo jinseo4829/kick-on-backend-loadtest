@@ -38,7 +38,6 @@ public class SlackService {
             } else {
                 return;
             }
-            System.out.println(channelAddress);
             List<LayoutBlock> layoutBlocks = new ArrayList<>();
             layoutBlocks.add(section(section -> section.text(markdownText("*🚨 [" + env + "] 에러가 발생했습니다!" + "🚨*" ))));
             layoutBlocks.add(divider());
@@ -58,6 +57,30 @@ public class SlackService {
         }catch (Exception e) {
             throw new InternalServerException(ResponseCode.SLACK_SERVER_ERROR);
         }
+    }
 
+    public void sendLogMessage(String text) {
+        try {
+            String channelAddress;
+            if(env.equals("dev")){
+                channelAddress = "C08DTASMF6Y";
+            }else if (env.equals("prod")){
+                channelAddress = "C08E3F72GG1";
+            } else {
+                return;
+            }
+            List<LayoutBlock> layoutBlocks = new ArrayList<>();
+            layoutBlocks.add(section(section -> section.text(markdownText("*✅ [" + env + "] "+ "로그 알림!" + "✅*" ))));
+            layoutBlocks.add(divider());
+            layoutBlocks.add(section(section -> section.text(markdownText("message : " + text))));
+            ChatPostMessageRequest request = ChatPostMessageRequest.builder()
+                    .channel(channelAddress)
+                    .blocks(layoutBlocks)
+                    .build();
+            MethodsClient slackClient = slack.methods(token);
+            slackClient.chatPostMessage(request);
+        }catch (Exception e) {
+            throw new InternalServerException(ResponseCode.SLACK_SERVER_ERROR, e.getMessage());
+        }
     }
 }
