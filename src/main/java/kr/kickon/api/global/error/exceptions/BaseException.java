@@ -13,7 +13,6 @@ public class BaseException extends RuntimeException {
     public BaseException(ResponseCode responseCode){
         super(responseCode.getMessage());
         this.slackService = SpringContext.getBean(SlackService.class);
-        slackService.sendErrorMessage(responseCode.getMessage(), Arrays.toString(super.getStackTrace()));
         this.responseCode = responseCode;
     }
 
