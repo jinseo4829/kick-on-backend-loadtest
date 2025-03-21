@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class GetNewsRequestDTO {
     @Schema(description = "team PK, 옵셔널임, 넣으면 팀별 뉴스 조회", example = "1")
-    @Positive
+    @Positive(message = "팀 pk는 양수로 입력해주세요.")
     private Long team;
 
     @Schema(description = "페이징 할 때 한 페이지 당 게시글 수", example = "10")
