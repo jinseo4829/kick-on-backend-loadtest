@@ -95,15 +95,4 @@ public class UserService implements BaseService<User> {
 
         userRepository.save(user);
     }
-
-    public void updateUser(User user, Team team){
-        user.setNickname(request.getNickname());
-        UserFavoriteTeam userFavoriteTeam = null;
-        if(request.getTeam()!=null){
-
-            userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
-            user
-        }
-        userRepository.save(user);
-    }
 }
