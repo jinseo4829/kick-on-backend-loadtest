@@ -1,15 +1,12 @@
-package kr.kickon.api.global.auth;
+package kr.kickon.api.global.config;
 
-import jakarta.servlet.http.HttpServletResponse;
 import kr.kickon.api.global.auth.jwt.CustomAccessDeniedHandler;
 import kr.kickon.api.global.auth.jwt.CustomAuthenticationEntryPoint;
 import kr.kickon.api.global.auth.jwt.JwtAuthenticationFilter;
 import kr.kickon.api.global.auth.oauth.CustomAuthorizationRequestResolver;
 import kr.kickon.api.global.auth.oauth.OAuth2SuccessHandler;
 import kr.kickon.api.global.auth.oauth.PrincipalOauth2UserService;
-import kr.kickon.api.global.common.enums.Role;
 import lombok.AllArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,7 +15,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -42,6 +38,7 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
 
                 .csrf(AbstractHttpConfigurer::disable) // CSRF 보안 비활성화
+                .cors(AbstractHttpConfigurer::disable)
                 .sessionManagement((sessionConfig)->{
                     sessionConfig.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
                 }) // 세션 관리 정책
