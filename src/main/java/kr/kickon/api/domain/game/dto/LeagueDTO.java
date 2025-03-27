@@ -11,7 +11,7 @@ import java.util.List;
 
 
 @Data
-@Schema(description = "리그, 게임 아이템 DTO")
+@Schema(name = "GameLeagueDTO", description = "리그, 게임 아이템 DTO")
 public class LeagueDTO {
     @Schema(description = "리그 이름", example = "K리그 1")
     private String name;
