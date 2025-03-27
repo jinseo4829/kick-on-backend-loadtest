@@ -126,6 +126,7 @@ public class NewsController {
         PaginatedNewsListDTO news = newsService.findNewsWithPagination(query.getTeam() != null ? userFavoriteTeam.getTeam().getPk() : null, query.getPage(), query.getSize(),query.getOrder(), query.getLeague());
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, news.getNewsList(), new PagedMetaDTO(news.getCurrentPage(), news.getPageSize(), news.getTotalItems())));
     }
+
     @Operation(summary = "뉴스 상세 조회", description = "뉴스 PK 값으로 게시글 조회")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공",

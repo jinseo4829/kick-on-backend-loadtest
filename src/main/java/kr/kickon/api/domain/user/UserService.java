@@ -3,12 +3,15 @@ package kr.kickon.api.domain.user;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.transaction.Transactional;
+import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.domain.user.request.PatchUserRequest;
 import kr.kickon.api.domain.user.request.PrivacyUpdateRequest;
+import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.auth.oauth.dto.OAuth2UserInfo;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.QUser;
 import kr.kickon.api.global.common.entities.User;
+import kr.kickon.api.global.common.entities.UserFavoriteTeam;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.ProviderType;
 import kr.kickon.api.global.common.enums.ResponseCode;
@@ -29,6 +32,7 @@ public class UserService implements BaseService<User> {
     private final UserRepository userRepository;
     private final JPAQueryFactory queryFactory;
     private final UUIDGenerator uuidGenerator;
+    private final UserFavoriteTeamService userFavoriteTeamService;
 
     public List<User> findUsersByStatus(DataStatus status){
         // QueryDSL Predicate 생성
@@ -92,8 +96,14 @@ public class UserService implements BaseService<User> {
         userRepository.save(user);
     }
 
-    public void updateUser(User user, PatchUserRequest request){
+    public void updateUser(User user, Team team){
         user.setNickname(request.getNickname());
+        UserFavoriteTeam userFavoriteTeam = null;
+        if(request.getTeam()!=null){
+
+            userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
+            user
+        }
         userRepository.save(user);
     }
 }

@@ -45,4 +45,8 @@ public class UserFavoriteTeamService implements BaseService<UserFavoriteTeam> {
         Optional<UserFavoriteTeam> userFavoriteTeam =userFavoriteTeamRepository.findOne(predicate);
         return userFavoriteTeam.orElse(null);
     }
+
+    public void save(UserFavoriteTeam userFavoriteTeam) {
+        userFavoriteTeamRepository.save(userFavoriteTeam);
+    }
 }

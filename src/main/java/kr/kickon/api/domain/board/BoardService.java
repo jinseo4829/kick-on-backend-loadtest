@@ -10,6 +10,7 @@ import kr.kickon.api.domain.board.dto.BoardListDTO;
 import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
 import kr.kickon.api.domain.board.dto.UserDTO;
 import kr.kickon.api.domain.boardKick.BoardKickService;
+import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
@@ -52,12 +53,14 @@ public class BoardService implements BaseService<Board> {
         QBoardViewHistory boardViewHistory = QBoardViewHistory.boardViewHistory;
         QBoardReply boardReply = QBoardReply.boardReply;
         QUser user = QUser.user;
-        return queryFactory.select(board, user,
+        QTeam team = QTeam.team;
+        return queryFactory.select(board, user, team,
                         boardKick.pk.countDistinct().coalesce(0L).as("kickCount"),
                         boardViewHistory.pk.countDistinct().coalesce(0L).as("viewCount"),
                         boardReply.pk.countDistinct().coalesce(0L).as("replyCount"))
                 .from(board)
                 .join(user).on(board.user.pk.eq(user.pk))
+                .leftJoin(team).on(board.team.pk.eq(team.pk))
                 .leftJoin(boardKick).on(board.pk.eq(boardKick.board.pk).and(boardKick.status.eq(DataStatus.ACTIVATED)))
                 .leftJoin(boardViewHistory).on(board.pk.eq(boardViewHistory.board.pk).and(boardViewHistory.status.eq(DataStatus.ACTIVATED)))
                 .leftJoin(boardReply).on(board.pk.eq(boardReply.board.pk).and(boardReply.status.eq(DataStatus.ACTIVATED)))
@@ -69,6 +72,8 @@ public class BoardService implements BaseService<Board> {
         QUser user = QUser.user;
         Board boardEntity = tuple.get(board);
         User userEntity = tuple.get(user);
+        QTeam team = QTeam.team;
+        Team teamEntity = tuple.get(team);
         return BoardListDTO.builder()
                 .pk(boardEntity.getPk())
                 .title(boardEntity.getTitle())
@@ -77,11 +82,17 @@ public class BoardService implements BaseService<Board> {
                         .nickname(userEntity.getNickname())
                         .profileImageUrl(userEntity.getProfileImageUrl())
                         .build())
+                .team(TeamDTO.builder()
+                        .pk(teamEntity.getPk())
+                        .logoUrl(teamEntity.getLogoUrl())
+                        .nameKr(teamEntity.getNameKr())
+                        .nameEn(teamEntity.getNameEn())
+                        .build())
                 .createdAt(tuple.get(board.createdAt))
                 .createdAt(boardEntity.getCreatedAt())
-                .likes(tuple.get(2, Long.class).intValue())
-                .views(tuple.get(3, Long.class).intValue())
-                .replies(tuple.get(4, Long.class).intValue())
+                .likes(tuple.get(3, Long.class).intValue())
+                .views(tuple.get(4, Long.class).intValue())
+                .replies(tuple.get(5, Long.class).intValue())
                 .build();
     }
 
@@ -98,6 +109,7 @@ public class BoardService implements BaseService<Board> {
     public BoardDetailDTO findOneBoardListDTOByPk(Long boardPk,Long userPk) {
         QBoard board = QBoard.board;
         QUser user = QUser.user;
+        QTeam team = QTeam.team;
         Tuple result = createBoardListDTOQuery()
                 .where(board.pk.eq(boardPk))
                 .groupBy(board.pk, user.pk)
@@ -107,6 +119,7 @@ public class BoardService implements BaseService<Board> {
         BoardKick boardKick = boardKickService.findByBoardAndUser(result.get(board).getPk(),userPk);
         Board boardEntity = result.get(board);
         User userEntity = result.get(user);
+        Team teamEntity = result.get(team);
         return BoardDetailDTO.builder()
                 .pk(boardEntity.getPk())
                 .title(boardEntity.getTitle())
@@ -114,6 +127,12 @@ public class BoardService implements BaseService<Board> {
                         .id(userEntity.getId())
                         .nickname(userEntity.getNickname())
                         .profileImageUrl(userEntity.getProfileImageUrl())
+                        .build())
+                .team(TeamDTO.builder()
+                        .pk(teamEntity.getPk())
+                        .logoUrl(teamEntity.getLogoUrl())
+                        .nameKr(teamEntity.getNameKr())
+                        .nameEn(teamEntity.getNameEn())
                         .build())
                 .createdAt(result.get(board.createdAt))
                 .createdAt(boardEntity.getCreatedAt())

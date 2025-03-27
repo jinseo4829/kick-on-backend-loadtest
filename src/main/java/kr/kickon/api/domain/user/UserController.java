@@ -6,8 +6,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
+import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.domain.user.dto.GetUserMeDTO;
 import kr.kickon.api.domain.user.request.PatchUserRequest;
 import kr.kickon.api.domain.user.request.PrivacyUpdateRequest;
@@ -15,10 +17,7 @@ import kr.kickon.api.domain.user.response.GetUserMeResponse;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
 import kr.kickon.api.global.common.ResponseDTO;
-import kr.kickon.api.global.common.entities.ActualSeasonTeam;
-import kr.kickon.api.global.common.entities.League;
-import kr.kickon.api.global.common.entities.User;
-import kr.kickon.api.global.common.entities.UserFavoriteTeam;
+import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
@@ -39,6 +38,7 @@ public class UserController {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserFavoriteTeamService userFavoriteTeamService;
     private final ActualSeasonTeamService actualSeasonTeamService;
+    private final TeamService teamService;
 
     @PatchMapping("/privacy")
     @Operation(summary = "개인정보 동의", description = "개인 정보 동의")
@@ -78,9 +78,19 @@ public class UserController {
 
     @Operation(summary = "내 정보 수정", description = "jwt 기반으로 내 정보 수정, jwt 없으면 접근 제한")
     @PatchMapping()
+    @Transactional
     public ResponseEntity<ResponseDTO<Void>> patchUser(@Valid @RequestBody PatchUserRequest request) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        userService.updateUser(user,request);
+        Team team = null;
+        team = teamService.findByPk(request.getTeam());
+        if(team != null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
+        user.setNickname(request.getNickname());
+        userService.saveUser(user);
+        if(request.getTeam()!=null){
+            UserFavoriteTeam userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
+            userFavoriteTeam.setTeam(team);
+            userFavoriteTeamService.save(userFavoriteTeam);
+        }
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
     }
 

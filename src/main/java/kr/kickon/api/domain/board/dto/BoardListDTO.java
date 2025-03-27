@@ -2,6 +2,7 @@ package kr.kickon.api.domain.board.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.MappedSuperclass;
+import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.global.common.ExampleConstants;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -22,6 +23,8 @@ public class BoardListDTO {
     private String title;
 
     private UserDTO user;
+
+    private TeamDTO team;
 
     @Schema(example = ExampleConstants.datetime, description = "생성 시각")
     private LocalDateTime createdAt;

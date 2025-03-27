@@ -9,6 +9,7 @@ import kr.kickon.api.domain.board.dto.BoardListDTO;
 import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
 import kr.kickon.api.domain.news.dto.*;
 import kr.kickon.api.domain.newsKick.NewsKickService;
+import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
@@ -51,12 +52,14 @@ public class NewsService implements BaseService<News> {
         QNewsViewHistory newsViewHistory = QNewsViewHistory.newsViewHistory;
         QNewsReply newsReply = QNewsReply.newsReply;
         QUser user = QUser.user;
-        return queryFactory.select(news, user,
+        QTeam team = QTeam.team;
+        return queryFactory.select(news, user, team,
                         newsKick.pk.countDistinct().coalesce(0L).as("kickCount"),
                         newsViewHistory.pk.countDistinct().coalesce(0L).as("viewCount"),
                         newsReply.pk.countDistinct().coalesce(0L).as("replyCount"))
                 .from(news)
                 .join(user).on(news.user.pk.eq(user.pk))
+                .leftJoin(team).on(news.team.pk.eq(team.pk))
                 .leftJoin(newsKick).on(news.pk.eq(newsKick.news.pk).and(newsKick.status.eq(DataStatus.ACTIVATED)))
                 .leftJoin(newsViewHistory).on(news.pk.eq(newsViewHistory.news.pk).and(newsViewHistory.status.eq(DataStatus.ACTIVATED)))
                 .leftJoin(newsReply).on(news.pk.eq(newsReply.news.pk).and(newsReply.status.eq(DataStatus.ACTIVATED)))
@@ -67,29 +70,40 @@ public class NewsService implements BaseService<News> {
     public NewsListDTO tupleToNewsListDTO(Tuple tuple){
         QNews news = QNews.news;
         QUser user = QUser.user;
+        QTeam team = QTeam.team;
         News newsEntity = tuple.get(news);
         User userEntity = tuple.get(user);
+        Team teamEntity = tuple.get(team);
+
         return NewsListDTO.builder()
                 .pk(newsEntity.getPk())
                 .title(newsEntity.getTitle())
                 .content(newsEntity.getContents())
                 .thumbnailUrl(newsEntity.getThumbnailUrl())
                 .category(newsEntity.getCategory())
+                .team(TeamDTO.builder()
+                        .pk(teamEntity.getPk())
+                        .logoUrl(teamEntity.getLogoUrl())
+                        .nameKr(teamEntity.getNameKr())
+                        .nameEn(teamEntity.getNameEn())
+                        .build())
                 .user(UserDTO.builder()
                         .id(userEntity.getId())
                         .nickname(userEntity.getNickname())
                         .profileImageUrl(userEntity.getProfileImageUrl())
                         .build())
                 .createdAt(newsEntity.getCreatedAt())
-                .likes(tuple.get(2, Long.class).intValue())
-                .views(tuple.get(3, Long.class).intValue())
-                .replies(tuple.get(4, Long.class).intValue())
+                .likes(tuple.get(3, Long.class).intValue())
+                .views(tuple.get(4, Long.class).intValue())
+                .replies(tuple.get(5, Long.class).intValue())
                 .build();
     }
 
     public NewsDetailDTO findNewsDeatailDTOByPk(Long boardPk, Long userPk) {
         QNews news = QNews.news;
         QUser user = QUser.user;
+        QTeam team = QTeam.team;
+
         Tuple result = createNewsListDTOQuery()
                 .where(news.pk.eq(boardPk))
                 .groupBy(news.pk, user.pk)
@@ -99,6 +113,7 @@ public class NewsService implements BaseService<News> {
         NewsKick newsKick = newsKickService.findByBoardAndUser(result.get(news).getPk(),userPk);
         News newsEntity = result.get(news);
         User userEntity = result.get(user);
+        Team teamEntity = result.get(team);
 
         System.out.println(result);
         return NewsDetailDTO.builder()
@@ -109,11 +124,17 @@ public class NewsService implements BaseService<News> {
                         .nickname(userEntity.getNickname())
                         .profileImageUrl(userEntity.getProfileImageUrl())
                         .build())
+                .team(TeamDTO.builder()
+                        .pk(teamEntity.getPk())
+                        .logoUrl(teamEntity.getLogoUrl())
+                        .nameKr(teamEntity.getNameKr())
+                        .nameEn(teamEntity.getNameEn())
+                        .build())
                 .createdAt(result.get(news.createdAt))
                 .createdAt(newsEntity.getCreatedAt())
-                .likes(result.get(2, Long.class).intValue())
-                .views(result.get(3, Long.class).intValue())
-                .replies(result.get(4, Long.class).intValue())
+                .likes(result.get(3, Long.class).intValue())
+                .views(result.get(4, Long.class).intValue())
+                .replies(result.get(5, Long.class).intValue())
                 .isKicked(newsKick!=null)
                 .content(newsEntity.getContents())
                 .build();
