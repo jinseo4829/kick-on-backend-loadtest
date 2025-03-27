@@ -70,7 +70,10 @@ public class ActualSeasonTeamService implements BaseService<ActualSeasonTeam> {
                         actualSeasonTeam.team.pk.eq(teamPk),
                         actualSeasonTeam.status.eq(DataStatus.ACTIVATED),
                         actualSeasonTeam.team.status.eq(DataStatus.ACTIVATED),
-                        actualSeasonTeam.actualSeason.operatingStatus.eq(OperatingStatus.PROCEEDING)
+                        actualSeasonTeam.actualSeason.operatingStatus.eq(OperatingStatus.PROCEEDING),
+                        actualSeasonTeam.actualSeason.status.eq(DataStatus.ACTIVATED),
+                        actualSeasonTeam.actualSeason.league.status.eq(DataStatus.ACTIVATED)
+
                 )
                 .orderBy(actualSeasonTeam.createdAt.desc()) // 최신 순 정렬
                 .fetchFirst(); // 가장 최신 1개만 조회

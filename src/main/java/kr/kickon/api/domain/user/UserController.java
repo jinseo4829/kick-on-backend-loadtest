@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
 import kr.kickon.api.domain.user.dto.GetUserMeDTO;
 import kr.kickon.api.domain.user.request.PatchUserRequest;
 import kr.kickon.api.domain.user.request.PrivacyUpdateRequest;
@@ -14,6 +15,8 @@ import kr.kickon.api.domain.user.response.GetUserMeResponse;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
 import kr.kickon.api.global.common.ResponseDTO;
+import kr.kickon.api.global.common.entities.ActualSeasonTeam;
+import kr.kickon.api.global.common.entities.League;
 import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.entities.UserFavoriteTeam;
 import kr.kickon.api.global.common.enums.DataStatus;
@@ -35,6 +38,7 @@ public class UserController {
     private final UserService userService;
     private final JwtTokenProvider jwtTokenProvider;
     private final UserFavoriteTeamService userFavoriteTeamService;
+    private final ActualSeasonTeamService actualSeasonTeamService;
 
     @PatchMapping("/privacy")
     @Operation(summary = "개인정보 동의", description = "개인 정보 동의")
@@ -55,10 +59,20 @@ public class UserController {
         UserFavoriteTeam userFavoriteTeam = null;
         GetUserMeDTO userDto = new GetUserMeDTO(user);;
         userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
-
+        League league = null;
         if(userFavoriteTeam != null && userFavoriteTeam.getTeam().getStatus() == DataStatus.ACTIVATED) {
             userDto.setTeamLogoUrl(userFavoriteTeam.getTeam().getLogoUrl());
+            userDto.setTeamName(userFavoriteTeam.getTeam().getNameKr()!=null?userFavoriteTeam.getTeam().getNameKr():userFavoriteTeam.getTeam().getNameEn());
+            ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findLatestByTeam(userFavoriteTeam.getTeam().getPk());
+            if(actualSeasonTeam != null) league = actualSeasonTeam.getActualSeason().getLeague();
+
         }
+
+        if(league!=null) {
+            userDto.setLeagueLogoUrl(league.getLogoUrl());
+            userDto.setLeagueName(league.getKrName()!=null?league.getKrName(): league.getEnName());
+        }
+
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS,userDto));
     }
 
