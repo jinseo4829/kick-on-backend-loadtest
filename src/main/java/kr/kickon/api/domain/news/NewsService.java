@@ -75,18 +75,12 @@ public class NewsService implements BaseService<News> {
         User userEntity = tuple.get(user);
         Team teamEntity = tuple.get(team);
 
-        return NewsListDTO.builder()
+        NewsListDTO newsListDTO = NewsListDTO.builder()
                 .pk(newsEntity.getPk())
                 .title(newsEntity.getTitle())
                 .content(newsEntity.getContents())
                 .thumbnailUrl(newsEntity.getThumbnailUrl())
                 .category(newsEntity.getCategory())
-                .team(TeamDTO.builder()
-                        .pk(teamEntity.getPk())
-                        .logoUrl(teamEntity.getLogoUrl())
-                        .nameKr(teamEntity.getNameKr())
-                        .nameEn(teamEntity.getNameEn())
-                        .build())
                 .user(UserDTO.builder()
                         .id(userEntity.getId())
                         .nickname(userEntity.getNickname())
@@ -97,6 +91,18 @@ public class NewsService implements BaseService<News> {
                 .views(tuple.get(4, Long.class).intValue())
                 .replies(tuple.get(5, Long.class).intValue())
                 .build();
+
+
+        if(teamEntity!=null){
+            newsListDTO.setTeam(TeamDTO.builder()
+                    .pk(teamEntity.getPk())
+                    .logoUrl(teamEntity.getLogoUrl())
+                    .nameKr(teamEntity.getNameKr())
+                    .nameEn(teamEntity.getNameEn())
+                    .build());
+        }
+
+        return newsListDTO;
     }
 
     public NewsDetailDTO findNewsDeatailDTOByPk(Long boardPk, Long userPk) {
@@ -116,19 +122,13 @@ public class NewsService implements BaseService<News> {
         Team teamEntity = result.get(team);
 
         System.out.println(result);
-        return NewsDetailDTO.builder()
+        NewsDetailDTO newsDetailDTO = NewsDetailDTO.builder()
                 .pk(newsEntity.getPk())
                 .title(newsEntity.getTitle())
                 .user(UserDTO.builder()
                         .id(userEntity.getId())
                         .nickname(userEntity.getNickname())
                         .profileImageUrl(userEntity.getProfileImageUrl())
-                        .build())
-                .team(TeamDTO.builder()
-                        .pk(teamEntity.getPk())
-                        .logoUrl(teamEntity.getLogoUrl())
-                        .nameKr(teamEntity.getNameKr())
-                        .nameEn(teamEntity.getNameEn())
                         .build())
                 .createdAt(result.get(news.createdAt))
                 .createdAt(newsEntity.getCreatedAt())
@@ -138,6 +138,16 @@ public class NewsService implements BaseService<News> {
                 .isKicked(newsKick!=null)
                 .content(newsEntity.getContents())
                 .build();
+
+        if(teamEntity!=null){
+            newsDetailDTO.setTeam(TeamDTO.builder()
+                    .pk(teamEntity.getPk())
+                    .logoUrl(teamEntity.getLogoUrl())
+                    .nameKr(teamEntity.getNameKr())
+                    .nameEn(teamEntity.getNameEn())
+                    .build());
+        }
+        return newsDetailDTO;
     }
 
     public List<NewsListDTO> findRecent3News() {

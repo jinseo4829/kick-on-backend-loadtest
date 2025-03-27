@@ -74,7 +74,7 @@ public class BoardService implements BaseService<Board> {
         User userEntity = tuple.get(user);
         QTeam team = QTeam.team;
         Team teamEntity = tuple.get(team);
-        return BoardListDTO.builder()
+        BoardListDTO boardListDTO = BoardListDTO.builder()
                 .pk(boardEntity.getPk())
                 .title(boardEntity.getTitle())
                 .user(UserDTO.builder()
@@ -82,18 +82,23 @@ public class BoardService implements BaseService<Board> {
                         .nickname(userEntity.getNickname())
                         .profileImageUrl(userEntity.getProfileImageUrl())
                         .build())
-                .team(TeamDTO.builder()
-                        .pk(teamEntity.getPk())
-                        .logoUrl(teamEntity.getLogoUrl())
-                        .nameKr(teamEntity.getNameKr())
-                        .nameEn(teamEntity.getNameEn())
-                        .build())
                 .createdAt(tuple.get(board.createdAt))
                 .createdAt(boardEntity.getCreatedAt())
                 .likes(tuple.get(3, Long.class).intValue())
                 .views(tuple.get(4, Long.class).intValue())
                 .replies(tuple.get(5, Long.class).intValue())
                 .build();
+
+
+        if(teamEntity!=null){
+            boardListDTO.setTeam(TeamDTO.builder()
+                    .pk(teamEntity.getPk())
+                    .logoUrl(teamEntity.getLogoUrl())
+                    .nameKr(teamEntity.getNameKr())
+                    .nameEn(teamEntity.getNameEn())
+                    .build());
+        }
+        return boardListDTO;
     }
 
     public List<BoardListDTO> findTop10Boards() {
@@ -120,19 +125,14 @@ public class BoardService implements BaseService<Board> {
         Board boardEntity = result.get(board);
         User userEntity = result.get(user);
         Team teamEntity = result.get(team);
-        return BoardDetailDTO.builder()
+
+        BoardDetailDTO boardDetailDTO = BoardDetailDTO.builder()
                 .pk(boardEntity.getPk())
                 .title(boardEntity.getTitle())
                 .user(UserDTO.builder()
                         .id(userEntity.getId())
                         .nickname(userEntity.getNickname())
                         .profileImageUrl(userEntity.getProfileImageUrl())
-                        .build())
-                .team(TeamDTO.builder()
-                        .pk(teamEntity.getPk())
-                        .logoUrl(teamEntity.getLogoUrl())
-                        .nameKr(teamEntity.getNameKr())
-                        .nameEn(teamEntity.getNameEn())
                         .build())
                 .createdAt(result.get(board.createdAt))
                 .createdAt(boardEntity.getCreatedAt())
@@ -142,6 +142,16 @@ public class BoardService implements BaseService<Board> {
                 .isKicked(boardKick!=null)
                 .content(boardEntity.getContents())
                 .build();
+
+        if(teamEntity!=null){
+                boardDetailDTO.setTeam(TeamDTO.builder()
+                    .pk(teamEntity.getPk())
+                    .logoUrl(teamEntity.getLogoUrl())
+                    .nameKr(teamEntity.getNameKr())
+                    .nameEn(teamEntity.getNameEn())
+                    .build());
+        }
+        return boardDetailDTO;
     }
 
     public PaginatedBoardListDTO findBoardsWithPagination(Long teamPk, Integer page, Integer size, String sortBy) {
