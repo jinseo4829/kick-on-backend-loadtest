@@ -131,6 +131,65 @@ public class MigrationService {
         list.forEach(apiData -> {
             Game game = null;
             GameStatus gameStatus = getGameStatus(apiData, scheduledStatus, finishedStatus);
+            try {
+                // 필수 값 체크
+                game = gameService.findByApiId(apiData.getId());
+                game.setGameStatus(gameStatus);
+                game.setAwayPenaltyScore(apiData.getAwayPenaltyScore());
+                game.setHomePenaltyScore(apiData.getHomePenaltyScore());
+                game.setHomeScore(apiData.getHomeScore());
+                game.setAwayScore(apiData.getAwayScore());
+            } catch (NotFoundException ignore) {
+                Optional<Team> homeTeam, awayTeam;
+                homeTeam = Optional.ofNullable(teamService.findByApiId(apiData.getHomeTeamId()));
+                awayTeam = Optional.ofNullable(teamService.findByApiId(apiData.getAwayTeamId()));
+                if (homeTeam.isEmpty() || awayTeam.isEmpty()) {
+                } else {
+                    String gameId = "";
+                    do {
+                        try {
+                            gameId = uuidGenerator.generateUniqueUUID(leagueService::findById);
+                        } catch (NotFoundException ignore2) {
+                        }
+                        // 이미 생성된 ID가 배열에 있는지 확인
+                        if (!gameIds.contains(gameId)) {
+                            break;
+                        }
+                    } while (true); // 중복이 있을 경우 다시 생성
+                    gameIds.add(gameId);
+
+                    game = Game.builder()
+                            .id(gameId)
+                            .gameStatus(gameStatus)
+                            .awayPenaltyScore(apiData.getAwayPenaltyScore())
+                            .homePenaltyScore(apiData.getHomePenaltyScore())
+                            .actualSeason(apiData.getActualSeason())
+                            .apiId(apiData.getId())
+                            .homeScore(apiData.getHomeScore())
+                            .awayScore(apiData.getAwayScore())
+                            .round(apiData.getRound())
+                            .homeTeam(homeTeam.get())
+                            .awayTeam(awayTeam.get())
+                            .startedAt(apiData.getDate())
+                            .build();
+                }
+
+            }
+            gameService.save(game);
+        });
+    }
+
+    public void saveGamesAndUpdateGambles(List<ApiGamesDTO> list){
+        // 게임 아이디 체크
+        List<String> gameIds = new ArrayList<>();
+        List<String> scheduledStatus = new ArrayList<>(Arrays.asList(GameService.ScheduledStatus));
+        List<String> finishedStatus = new ArrayList<>(Arrays.asList(GameService.FinishedStatus));
+        List<String> homeGambleSeasonPointIds = new ArrayList<>();
+        List<String> awayGambleSeasonPointIds = new ArrayList<>();
+        List<String> homeGambleSeasonPoint = new ArrayList<>();
+        list.forEach(apiData -> {
+            Game game = null;
+            GameStatus gameStatus = getGameStatus(apiData, scheduledStatus, finishedStatus);
             try{
                 // 필수 값 체크
                 game = gameService.findByApiId(apiData.getId());
@@ -188,9 +247,23 @@ public class MigrationService {
                     .filter(g -> g.getSupportingTeam().getApiId().equals(apiData.getAwayTeamId()))
                     .toList();
 
+            String homeGambleSeasonPointId = "";
+            String awayGambleSeasonPointId = "";
+            do {
+                homeGambleSeasonPointId = uuidGenerator.generateUniqueUUID(gambleSeasonPointService::findById);
+                // 이미 생성된 ID가 배열에 있는지 확인
+            } while (homeGambleSeasonPointIds.contains(homeGambleSeasonPointId)); // 중복이 있을 경우 다시 생성
+            do {
+                awayGambleSeasonPointId = uuidGenerator.generateUniqueUUID(gambleSeasonPointService::findById);
+                // 이미 생성된 ID가 배열에 있는지 확인
+            } while (awayGambleSeasonPointIds.contains(awayGambleSeasonPointId)); // 중복이 있을 경우 다시 생성
+            homeGambleSeasonPointIds.add(homeGambleSeasonPointId);
+            awayGambleSeasonPointIds.add(awayGambleSeasonPointId);
+
             // 홈팀 평균 포인트 저장
             double homeAvgPoints = calculateAveragePoints(homeTeamGambles);
             GambleSeasonPoint homeSeasonPoint = GambleSeasonPoint.builder()
+                    .id(homeGambleSeasonPointId)
                     .averagePoints((int) Math.round(homeAvgPoints * 1000))
                     .team(teamService.findByApiId(apiData.getHomeTeamId()))
                     .game(game)
@@ -200,6 +273,7 @@ public class MigrationService {
             // 어웨이팀 평균 포인트 저장
             double awayAvgPoints = calculateAveragePoints(awayTeamGambles);
             GambleSeasonPoint awaySeasonPoint = GambleSeasonPoint.builder()
+                    .id(awayGambleSeasonPointId)
                     .averagePoints((int) Math.round(awayAvgPoints * 1000))
                     .team(teamService.findByApiId(apiData.getAwayTeamId()))
                     .game(game)
@@ -215,7 +289,6 @@ public class MigrationService {
             gambleSeasonRankingService.save(homeGambleSeasonRanking);
             gambleSeasonRankingService.save(awayGambleSeasonRanking);
         });
-
         updateTeamRankings();
     }
 

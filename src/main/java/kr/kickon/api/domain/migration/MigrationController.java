@@ -98,7 +98,7 @@ public class MigrationController {
         slackService.sendLogMessage("Scheduling: 게임 결과 불러오기 시작 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));
         List<Game> games = gameService.findByToday();
         List<ApiGamesDTO> apiGamesDTOS = migrationService.fetchGamesByApiIds(games);
-        migrationService.saveGames(apiGamesDTOS);
+        migrationService.saveGamesAndUpdateGambles(apiGamesDTOS);
         slackService.sendLogMessage("Scheduling: 게임 결과 불러오기 끝 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
     }
