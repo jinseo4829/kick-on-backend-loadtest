@@ -3,12 +3,16 @@ package kr.kickon.api.global.common.entities;
 import jakarta.persistence.*;
 import kr.kickon.api.global.common.enums.PointStatus;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "UserPointDetail")
 @Getter
 @Setter
+@SuperBuilder
+@NoArgsConstructor
 public class UserPointDetail extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import kr.kickon.api.global.common.enums.PointCategory;
 import kr.kickon.api.global.common.enums.PointStatus;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
@@ -12,6 +14,8 @@ import java.time.LocalDateTime;
 @Table(name = "UserPointEvent")
 @Getter
 @Setter
+@SuperBuilder
+@NoArgsConstructor
 public class UserPointEvent extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -21,7 +25,7 @@ public class UserPointEvent extends BaseEntity {
     @Column(nullable = false)
     private PointStatus pointStatus;
 
-    @Column(nullable = false)
+    @Column()
     private LocalDateTime expiredAt;
 
     @Column(nullable = false)

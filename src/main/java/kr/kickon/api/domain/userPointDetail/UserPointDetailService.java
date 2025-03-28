@@ -32,5 +32,9 @@ public class UserPointDetailService implements BaseService<UserPointDetail> {
         Optional<UserPointDetail> userPointDetail = userPointDetailRepository.findOne(predicate);
         return userPointDetail.orElse(null);
     }
+
+    public void save(UserPointDetail userPointDetail) {
+        userPointDetailRepository.save(userPointDetail);
+    }
 }
 

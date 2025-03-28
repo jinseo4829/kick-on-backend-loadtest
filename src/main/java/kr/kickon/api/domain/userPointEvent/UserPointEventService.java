@@ -117,4 +117,7 @@ public class UserPointEventService implements BaseService<UserPointEvent> {
 
     }
 
+    public UserPointEvent save(UserPointEvent userPointEvent) {
+        return userPointEventRepository.save(userPointEvent);
+    }
 }
