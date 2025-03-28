@@ -52,6 +52,7 @@ public enum ResponseCode {
 
     // ✅ 500 Internal Server Error
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다."),
+    AWS_PRESIGNED_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "AWS_PRESIGNED_ERROR", "Presigned Url 생성 중 내부 오류가 발생했습니다."),
     SLACK_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SLACK_SERVER_ERROR", "슬랙 오류가 발생했습니다.");
 
     private final HttpStatus httpStatus;
