@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -57,5 +58,44 @@ public class GambleSeasonRankingService implements BaseService<GambleSeasonRanki
                         .and(gambleSeasonRanking.gambleSeason.pk.eq(gambleSeasonPk).and(gambleSeasonRanking.status.eq(DataStatus.ACTIVATED))))
                 .orderBy(gambleSeasonRanking.rankOrder.asc())
                 .fetch();
+    }
+
+    public List<GambleSeasonRanking> findRecentSeasonRankingByGambleSeason(Long gambleSeasonPk) {
+        QGambleSeasonRanking gambleSeasonRanking = QGambleSeasonRanking.gambleSeasonRanking;
+
+        return queryFactory
+                .select(gambleSeasonRanking)
+                .from(gambleSeasonRanking)
+                .where(gambleSeasonRanking.status.eq(DataStatus.ACTIVATED)
+                        .and(gambleSeasonRanking.gambleSeason.pk.eq(gambleSeasonPk).and(gambleSeasonRanking.status.eq(DataStatus.ACTIVATED))))
+                .orderBy(gambleSeasonRanking.rankOrder.asc())
+                .fetch();
+    }
+
+    public GambleSeasonRanking findByTeamPk(Long teamPk) {
+        BooleanExpression predicate = QGambleSeasonRanking.gambleSeasonRanking.team.pk.eq(teamPk).and(QGambleSeasonRanking.gambleSeasonRanking.status.eq(DataStatus.ACTIVATED));
+        Optional<GambleSeasonRanking> gambleSeasonRanking = gambleSeasonRankingRepository.findOne(predicate);
+        return gambleSeasonRanking.orElse(null);
+    }
+
+    public void recalculateRanking(List<GambleSeasonRanking> ranking) {
+        // 1. 포인트 기준 내림차순, 경기 수 기준 오름차순 정렬
+        ranking.sort(Comparator
+                .comparingInt(GambleSeasonRanking::getPoints).reversed()
+                .thenComparingInt(GambleSeasonRanking::getGameNum));
+
+        int currentRank = 1;
+
+        for (GambleSeasonRanking current : ranking) {
+            current.setRankOrder(currentRank);
+            currentRank++; // 다음 순위 증가
+        }
+
+        // 변경된 랭킹을 저장
+        gambleSeasonRankingRepository.saveAll(ranking);
+    }
+
+    public void save(GambleSeasonRanking gambleSeasonRanking) {
+        gambleSeasonRankingRepository.save(gambleSeasonRanking);
     }
 }
