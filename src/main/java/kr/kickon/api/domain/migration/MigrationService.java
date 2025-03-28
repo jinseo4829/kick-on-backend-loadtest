@@ -9,6 +9,7 @@ import kr.kickon.api.domain.gambleSeason.GambleSeasonService;
 import kr.kickon.api.domain.gambleSeasonPoint.GambleSeasonPointService;
 import kr.kickon.api.domain.gambleSeasonRanking.GambleSeasonRankingService;
 import kr.kickon.api.domain.gambleSeasonRanking.dto.GetGambleSeasonRankingDTO;
+import kr.kickon.api.domain.gambleSeasonTeam.GambleSeasonTeamService;
 import kr.kickon.api.domain.game.GameService;
 import kr.kickon.api.domain.league.LeagueService;
 import kr.kickon.api.domain.migration.dto.*;
@@ -47,8 +48,9 @@ public class MigrationService {
     private final GambleSeasonPointService gambleSeasonPointService;
     private final GambleSeasonRankingService gambleSeasonRankingService;
     private final GambleSeasonService gambleSeasonService;
+    private final GambleSeasonTeamService gambleSeasonTeamService;
 
-    public MigrationService(@Value("${api.key}") String apiKey, LeagueService leagueService, TeamService teamService, ActualSeasonService actualSeasonService, UUIDGenerator uuidGenerator, ActualSeasonTeamService actualSeasonTeamService, GameService gameService, ActualSeasonRankingService actualSeasonRankingService, UserGameGambleService userGameGambleService, GambleSeasonPointService gambleSeasonPointService, GambleSeasonRankingService gambleSeasonRankingService, GambleSeasonService gambleSeasonService) {
+    public MigrationService(@Value("${api.key}") String apiKey, LeagueService leagueService, TeamService teamService, ActualSeasonService actualSeasonService, UUIDGenerator uuidGenerator, ActualSeasonTeamService actualSeasonTeamService, GameService gameService, ActualSeasonRankingService actualSeasonRankingService, UserGameGambleService userGameGambleService, GambleSeasonPointService gambleSeasonPointService, GambleSeasonRankingService gambleSeasonRankingService, GambleSeasonService gambleSeasonService, GambleSeasonTeamService gambleSeasonTeamService) {
         this.gambleSeasonService = gambleSeasonService;
         ExchangeStrategies exchangeStrategies = ExchangeStrategies.builder()
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(-1)) // to unlimited memory size
@@ -69,6 +71,7 @@ public class MigrationService {
         this.userGameGambleService = userGameGambleService;
         this.gambleSeasonPointService = gambleSeasonPointService;
         this.gambleSeasonRankingService = gambleSeasonRankingService;
+        this.gambleSeasonTeamService = gambleSeasonTeamService;
     }
 
     @Transactional
@@ -186,13 +189,14 @@ public class MigrationService {
         List<String> finishedStatus = new ArrayList<>(Arrays.asList(GameService.FinishedStatus));
         List<String> homeGambleSeasonPointIds = new ArrayList<>();
         List<String> awayGambleSeasonPointIds = new ArrayList<>();
-        List<String> homeGambleSeasonPoint = new ArrayList<>();
         list.forEach(apiData -> {
+
             Game game = null;
             GameStatus gameStatus = getGameStatus(apiData, scheduledStatus, finishedStatus);
             try{
                 // 필수 값 체크
                 game = gameService.findByApiId(apiData.getId());
+                System.out.println(game.getPk() + ". " + game.getHomeTeam().getNameEn() + " VS " +game.getAwayTeam().getNameEn() + " / " + game.getApiId());
                 game.setGameStatus(gameStatus);
                 game.setAwayPenaltyScore(apiData.getAwayPenaltyScore());
                 game.setHomePenaltyScore(apiData.getHomePenaltyScore());
@@ -262,32 +266,41 @@ public class MigrationService {
 
             // 홈팀 평균 포인트 저장
             double homeAvgPoints = calculateAveragePoints(homeTeamGambles);
-            GambleSeasonPoint homeSeasonPoint = GambleSeasonPoint.builder()
-                    .id(homeGambleSeasonPointId)
-                    .averagePoints((int) Math.round(homeAvgPoints * 1000))
-                    .team(teamService.findByApiId(apiData.getHomeTeamId()))
-                    .game(game)
-                    .build();
-            gambleSeasonPointService.save(homeSeasonPoint);
 
-            // 어웨이팀 평균 포인트 저장
-            double awayAvgPoints = calculateAveragePoints(awayTeamGambles);
-            GambleSeasonPoint awaySeasonPoint = GambleSeasonPoint.builder()
-                    .id(awayGambleSeasonPointId)
-                    .averagePoints((int) Math.round(awayAvgPoints * 1000))
-                    .team(teamService.findByApiId(apiData.getAwayTeamId()))
-                    .game(game)
-                    .build();
-            gambleSeasonPointService.save(awaySeasonPoint);
-            // 랭킹 업데이트
-            GambleSeasonRanking homeGambleSeasonRanking = gambleSeasonRankingService.findByTeamPk(homeSeasonPoint.getTeam().getPk());
-            homeGambleSeasonRanking.setPoints(homeGambleSeasonRanking.getPoints() + homeSeasonPoint.getAveragePoints());
-            homeGambleSeasonRanking.setGameNum(homeGambleSeasonRanking.getGameNum()+1);
-            GambleSeasonRanking awayGambleSeasonRanking = gambleSeasonRankingService.findByTeamPk(awaySeasonPoint.getTeam().getPk());
-            awayGambleSeasonRanking.setPoints(awayGambleSeasonRanking.getPoints() + awaySeasonPoint.getAveragePoints());
-            homeGambleSeasonRanking.setGameNum(awayGambleSeasonRanking.getGameNum()+1);
-            gambleSeasonRankingService.save(homeGambleSeasonRanking);
-            gambleSeasonRankingService.save(awayGambleSeasonRanking);
+            GambleSeasonTeam homeGambleSeasonTeam = gambleSeasonTeamService.findRecentOperatingByTeamPk(game.getHomeTeam().getPk());
+            if(homeGambleSeasonTeam != null){
+                Team homeTeam = teamService.findByApiId(apiData.getHomeTeamId());
+                Team awayTeam = teamService.findByApiId(apiData.getAwayTeamId());
+                GambleSeasonPoint homeSeasonPoint = GambleSeasonPoint.builder()
+                        .id(homeGambleSeasonPointId)
+                        .gambleSeason(homeGambleSeasonTeam.getGambleSeason())
+                        .averagePoints((int) Math.round(homeAvgPoints * 1000))
+                        .team(homeTeam)
+                        .game(game)
+                        .build();
+                gambleSeasonPointService.save(homeSeasonPoint);
+
+                // 어웨이팀 평균 포인트 저장
+                double awayAvgPoints = calculateAveragePoints(awayTeamGambles);
+                GambleSeasonPoint awaySeasonPoint = GambleSeasonPoint.builder()
+                        .id(awayGambleSeasonPointId)
+                        .gambleSeason(homeGambleSeasonTeam.getGambleSeason())
+                        .averagePoints((int) Math.round(awayAvgPoints * 1000))
+                        .team(awayTeam)
+                        .game(game)
+                        .build();
+                gambleSeasonPointService.save(awaySeasonPoint);
+                // 랭킹 업데이트
+                GambleSeasonRanking homeGambleSeasonRanking = gambleSeasonRankingService.findByTeamPk(homeSeasonPoint.getTeam().getPk());
+                homeGambleSeasonRanking.setPoints(homeGambleSeasonRanking.getPoints() + homeSeasonPoint.getAveragePoints());
+                homeGambleSeasonRanking.setGameNum(homeGambleSeasonRanking.getGameNum()+1);
+                GambleSeasonRanking awayGambleSeasonRanking = gambleSeasonRankingService.findByTeamPk(awaySeasonPoint.getTeam().getPk());
+                awayGambleSeasonRanking.setPoints(awayGambleSeasonRanking.getPoints() + awaySeasonPoint.getAveragePoints());
+                homeGambleSeasonRanking.setGameNum(awayGambleSeasonRanking.getGameNum()+1);
+                gambleSeasonRankingService.save(homeGambleSeasonRanking);
+                gambleSeasonRankingService.save(awayGambleSeasonRanking);
+            }
+
         });
         updateTeamRankings();
     }
@@ -732,6 +745,13 @@ public class MigrationService {
                         Map<String, Object> statusData = (Map<String, Object>) fixtureData.get("status");
                         String status = (String) statusData.get("short");
 
+                        // "teams" 데이터 추출
+                        Map<String, Object> teamData = (Map<String, Object>) responseData.get("teams");
+                        Map<String, Object> homeTeamData = (Map<String, Object>) teamData.get("home");
+                        Map<String, Object> awayTeamData = (Map<String, Object>) teamData.get("away");
+                        Long homeTeamId = Long.valueOf((Integer) homeTeamData.get("id"));
+                        Long awayTeamId = Long.valueOf((Integer) awayTeamData.get("id"));
+
                         // "goals" 데이터 추출
                         Map<String, Object> goalsData = (Map<String, Object>) responseData.get("goals");
                         Integer homeScore = (Integer) goalsData.get("home");
@@ -750,6 +770,8 @@ public class MigrationService {
                                 .id(fixtureId)
                                 .awayScore(awayScore)
                                 .homeScore(homeScore)
+                                .homeTeamId(homeTeamId)
+                                .awayTeamId(awayTeamId)
                                 .status(status)
                                 .homePenaltyScore(homePenaltyScore)
                                 .awayPenaltyScore(awayPenaltyScore)
