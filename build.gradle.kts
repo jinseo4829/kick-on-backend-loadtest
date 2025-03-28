@@ -15,7 +15,6 @@ tasks.named<BootJar>("bootJar") {
 tasks.named<Jar>("jar") {
 	enabled = false
 }
-
 group = "kr.kickon"
 version = "0.0.1-SNAPSHOT"
 
@@ -33,6 +32,10 @@ configurations {
 
 repositories {
 	mavenCentral()
+}
+
+ext {
+	set("springCloudVersion", "2024.0.0")
 }
 
 dependencies {
@@ -79,11 +82,12 @@ dependencies {
 	// jwt
 	implementation("io.jsonwebtoken:jjwt:0.12.5")
 
-	//AWS Parameter Store
+	//AWS
 	implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.1.0"))
 	implementation("io.awspring.cloud:spring-cloud-aws-starter-parameter-store")
 	implementation(platform("software.amazon.awssdk:bom:2.27.21"))
 	implementation("software.amazon.awssdk:ssm")
+	implementation("software.amazon.awssdk:s3")
 
 	// test
 	testImplementation("org.springframework.boot:spring-boot-starter-test")

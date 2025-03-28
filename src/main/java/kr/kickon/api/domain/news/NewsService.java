@@ -130,13 +130,13 @@ public class NewsService implements BaseService<News> {
                         .nickname(userEntity.getNickname())
                         .profileImageUrl(userEntity.getProfileImageUrl())
                         .build())
-                .createdAt(result.get(news.createdAt))
                 .createdAt(newsEntity.getCreatedAt())
                 .likes(result.get(3, Long.class).intValue())
                 .views(result.get(4, Long.class).intValue())
                 .replies(result.get(5, Long.class).intValue())
                 .isKicked(newsKick!=null)
                 .content(newsEntity.getContents())
+                .thumbnailUrl(newsEntity.getThumbnailUrl())
                 .build();
 
         if(teamEntity!=null){

@@ -1,7 +1,7 @@
 package kr.kickon.api.global.auth.jwt.dto;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
-import software.amazon.awssdk.annotations.NotNull;
 
 @Getter
 public class TokenRequestDTO {
