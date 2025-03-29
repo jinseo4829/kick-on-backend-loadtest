@@ -81,13 +81,14 @@ public class MigrationController {
     @PostMapping("/rankings")
     @Scheduled(cron = "0 10 * * * *")
     public ResponseEntity<ResponseDTO<Void>> fetchRanking() {
-        log.info("Scheduling: 랭킹 불러오기 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));
+        slackService.sendLogMessage("Scheduling: 랭킹 불러오기 시작 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));
         List<League> leagues = leagueService.findAllLeagues();
 //        List<League> leagues = new ArrayList<>();
 //        leagues.add(leagueService.findByPk(Long.parseLong(league)));
 
         List<ApiRankingDTO> rankingsFromApi = migrationService.fetchRankings(leagues);
         migrationService.saveRankings(rankingsFromApi);
+        slackService.sendLogMessage("Scheduling: 랭킹 불러오기 끝 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
     }
 
