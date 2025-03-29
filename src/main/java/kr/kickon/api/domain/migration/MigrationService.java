@@ -300,7 +300,6 @@ public class MigrationService {
                 gambleSeasonRankingService.save(homeGambleSeasonRanking);
                 gambleSeasonRankingService.save(awayGambleSeasonRanking);
             }
-
         });
         updateTeamRankings();
     }
@@ -503,6 +502,8 @@ public class MigrationService {
         for(League league : leagues) {
             ActualSeason actualSeason;
             actualSeason = actualSeasonService.findRecentByLeaguePk(league.getPk());
+//            log.error("{}",actualSeason.getYear());
+//            log.error("{}",league.getKrName());
             if(actualSeason == null) continue;
             Map<String, Object> response = webClient.get().uri(uriBuilder ->
                             uriBuilder.path("/standings")
@@ -514,7 +515,7 @@ public class MigrationService {
                     .block();
             List<Map<String, Object>> responseData = (List<Map<String, Object>>) response.get("response");
             // "fixture" 데이터 추출
-
+//            log.error("{}",responseData);
             if(responseData.isEmpty()) continue;
             Map<String, Object> leagueData = (Map<String, Object>) responseData.get(0).get("league");
             List<List<Map<String, Object>>> rankingDatas = (List<List<Map<String, Object>>>) leagueData.get("standings");
@@ -523,7 +524,7 @@ public class MigrationService {
             list.addAll(flattenedList.stream()
                     .filter(rankingData -> {
                         String group = (String) rankingData.get("group");
-                        return group != null && group.contains("Regular Season");
+                        return group != null && (group.contains("Regular Season") || group.replaceAll(" ","").equals(((String) leagueData.get("name")).replaceAll(" ","")));
                     })
                     .map(rankingData -> {
                         // DTO 객체 생성
@@ -550,6 +551,7 @@ public class MigrationService {
                                 .build();
                     }).toList());
         }
+//        log.error("{}",list.size());
         return list;
     }
 
