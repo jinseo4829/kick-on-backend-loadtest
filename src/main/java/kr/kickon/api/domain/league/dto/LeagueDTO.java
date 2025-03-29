@@ -14,11 +14,11 @@ public class LeagueDTO {
     @Schema(example = "1", description = "리그 pk값")
     private Long pk;
 
-    @Schema(example = ExampleConstants.leagueEnName, description = "리그 영어 제목")
-    private String enName;
+    @Schema(example = ExampleConstants.leaguenameEn, description = "리그 영어 제목")
+    private String nameEn;
 
     @Schema(example = ExampleConstants.leagueKrName, description = "리그 한글 제목")
-    private String krName;
+    private String nameJr;
 
     @Schema(example = ExampleConstants.teamLogoUrl, description = "리그 로고 url")
     private String logoUrl;

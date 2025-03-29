@@ -372,7 +372,7 @@ public class MigrationService {
             ActualSeason actualSeason;
             try {
                 league = leagueService.findByApiId(apiLeague.getId());
-                league.setEnName(apiLeague.getName());
+                league.setNameEn(apiLeague.getName());
                 league.setType(apiLeague.getType());
                 league.setLogoUrl(apiLeague.getLogo());
                 leagueService.save(league);
@@ -503,7 +503,7 @@ public class MigrationService {
             ActualSeason actualSeason;
             actualSeason = actualSeasonService.findRecentByLeaguePk(league.getPk());
 //            log.error("{}",actualSeason.getYear());
-//            log.error("{}",league.getKrName());
+//            log.error("{}",league.getNameKr());
             if(actualSeason == null) continue;
             Map<String, Object> response = webClient.get().uri(uriBuilder ->
                             uriBuilder.path("/standings")

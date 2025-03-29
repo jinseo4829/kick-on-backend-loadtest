@@ -16,8 +16,8 @@ public class ExampleConstants {
     public static final String replyContent = "댓글 입니다~~";
     public static final String teamLogoUrl="https://i2-prod.liverpool.com/incoming/article30696725.ece/ALTERNATES/s810/0_DarwinNunez.jpg";
     public static final String teamName = "리버풀";
-    public static final String leagueEnName = "K League 1";
+    public static final String leaguenameEn = "K League 1";
     public static final String leagueKrName = "K리그 1";
     public static final String teamKrName = "전남드래곤즈";
-    public static final String teamEnName = "Jeonnam Dragons";
+    public static final String teamnameEn = "Jeonnam Dragons";
 }
