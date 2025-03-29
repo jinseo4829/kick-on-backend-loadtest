@@ -62,7 +62,7 @@ public class GameController {
         if(actualSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
         LeagueDTO leagueDTO = new LeagueDTO();
         leagueDTO.setPk(actualSeason.getLeague().getPk());
-        leagueDTO.setName(actualSeason.getLeague().getKrName());
+        leagueDTO.setName(actualSeason.getLeague().getNameKr());
         UserFavoriteTeam userFavoriteTeam = null;
         List<Game> games = null;
         if(user!=null) userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());

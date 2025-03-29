@@ -70,7 +70,7 @@ public class UserController {
 
         if(league!=null) {
             userDto.setLeagueLogoUrl(league.getLogoUrl());
-            userDto.setLeagueName(league.getKrName()!=null?league.getKrName(): league.getEnName());
+            userDto.setLeagueName(league.getNameKr()!=null?league.getNameKr(): league.getNameEn());
         }
 
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS,userDto));
