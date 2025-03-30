@@ -18,7 +18,7 @@ public class LeagueDTO {
     private String nameEn;
 
     @Schema(example = ExampleConstants.leagueKrName, description = "리그 한글 제목")
-    private String nameJr;
+    private String nameKr;
 
     @Schema(example = ExampleConstants.teamLogoUrl, description = "리그 로고 url")
     private String logoUrl;
