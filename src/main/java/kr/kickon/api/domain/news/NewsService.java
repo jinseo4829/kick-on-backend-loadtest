@@ -116,7 +116,7 @@ public class NewsService implements BaseService<News> {
                 .fetchOne();
         if(result == null) return null;
 
-        NewsKick newsKick = newsKickService.findByBoardAndUser(result.get(news).getPk(),userPk);
+        NewsKick newsKick = newsKickService.findByNewsAndUser(result.get(news).getPk(),userPk);
         News newsEntity = result.get(news);
         User userEntity = result.get(user);
         Team teamEntity = result.get(team);

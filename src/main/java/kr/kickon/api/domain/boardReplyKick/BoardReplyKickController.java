@@ -8,6 +8,7 @@ import kr.kickon.api.domain.boardViewHistory.BoardViewHistoryService;
 import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.*;
+import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
@@ -39,11 +40,18 @@ public class BoardReplyKickController {
 
         if(boardReply==null) throw new NotFoundException(ResponseCode.NOT_FOUND_BOARD_REPLY);
 
-        String id = uuidGenerator.generateUniqueUUID(boardReplyService::findById);
-        boardReplyKickService.save(BoardReplyKick.builder()
-                .id(id)
-                .boardReply(boardReply)
-                .user(user).build());
+        // 게시글 댓글 킥 이미 있는지 체크
+        BoardReplyKick boardReplyKick = boardReplyKickService.findByBoardReplyAndUser(boardReply.getPk(), user.getPk());
+        if(boardReplyKick==null){
+            String id = uuidGenerator.generateUniqueUUID(boardReplyService::findById);
+            boardReplyKickService.save(BoardReplyKick.builder()
+                    .id(id)
+                    .boardReply(boardReply)
+                    .user(user).build());
+        }else{
+            boardReplyKick.setStatus(DataStatus.DEACTIVATED);
+            boardReplyKickService.save(boardReplyKick);
+        }
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
 }
