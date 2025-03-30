@@ -41,7 +41,7 @@ public class LeagueController {
                     .pk(league.getPk())
                     .leagueType(league.getType())
                     .nameEn(league.getNameEn())
-                    .nameJr(league.getNameKr())
+                    .nameKr(league.getNameKr())
                     .logoUrl(league.getLogoUrl())
                     .build()
         ).toList();
