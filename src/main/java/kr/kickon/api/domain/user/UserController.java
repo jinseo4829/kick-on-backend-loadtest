@@ -81,12 +81,12 @@ public class UserController {
     @Transactional
     public ResponseEntity<ResponseDTO<Void>> patchUser(@Valid @RequestBody PatchUserRequest request) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        Team team = null;
-        team = teamService.findByPk(request.getTeam());
-        if(team != null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
         user.setNickname(request.getNickname());
         userService.saveUser(user);
         if(request.getTeam()!=null){
+            Team team = null;
+            team = teamService.findByPk(request.getTeam());
+            if(team != null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
             UserFavoriteTeam userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
             userFavoriteTeam.setTeam(team);
             userFavoriteTeamService.save(userFavoriteTeam);

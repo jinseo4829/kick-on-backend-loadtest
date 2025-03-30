@@ -36,7 +36,6 @@ public class SecurityConfig {
         http
                 .httpBasic(AbstractHttpConfigurer::disable) // ui 사용하는거 비활성화
                 .formLogin(AbstractHttpConfigurer::disable)
-
                 .csrf(AbstractHttpConfigurer::disable) // CSRF 보안 비활성화
                 .cors(AbstractHttpConfigurer::disable)
                 .sessionManagement((sessionConfig)->{
