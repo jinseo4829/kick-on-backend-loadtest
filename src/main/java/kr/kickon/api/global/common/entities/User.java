@@ -46,12 +46,6 @@ public class User extends BaseEntity{
 
     @Column()
     private LocalDateTime marketingAgreedAt;
-
-    @Override
-    public String toString() {
-
-        return getId() + " / " + getProviderId() + " / " + provider + getProfileImageUrl() + " / " + getNickname() + " / " + getEmail() + " / " + getPrivacyAgreedAt();
-    }
 }
 
 

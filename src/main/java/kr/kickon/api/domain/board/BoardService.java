@@ -119,12 +119,13 @@ public class BoardService implements BaseService<Board> {
                 .where(board.pk.eq(boardPk))
                 .groupBy(board.pk, user.pk)
                 .fetchOne();
+        System.out.println(result.toString());
         if(result == null) return null;
 
         BoardKick boardKick = boardKickService.findByBoardAndUser(result.get(board).getPk(),userPk);
         Board boardEntity = result.get(board);
         User userEntity = result.get(user);
-        Team teamEntity = result.get(team);
+
 
         BoardDetailDTO boardDetailDTO = BoardDetailDTO.builder()
                 .pk(boardEntity.getPk())
@@ -136,14 +137,15 @@ public class BoardService implements BaseService<Board> {
                         .build())
                 .createdAt(result.get(board.createdAt))
                 .createdAt(boardEntity.getCreatedAt())
-                .likes(result.get(2, Long.class).intValue())
-                .views(result.get(3, Long.class).intValue())
-                .replies(result.get(4, Long.class).intValue())
+                .likes(result.get(3, Long.class).intValue())
+                .views(result.get(4, Long.class).intValue())
+                .replies(result.get(5, Long.class).intValue())
                 .isKicked(boardKick!=null)
                 .content(boardEntity.getContents())
                 .build();
 
-        if(teamEntity!=null){
+        if(result.get(team)!=null){
+            Team teamEntity = result.get(team);
                 boardDetailDTO.setTeam(TeamDTO.builder()
                     .pk(teamEntity.getPk())
                     .logoUrl(teamEntity.getLogoUrl())
