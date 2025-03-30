@@ -7,9 +7,11 @@ import kr.kickon.api.domain.newsKick.NewsKickService;
 import kr.kickon.api.domain.newsKick.request.CreateNewsKickRequestDTO;
 import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
 import kr.kickon.api.global.common.ResponseDTO;
+import kr.kickon.api.global.common.entities.NewsKick;
 import kr.kickon.api.global.common.entities.News;
 import kr.kickon.api.global.common.entities.NewsKick;
 import kr.kickon.api.global.common.entities.User;
+import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
@@ -41,11 +43,19 @@ public class NewsKickController {
 
         if(news==null) throw new NotFoundException(ResponseCode.NOT_FOUND_BOARD);
 
-        String id = uuidGenerator.generateUniqueUUID(newsService::findById);
-        newsKickService.save(NewsKick.builder()
-                .id(id)
-                .news(news)
-                .user(user).build());
+
+        // 게시글 킥 이미 있는지 체크
+        NewsKick newsKick = newsKickService.findByNewsAndUser(news.getPk(), user.getPk());
+        if(newsKick==null){
+            String id = uuidGenerator.generateUniqueUUID(newsService::findById);
+            newsKickService.save(NewsKick.builder()
+                    .id(id)
+                    .news(news)
+                    .user(user).build());
+        }else{
+            newsKick.setStatus(DataStatus.DEACTIVATED);
+            newsKickService.save(newsKick);
+        }
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
 }

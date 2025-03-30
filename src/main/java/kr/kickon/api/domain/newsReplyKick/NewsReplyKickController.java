@@ -7,9 +7,11 @@ import kr.kickon.api.domain.newsReplyKick.NewsReplyKickService;
 import kr.kickon.api.domain.newsReplyKick.request.CreateNewsReplyKickRequestDTO;
 import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
 import kr.kickon.api.global.common.ResponseDTO;
+import kr.kickon.api.global.common.entities.NewsReplyKick;
 import kr.kickon.api.global.common.entities.NewsReply;
 import kr.kickon.api.global.common.entities.NewsReplyKick;
 import kr.kickon.api.global.common.entities.User;
+import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
@@ -41,11 +43,18 @@ public class NewsReplyKickController {
 
         if(newsReply==null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS_REPLY);
 
-        String id = uuidGenerator.generateUniqueUUID(newsReplyService::findById);
-        newsReplyKickService.save(NewsReplyKick.builder()
-                .id(id)
-                .newsReply(newsReply)
-                .user(user).build());
+        // 뉴스 댓글 킥 이미 있는지 체크
+        NewsReplyKick newsReplyKick = newsReplyKickService.findByNewsReplyAndUser(newsReply.getPk(), user.getPk());
+        if(newsReplyKick==null){
+            String id = uuidGenerator.generateUniqueUUID(newsReplyService::findById);
+            newsReplyKickService.save(NewsReplyKick.builder()
+                    .id(id)
+                    .newsReply(newsReply)
+                    .user(user).build());
+        }else{
+            newsReplyKick.setStatus(DataStatus.DEACTIVATED);
+            newsReplyKickService.save(newsReplyKick);
+        }
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
 }

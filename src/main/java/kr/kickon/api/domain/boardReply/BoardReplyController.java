@@ -52,6 +52,7 @@ public class BoardReplyController {
 
         if(board.getTeam()!= null){
             UserFavoriteTeam userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
+            if(userFavoriteTeam==null) throw new ForbiddenException(ResponseCode.FORBIDDEN);
             if(!userFavoriteTeam.getTeam().getPk().equals(board.getTeam().getPk())) throw new ForbiddenException(ResponseCode.FORBIDDEN);
         }
 
