@@ -31,6 +31,9 @@ public class GetUserMeDTO {
     @Schema(description = "소셜 로그인 provider", example = "KAKAO")
     private ProviderType providerType;
 
+    @Schema(description = "팀 pk", example = "1")
+    private Long teamPk;
+
     @Schema(description = "팀 로고 url", example = "https://naver.me/image.png")
     private String teamLogoUrl;
 
@@ -55,6 +58,7 @@ public class GetUserMeDTO {
         this.email = user.getEmail();
         this.providerType = user.getProvider();
         this.profileImageUrl = user.getProfileImageUrl();
+        this.teamPk = null;
         this.teamLogoUrl = null;
         this.teamName = null;
         this.leagueLogoUrl = null;

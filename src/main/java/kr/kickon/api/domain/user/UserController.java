@@ -61,6 +61,7 @@ public class UserController {
         userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
         League league = null;
         if(userFavoriteTeam != null && userFavoriteTeam.getTeam().getStatus() == DataStatus.ACTIVATED) {
+            userDto.setTeamPk(userFavoriteTeam.getTeam().getPk());
             userDto.setTeamLogoUrl(userFavoriteTeam.getTeam().getLogoUrl());
             userDto.setTeamName(userFavoriteTeam.getTeam().getNameKr()!=null?userFavoriteTeam.getTeam().getNameKr():userFavoriteTeam.getTeam().getNameEn());
             ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findLatestByTeam(userFavoriteTeam.getTeam().getPk());
