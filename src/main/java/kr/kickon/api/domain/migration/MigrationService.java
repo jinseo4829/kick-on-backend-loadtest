@@ -196,7 +196,6 @@ public class MigrationService {
             try{
                 // 필수 값 체크
                 game = gameService.findByApiId(apiData.getId());
-                System.out.println(game.getPk() + ". " + game.getHomeTeam().getNameEn() + " VS " +game.getAwayTeam().getNameEn() + " / " + game.getApiId());
                 game.setGameStatus(gameStatus);
                 game.setAwayPenaltyScore(apiData.getAwayPenaltyScore());
                 game.setHomePenaltyScore(apiData.getHomePenaltyScore());

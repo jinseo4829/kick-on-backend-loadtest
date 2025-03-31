@@ -119,7 +119,6 @@ public class BoardService implements BaseService<Board> {
                 .where(board.pk.eq(boardPk))
                 .groupBy(board.pk, user.pk)
                 .fetchOne();
-        System.out.println(result.toString());
         if(result == null) return null;
 
         BoardKick boardKick = boardKickService.findByBoardAndUser(result.get(board).getPk(),userPk);
