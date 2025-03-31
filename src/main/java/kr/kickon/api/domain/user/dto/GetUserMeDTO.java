@@ -9,6 +9,8 @@ import kr.kickon.api.global.common.enums.ProviderType;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 
 @Getter
 @Setter
@@ -41,6 +43,12 @@ public class GetUserMeDTO {
     @Schema(description = "리그 이름", example = "K리그 1")
     private String leagueName;
 
+    @Schema(description = "개인정보 동의 시각", example = ExampleConstants.datetime)
+    private LocalDateTime privacyAgreedAt;
+
+    @Schema(description = "마케팅 동의 시각", example = ExampleConstants.datetime)
+    private LocalDateTime marketingAgreedAt;
+
     public GetUserMeDTO(User user) {
         this.id = user.getId();
         this.nickname = user.getNickname();
@@ -51,5 +59,7 @@ public class GetUserMeDTO {
         this.teamName = null;
         this.leagueLogoUrl = null;
         this.leagueName = null;
+        this.privacyAgreedAt = user.getPrivacyAgreedAt();
+        this.marketingAgreedAt = user.getMarketingAgreedAt();;
     }
 }
