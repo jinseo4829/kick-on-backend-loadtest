@@ -16,11 +16,13 @@ public class WebConfig implements WebMvcConfigurer {
         if(env.equals("dev")){
             registry.addMapping("/**")
                     .allowedOriginPatterns("*") // “*“같은 와일드카드를 사용
+                    .allowedHeaders("*")
                     .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH") // 허용할 HTTP method
                     .allowCredentials(true); // 쿠키 인증 요청 허용
         }if(env.equals("prod")){
             registry.addMapping("/**")
                     .allowedOrigins("https://kick-on.kr")
+                    .allowedHeaders("*")
                     .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS","PATCH") // 허용할 HTTP method
                     .allowCredentials(true); // 쿠키 인증 요청 허용
         }
