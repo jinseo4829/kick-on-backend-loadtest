@@ -10,6 +10,7 @@ import kr.kickon.api.global.common.entities.Board;
 import kr.kickon.api.global.common.entities.BoardKick;
 import kr.kickon.api.global.common.entities.ReportBoard;
 import kr.kickon.api.global.common.entities.User;
+import kr.kickon.api.global.common.enums.ReportStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
@@ -45,6 +46,7 @@ public class ReportBoardController {
         reportBoardService.save(ReportBoard.builder()
                 .id(id)
                 .reportedBoard(board)
+                .reportStatus(ReportStatus.REPORTED)
                 .user(user)
                 .reason(body.getReason())
                 .build());
