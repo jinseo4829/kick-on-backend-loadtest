@@ -80,7 +80,7 @@ public class NewsService implements BaseService<News> {
                 .title(newsEntity.getTitle())
                 .content(newsEntity.getContents())
                 .thumbnailUrl(newsEntity.getThumbnailUrl())
-                .category(newsEntity.getCategory())
+                .category(newsEntity.getCategory().getKoreanName())
                 .user(UserDTO.builder()
                         .id(userEntity.getId())
                         .nickname(userEntity.getNickname())
@@ -137,6 +137,7 @@ public class NewsService implements BaseService<News> {
                 .isKicked(newsKick!=null)
                 .content(newsEntity.getContents())
                 .thumbnailUrl(newsEntity.getThumbnailUrl())
+                .category(newsEntity.getCategory().getKoreanName())
                 .build();
 
         if(teamEntity!=null){
@@ -176,13 +177,15 @@ public class NewsService implements BaseService<News> {
 
     public List<HotNewsListDTO> findTop5HotNews() {
         QNews news = QNews.news;
+        QTeam team = QTeam.team;
         QNewsViewHistory newsViewHistory = QNewsViewHistory.newsViewHistory;
 
-        List<Tuple> results = queryFactory.select(news,
+        List<Tuple> results = queryFactory.select(news,team,
                         newsViewHistory.pk.count().coalesce(0L).as("viewCount"))
                 .from(news)
                 .leftJoin(newsViewHistory).on(news.pk.eq(newsViewHistory.news.pk)
                         .and(newsViewHistory.status.eq(DataStatus.ACTIVATED)))
+                .leftJoin(team).on(news.team.pk.eq(team.pk))
                 .where(news.status.eq(DataStatus.ACTIVATED)
                         .and(news.createdAt.goe(LocalDateTime.now().minusDays(1)))) // 최근 24시간 이내 뉴스만 조회
                 .groupBy(news.pk)
@@ -192,13 +195,19 @@ public class NewsService implements BaseService<News> {
 
         return results.stream().map(tuple -> {
             News newsEntity = tuple.get(news);
-            return HotNewsListDTO.builder()
+            Team teamEntity = tuple.get(team);
+            HotNewsListDTO.HotNewsListDTOBuilder builder = HotNewsListDTO.builder()
                     .pk(newsEntity.getPk())
                     .title(newsEntity.getTitle())
                     .thumbnailUrl(newsEntity.getThumbnailUrl())
-                    .category(newsEntity.getCategory())
-                    .views(tuple.get(1, Long.class).intValue()) // 조회수 가져오기
-                    .build();
+                    .category(newsEntity.getCategory().getKoreanName())
+                    .views(tuple.get(2, Long.class).intValue()) // 조회수 가져오기
+            ;
+
+            if(teamEntity!=null){
+                builder.teamNameEn(teamEntity.getNameEn()).teamNameKr(teamEntity.getNameKr()).teamPk(teamEntity.getPk()).teamLogoUrl(teamEntity.getLogoUrl());
+            }
+            return builder.build();
         }).toList();
     }
 

@@ -33,7 +33,7 @@ public class NewsListDTO {
     private String thumbnailUrl;
 
     @Schema(example = NewsCategory.VALUE.RENEWAL, description = "뉴스 카테고리")
-    private NewsCategory category;
+    private String category;
 
     private UserDTO user;
 
