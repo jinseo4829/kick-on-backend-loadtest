@@ -26,6 +26,5 @@ public class EventBoard extends BaseEntity {
 
     @Column(nullable = false)
     @Convert(converter = BooleanConverter.class)
-    @ColumnDefault("false")
     private Boolean isDisplayed;
 }

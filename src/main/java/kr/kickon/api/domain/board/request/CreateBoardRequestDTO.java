@@ -23,4 +23,8 @@ public class CreateBoardRequestDTO {
     @NotNull(message = "게시글 내용은 필수값입니다.")
     @Schema(description = "게시글 내용", example = ExampleConstants.content)
     private String contents;
+
+    @NotNull(message = "게시글에 이미지 포함 여부를 알려주세요.")
+    @Schema(description = "게시글 이미지 포함 여부", example = "false")
+    private Boolean hasImage;
 }
