@@ -21,6 +21,7 @@ import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
+import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -39,6 +40,7 @@ public class UserController {
     private final UserFavoriteTeamService userFavoriteTeamService;
     private final ActualSeasonTeamService actualSeasonTeamService;
     private final TeamService teamService;
+    private final UUIDGenerator uuidGenerator;
 
     @PatchMapping("/privacy")
     @Operation(summary = "개인정보 동의", description = "개인 정보 동의")
@@ -89,8 +91,19 @@ public class UserController {
             team = teamService.findByPk(request.getTeam());
             if(team == null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
             UserFavoriteTeam userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
-            userFavoriteTeam.setTeam(team);
-            userFavoriteTeamService.save(userFavoriteTeam);
+            if(userFavoriteTeam==null){
+                String id = uuidGenerator.generateUniqueUUID(userFavoriteTeamService::findById);
+                userFavoriteTeamService.save(
+                        UserFavoriteTeam.builder()
+                                .id(id)
+                                .user(user)
+                                .team(team)
+                                .build()
+                );
+            }else{
+                userFavoriteTeam.setTeam(team);
+                userFavoriteTeamService.save(userFavoriteTeam);
+            }
         }
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
     }
