@@ -72,6 +72,7 @@ public class UserController {
         }
 
         if(league!=null) {
+            userDto.setLeaguePk(league.getPk());
             userDto.setLeagueLogoUrl(league.getLogoUrl());
             userDto.setLeagueName(league.getNameKr()!=null?league.getNameKr(): league.getNameEn());
         }

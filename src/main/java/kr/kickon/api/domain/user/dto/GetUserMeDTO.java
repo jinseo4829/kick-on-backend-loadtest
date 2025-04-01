@@ -40,6 +40,9 @@ public class GetUserMeDTO {
     @Schema(description = "팀 이름", example = ExampleConstants.teamKrName)
     private String teamName;
 
+    @Schema(description = "리그 pk", example = "1")
+    private Long leaguePk;
+
     @Schema(description = "리그 로고 url", example = ExampleConstants.teamLogoUrl)
     private String leagueLogoUrl;
 
