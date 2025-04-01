@@ -68,6 +68,7 @@ public class BoardController {
                 .user(user)
                 .contents(request.getContents())
                 .title(request.getTitle())
+                .hasImage(request.getHasImage())
                 .build();
 
         if(request.getTeam()!=null){

@@ -1,10 +1,14 @@
 package kr.kickon.api.global.common.entities;
 
 import jakarta.persistence.*;
+import kotlin.reflect.KType;
+import kr.kickon.api.global.common.converters.BooleanConverter;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Type;
 
 @Entity
 @Table(name = "Board")
@@ -26,4 +30,8 @@ public class Board extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "team_pk", foreignKey = @ForeignKey(name = "fk_board_team"))
     private Team team;
+
+    @Column(nullable = false)
+    @Convert(converter = BooleanConverter.class)
+    private Boolean hasImage = false;
 }

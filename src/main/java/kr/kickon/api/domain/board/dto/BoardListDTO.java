@@ -29,6 +29,9 @@ public class BoardListDTO {
     @Schema(example = ExampleConstants.datetime, description = "생성 시각")
     private LocalDateTime createdAt;
 
+    @Schema(example = "true", description = "게시글 이미지 포함 여부")
+    private Boolean hasImage;
+
     @Schema(example = "1233", description = "조회수")
     private Integer views;
 
