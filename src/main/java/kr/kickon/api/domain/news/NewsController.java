@@ -121,8 +121,10 @@ public class NewsController {
     })
     public ResponseEntity<ResponseDTO<List<NewsListDTO>>> getNews(@Valid @ModelAttribute GetNewsRequestDTO query) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        UserFavoriteTeam userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
-        if(query.getTeam()!=null && !userFavoriteTeam.getTeam().getPk().equals(query.getTeam())) throw new ForbiddenException(ResponseCode.FORBIDDEN);
+        UserFavoriteTeam userFavoriteTeam = null;
+        if(user!=null){
+            userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
+        }
         PaginatedNewsListDTO news = newsService.findNewsWithPagination(query.getTeam() != null ? userFavoriteTeam.getTeam().getPk() : null, query.getPage(), query.getSize(),query.getOrder(), query.getLeague());
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, news.getNewsList(), new PagedMetaDTO(news.getCurrentPage(), news.getPageSize(), news.getTotalItems())));
     }
