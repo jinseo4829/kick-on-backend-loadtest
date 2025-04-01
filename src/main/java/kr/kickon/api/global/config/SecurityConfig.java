@@ -45,7 +45,6 @@ public class SecurityConfig {
                     authorizeRequests
                             .requestMatchers("/swagger-ui/*", "/oauth2/*", "/v3/**").permitAll() // ✅ OAuth2 로그인 경로, swagger 호출 허용
                             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
                             .requestMatchers(HttpMethod.GET,
                                     "/api/user/me",
                                     "/api/user-point-event/ranking"
@@ -70,12 +69,9 @@ public class SecurityConfig {
                             .requestMatchers(HttpMethod.DELETE,
                                     "/api/user-game-gamble"
                             ).hasRole("USER")
-
                             .requestMatchers(HttpMethod.PATCH,"/api/user").hasAnyRole("OAUTH_FIRST_JOIN", "USER")
                             .requestMatchers(HttpMethod.PATCH,"/api/user/privacy").hasAnyRole("OAUTH_FIRST_JOIN", "USER")
-
                             .requestMatchers("/api/**").hasAnyRole("GUEST", "OAUTH_FIRST_JOIN", "USER") // "GUEST"는 내부적으로 "ROLE_GUEST"로 변환됨
-
                             .requestMatchers("/**").permitAll()
                             .anyRequest().authenticated(); // ✅ 인증 필요
                 })

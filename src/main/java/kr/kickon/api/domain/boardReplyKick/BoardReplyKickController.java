@@ -2,6 +2,7 @@ package kr.kickon.api.domain.boardReplyKick;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import kr.kickon.api.domain.boardReply.BoardReplyService;
 import kr.kickon.api.domain.boardReplyKick.request.CreateBoardReplyKickRequestDTO;
 import kr.kickon.api.domain.boardViewHistory.BoardViewHistoryService;
@@ -33,7 +34,7 @@ public class BoardReplyKickController {
 
     @Operation(summary = "게시글 댓글 킥 생성 및 삭제", description = "댓글 PK값 옵셔널인데 넘기면 그거 기반으로 삭제 할거임!")
     @PostMapping()
-    public ResponseEntity<ResponseDTO<Void>> createBoardReplyKick(@RequestBody CreateBoardReplyKickRequestDTO body){
+    public ResponseEntity<ResponseDTO<Void>> createBoardReplyKick(@RequestBody @Valid CreateBoardReplyKickRequestDTO body){
         User user = jwtTokenProvider.getUserFromSecurityContext();
 
         BoardReply boardReply = boardReplyService.findByPk(body.getReply());
@@ -49,7 +50,7 @@ public class BoardReplyKickController {
                     .boardReply(boardReply)
                     .user(user).build());
         }else{
-            boardReplyKick.setStatus(DataStatus.DEACTIVATED);
+            boardReplyKick.setStatus(boardReplyKick.getStatus().equals(DataStatus.ACTIVATED) ? DataStatus.DEACTIVATED : DataStatus.ACTIVATED);
             boardReplyKickService.save(boardReplyKick);
         }
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));

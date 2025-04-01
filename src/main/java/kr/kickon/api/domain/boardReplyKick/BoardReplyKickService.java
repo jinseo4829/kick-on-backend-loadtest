@@ -38,7 +38,7 @@ public class BoardReplyKickService implements BaseService<BoardReplyKick> {
     }
 
     public BoardReplyKick findByBoardReplyAndUser(Long boardReplyPk, Long userPk){
-        BooleanExpression predicate = QBoardReplyKick.boardReplyKick.boardReply.pk.eq(boardReplyPk).and(QBoardReplyKick.boardReplyKick.status.eq(DataStatus.ACTIVATED).and(QBoardReplyKick.boardReplyKick.user.pk.eq(userPk)));
+        BooleanExpression predicate = QBoardReplyKick.boardReplyKick.boardReply.pk.eq(boardReplyPk).and(QBoardReplyKick.boardReplyKick.user.pk.eq(userPk));
         Optional<BoardReplyKick> boardReplyKick = boardReplyKickRepository.findOne(predicate);
         return boardReplyKick.orElse(null);
     }
