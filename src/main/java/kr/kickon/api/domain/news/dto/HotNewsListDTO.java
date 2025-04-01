@@ -35,6 +35,9 @@ public class HotNewsListDTO {
     @Schema(example = "1",description = "팀 pk")
     private Long teamPk;
 
+    @Schema(example = ExampleConstants.leagueKrName,description = "리그 이름 (한글)")
+    private String leagueNameKr;
+
     @Schema(example = "1233", description = "조회수")
     private Integer views;
 }

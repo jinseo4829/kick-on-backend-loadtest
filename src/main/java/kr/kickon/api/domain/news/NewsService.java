@@ -181,16 +181,25 @@ public class NewsService implements BaseService<News> {
         QNews news = QNews.news;
         QTeam team = QTeam.team;
         QNewsViewHistory newsViewHistory = QNewsViewHistory.newsViewHistory;
+        QActualSeasonTeam actualSeasonTeam = QActualSeasonTeam.actualSeasonTeam;
+        QActualSeason actualSeason = QActualSeason.actualSeason;
+        QLeague league = QLeague.league;
 
-        List<Tuple> results = queryFactory.select(news,team,
-                        newsViewHistory.pk.count().coalesce(0L).as("viewCount"))
+        List<Tuple> results = queryFactory.select(news, team,
+                        newsViewHistory.pk.count().coalesce(0L).as("viewCount"),
+                        league.nameKr.as("leagueName"))
                 .from(news)
                 .leftJoin(newsViewHistory).on(news.pk.eq(newsViewHistory.news.pk)
                         .and(newsViewHistory.status.eq(DataStatus.ACTIVATED)))
                 .leftJoin(team).on(news.team.pk.eq(team.pk))
+                // 가장 최근 진행 중인 ActualSeasonTeam을 찾고, ActualSeason을 통해 League 가져오기
+                .leftJoin(actualSeasonTeam).on(team.pk.eq(actualSeasonTeam.team.pk)
+                        .and(actualSeasonTeam.status.eq(DataStatus.ACTIVATED)))
+                .leftJoin(actualSeason).on(actualSeasonTeam.actualSeason.pk.eq(actualSeason.pk))
+                .leftJoin(league).on(actualSeason.league.pk.eq(league.pk))
                 .where(news.status.eq(DataStatus.ACTIVATED)
                         .and(news.createdAt.goe(LocalDateTime.now().minusDays(1)))) // 최근 24시간 이내 뉴스만 조회
-                .groupBy(news.pk)
+                .groupBy(news.pk, league.pk) // 그룹핑 추가
                 .orderBy(newsViewHistory.pk.count().coalesce(0L).desc()) // 조회수 기준 내림차순 정렬
                 .limit(5)
                 .fetch();
@@ -203,12 +212,20 @@ public class NewsService implements BaseService<News> {
                     .title(newsEntity.getTitle())
                     .thumbnailUrl(newsEntity.getThumbnailUrl())
                     .category(newsEntity.getCategory().getKoreanName())
-                    .views(tuple.get(2, Long.class).intValue()) // 조회수 가져오기
-            ;
+                    .views(tuple.get(2, Long.class).intValue()); // 조회수 가져오기
 
-            if(teamEntity!=null){
-                builder.teamNameEn(teamEntity.getNameEn()).teamNameKr(teamEntity.getNameKr()).teamPk(teamEntity.getPk()).teamLogoUrl(teamEntity.getLogoUrl());
+            if (teamEntity != null) {
+                builder.teamNameEn(teamEntity.getNameEn())
+                        .teamNameKr(teamEntity.getNameKr())
+                        .teamPk(teamEntity.getPk())
+                        .teamLogoUrl(teamEntity.getLogoUrl());
             }
+
+            // League 정보 추가
+            if (tuple.get(3, String.class) != null) { // leagueName이 존재하면 추가
+                builder.leagueNameKr(tuple.get(3, String.class));
+            }
+
             return builder.build();
         }).toList();
     }
