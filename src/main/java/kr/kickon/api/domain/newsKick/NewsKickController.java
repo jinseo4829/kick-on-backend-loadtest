@@ -2,6 +2,7 @@ package kr.kickon.api.domain.newsKick;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import kr.kickon.api.domain.news.NewsService;
 import kr.kickon.api.domain.newsKick.NewsKickService;
 import kr.kickon.api.domain.newsKick.request.CreateNewsKickRequestDTO;
@@ -36,7 +37,7 @@ public class NewsKickController {
 
     @Operation(summary = "뉴스 킥 생성 및 삭제", description = "PK값 옵셔널인데 넘기면 그거 기반으로 삭제 할거임!")
     @PostMapping()
-    public ResponseEntity<ResponseDTO<Void>> createNewsKick(@RequestBody CreateNewsKickRequestDTO body){
+    public ResponseEntity<ResponseDTO<Void>> createNewsKick(@RequestBody @Valid CreateNewsKickRequestDTO body){
         User user = jwtTokenProvider.getUserFromSecurityContext();
 
         News news = newsService.findByPk(body.getNews());
@@ -53,7 +54,7 @@ public class NewsKickController {
                     .news(news)
                     .user(user).build());
         }else{
-            newsKick.setStatus(DataStatus.DEACTIVATED);
+            newsKick.setStatus(newsKick.getStatus().equals(DataStatus.ACTIVATED) ? DataStatus.DEACTIVATED : DataStatus.ACTIVATED);
             newsKickService.save(newsKick);
         }
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));

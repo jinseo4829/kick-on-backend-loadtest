@@ -2,6 +2,7 @@ package kr.kickon.api.domain.boardKick;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import kr.kickon.api.domain.boardKick.request.CreateBoardKickRequestDTO;
 import kr.kickon.api.domain.board.BoardService;
 import kr.kickon.api.domain.boardKick.BoardKickService;
@@ -38,7 +39,7 @@ public class BoardKickController {
 
     @Operation(summary = "게시글 킥 생성 및 삭제", description = "PK값 옵셔널인데 넘기면 그거 기반으로 삭제 할거임!")
     @PostMapping()
-    public ResponseEntity<ResponseDTO<Void>> createBoardKick(@RequestBody CreateBoardKickRequestDTO body){
+    public ResponseEntity<ResponseDTO<Void>> createBoardKick(@RequestBody @Valid CreateBoardKickRequestDTO body){
         User user = jwtTokenProvider.getUserFromSecurityContext();
 
         Board board = boardService.findByPk(body.getBoard());
@@ -53,7 +54,7 @@ public class BoardKickController {
                     .board(board)
                     .user(user).build());
         }else{
-            boardKick.setStatus(DataStatus.DEACTIVATED);
+            boardKick.setStatus(boardKick.getStatus().equals(DataStatus.ACTIVATED) ? DataStatus.DEACTIVATED : DataStatus.ACTIVATED);
             boardKickService.save(boardKick);
         }
 

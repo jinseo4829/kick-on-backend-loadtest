@@ -2,6 +2,7 @@ package kr.kickon.api.domain.newsReplyKick;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import kr.kickon.api.domain.newsReply.NewsReplyService;
 import kr.kickon.api.domain.newsReplyKick.NewsReplyKickService;
 import kr.kickon.api.domain.newsReplyKick.request.CreateNewsReplyKickRequestDTO;
@@ -36,7 +37,7 @@ public class NewsReplyKickController {
 
     @Operation(summary = "뉴스 댓글 킥 생성 및 삭제", description = "댓글 PK값 옵셔널인데 넘기면 그거 기반으로 삭제 할거임!")
     @PostMapping()
-    public ResponseEntity<ResponseDTO<Void>> createNewsReplyKick(@RequestBody CreateNewsReplyKickRequestDTO body){
+    public ResponseEntity<ResponseDTO<Void>> createNewsReplyKick(@RequestBody @Valid CreateNewsReplyKickRequestDTO body){
         User user = jwtTokenProvider.getUserFromSecurityContext();
 
         NewsReply newsReply = newsReplyService.findByPk(body.getReply());
@@ -52,7 +53,7 @@ public class NewsReplyKickController {
                     .newsReply(newsReply)
                     .user(user).build());
         }else{
-            newsReplyKick.setStatus(DataStatus.DEACTIVATED);
+            newsReplyKick.setStatus(newsReplyKick.getStatus().equals(DataStatus.ACTIVATED) ? DataStatus.DEACTIVATED : DataStatus.ACTIVATED);
             newsReplyKickService.save(newsReplyKick);
         }
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
