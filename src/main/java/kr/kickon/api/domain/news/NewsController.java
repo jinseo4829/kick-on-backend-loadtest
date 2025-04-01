@@ -135,7 +135,7 @@ public class NewsController {
     @GetMapping("/{newsPk}")
     public ResponseEntity<ResponseDTO<NewsDetailDTO>> getBoardDetail(@PathVariable Long newsPk){
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        NewsDetailDTO newsDetailDTO = newsService.findNewsDeatailDTOByPk(newsPk,user.getPk());
+        NewsDetailDTO newsDetailDTO = newsService.findNewsDeatailDTOByPk(newsPk,user);
         if(newsDetailDTO==null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, newsDetailDTO));
     }

@@ -73,7 +73,9 @@ public class SecurityConfig {
                             .requestMatchers(HttpMethod.PATCH,"/api/user/privacy").hasAnyRole("OAUTH_FIRST_JOIN", "USER")
                             .requestMatchers("/api/**").hasAnyRole("GUEST", "OAUTH_FIRST_JOIN", "USER") // "GUEST"는 내부적으로 "ROLE_GUEST"로 변환됨
                             .requestMatchers("/**").permitAll()
-                            .anyRequest().authenticated(); // ✅ 인증 필요
+                            .anyRequest().authenticated()
+                            ; // ✅ 인증 필요
+
                 })
                 .oauth2Login(oAuth2Login -> {
                     oAuth2Login.userInfoEndpoint(userInfoEndpointConfig -> userInfoEndpointConfig.userService(principalOauth2UserService)).successHandler(oAuth2SuccessHandler).authorizationEndpoint(endpoint -> endpoint

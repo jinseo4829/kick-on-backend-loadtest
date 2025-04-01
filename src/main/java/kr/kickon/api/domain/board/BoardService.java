@@ -112,21 +112,17 @@ public class BoardService implements BaseService<Board> {
         return results.stream().map(this::tupleToBoardListDTO).toList();
     }
 
-    public BoardDetailDTO findOneBoardListDTOByPk(Long boardPk,Long userPk) {
+    public BoardDetailDTO findOneBoardListDTOByPk(Long boardPk,User userData) {
         QBoard board = QBoard.board;
         QUser user = QUser.user;
         QTeam team = QTeam.team;
         Tuple result = createBoardListDTOQuery()
                 .where(board.pk.eq(boardPk))
-                .groupBy(board.pk, user.pk)
+                .groupBy(board.pk)
                 .fetchOne();
         if(result == null) return null;
-
-        BoardKick boardKick = boardKickService.findByBoardAndUser(result.get(board).getPk(),userPk);
         Board boardEntity = result.get(board);
         User userEntity = result.get(user);
-
-
         BoardDetailDTO boardDetailDTO = BoardDetailDTO.builder()
                 .pk(boardEntity.getPk())
                 .title(boardEntity.getTitle())
@@ -141,10 +137,13 @@ public class BoardService implements BaseService<Board> {
                 .likes(result.get(3, Long.class).intValue())
                 .views(result.get(4, Long.class).intValue())
                 .replies(result.get(5, Long.class).intValue())
-                .isKicked(boardKick!=null)
                 .content(boardEntity.getContents())
                 .build();
-
+        if(userData!=null){
+            BoardKick boardKick = boardKickService.findByBoardAndUser(result.get(board).getPk(), userData.getPk());
+            boardDetailDTO
+                .setIsKicked(boardKick!=null);
+        }
         if(result.get(team)!=null){
             Team teamEntity = result.get(team);
                 boardDetailDTO.setTeam(TeamDTO.builder()

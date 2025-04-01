@@ -102,7 +102,7 @@ public class BoardController {
     @GetMapping("/{boardPk}")
     public ResponseEntity<ResponseDTO<BoardDetailDTO>> getBoardDetail(@PathVariable Long boardPk){
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        BoardDetailDTO boardDetailDTO = boardService.findOneBoardListDTOByPk(boardPk,user.getPk());
+        BoardDetailDTO boardDetailDTO = boardService.findOneBoardListDTOByPk(boardPk,user);
         if(boardDetailDTO==null) throw new NotFoundException(ResponseCode.NOT_FOUND_BOARD);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, boardDetailDTO));
     }

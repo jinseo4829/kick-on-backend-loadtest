@@ -105,23 +105,21 @@ public class NewsService implements BaseService<News> {
         return newsListDTO;
     }
 
-    public NewsDetailDTO findNewsDeatailDTOByPk(Long boardPk, Long userPk) {
+    public NewsDetailDTO findNewsDeatailDTOByPk(Long boardPk, User userData) {
         QNews news = QNews.news;
         QUser user = QUser.user;
         QTeam team = QTeam.team;
 
         Tuple result = createNewsListDTOQuery()
                 .where(news.pk.eq(boardPk))
-                .groupBy(news.pk, user.pk)
+                .groupBy(news.pk)
                 .fetchOne();
         if(result == null) return null;
 
-        NewsKick newsKick = newsKickService.findByNewsAndUser(result.get(news).getPk(),userPk);
         News newsEntity = result.get(news);
         User userEntity = result.get(user);
         Team teamEntity = result.get(team);
 
-        System.out.println(result);
         NewsDetailDTO newsDetailDTO = NewsDetailDTO.builder()
                 .pk(newsEntity.getPk())
                 .title(newsEntity.getTitle())
@@ -134,11 +132,15 @@ public class NewsService implements BaseService<News> {
                 .likes(result.get(3, Long.class).intValue())
                 .views(result.get(4, Long.class).intValue())
                 .replies(result.get(5, Long.class).intValue())
-                .isKicked(newsKick!=null)
                 .content(newsEntity.getContents())
                 .thumbnailUrl(newsEntity.getThumbnailUrl())
                 .category(newsEntity.getCategory().getKoreanName())
                 .build();
+
+        if(userData!=null){
+            NewsKick newsKick = newsKickService.findByNewsAndUser(result.get(news).getPk(), userData.getPk());
+            newsDetailDTO.setIsKicked(newsKick!=null);
+        }
 
         if(teamEntity!=null){
             newsDetailDTO.setTeam(TeamDTO.builder()
