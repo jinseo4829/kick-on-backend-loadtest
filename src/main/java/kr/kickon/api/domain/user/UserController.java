@@ -87,7 +87,7 @@ public class UserController {
         if(request.getTeam()!=null){
             Team team = null;
             team = teamService.findByPk(request.getTeam());
-            if(team != null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
+            if(team == null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
             UserFavoriteTeam userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
             userFavoriteTeam.setTeam(team);
             userFavoriteTeamService.save(userFavoriteTeam);
