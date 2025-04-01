@@ -9,6 +9,7 @@ import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.News;
 import kr.kickon.api.global.common.entities.ReportNews;
 import kr.kickon.api.global.common.entities.User;
+import kr.kickon.api.global.common.enums.ReportStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
@@ -44,6 +45,7 @@ public class ReportNewsController {
         reportNewsService.save(ReportNews.builder()
                 .id(id)
                 .reportedNews(news)
+                .reportStatus(ReportStatus.REPORTED)
                 .user(user)
                 .reason(body.getReason())
                 .build());
