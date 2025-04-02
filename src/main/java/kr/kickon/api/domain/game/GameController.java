@@ -58,7 +58,7 @@ public class GameController {
     @GetMapping()
     public ResponseEntity<ResponseDTO<LeagueDTO>> getGames(@Valid GetGamesRequestDTO paramDto) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        ActualSeason actualSeason = actualSeasonService.findByYearAndLeague(paramDto.getSeason(),paramDto.getLeague());
+        ActualSeason actualSeason = actualSeasonService.findRecentByLeaguePk(paramDto.getLeague());
         if(actualSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
         LeagueDTO leagueDTO = new LeagueDTO();
         leagueDTO.setPk(actualSeason.getLeague().getPk());
