@@ -140,7 +140,7 @@ public class BoardService implements BaseService<Board> {
                 .content(boardEntity.getContents())
                 .build();
         if(userData!=null){
-            BoardKick boardKick = boardKickService.findByBoardAndUser(result.get(board).getPk(), userData.getPk());
+            BoardKick boardKick = boardKickService.findByBoardAndUser(boardDetailDTO.getPk(), userData.getPk());
             boardDetailDTO
                 .setIsKicked(boardKick!=null);
         }

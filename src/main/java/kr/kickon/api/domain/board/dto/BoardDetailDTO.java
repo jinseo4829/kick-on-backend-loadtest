@@ -16,5 +16,5 @@ public class BoardDetailDTO extends BoardListDTO{
     private String content;
 
     @Schema(example = "true", description = "킥 눌렀는지 여부")
-    private Boolean isKicked;
+    private Boolean isKicked = false;
 }

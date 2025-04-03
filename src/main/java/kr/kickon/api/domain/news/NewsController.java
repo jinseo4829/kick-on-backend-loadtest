@@ -59,7 +59,7 @@ public class NewsController {
                     content = @Content(schema = @Schema(implementation = GetHomeNewsResponse.class))),
     })
     @GetMapping("/home")
-    public ResponseEntity<ResponseDTO<List<NewsListDTO>>> getHomeNews(@RequestParam String type) {
+    public ResponseEntity<ResponseDTO<List<NewsListDTO>>> getHomeNews(@RequestParam(required = false) String type) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         List<NewsListDTO>news=null;
         if(user==null){
@@ -121,11 +121,11 @@ public class NewsController {
     })
     public ResponseEntity<ResponseDTO<List<NewsListDTO>>> getNews(@Valid @ModelAttribute GetNewsRequestDTO query) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        UserFavoriteTeam userFavoriteTeam = null;
-        if(user!=null){
-            userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
+        if(query.getTeam()!=null){
+            Team team = teamService.findByPk(query.getTeam());
+            if(team==null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
         }
-        PaginatedNewsListDTO news = newsService.findNewsWithPagination(query.getTeam() != null ? userFavoriteTeam.getTeam().getPk() : null, query.getPage(), query.getSize(),query.getOrder(), query.getLeague());
+        PaginatedNewsListDTO news = newsService.findNewsWithPagination(query.getTeam() != null ? query.getTeam() : null, query.getPage(), query.getSize(),query.getOrder(), query.getLeague());
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, news.getNewsList(), new PagedMetaDTO(news.getCurrentPage(), news.getPageSize(), news.getTotalItems())));
     }
 

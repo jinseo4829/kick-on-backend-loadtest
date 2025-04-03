@@ -38,7 +38,7 @@ public class NewsKickService implements BaseService<NewsKick> {
     }
 
     public NewsKick findByNewsAndUser(Long newsPk, Long userPk){
-        BooleanExpression predicate = QNewsKick.newsKick.news.pk.eq(newsPk).and(QNewsKick.newsKick.user.pk.eq(userPk));
+        BooleanExpression predicate = QNewsKick.newsKick.news.pk.eq(newsPk).and(QNewsKick.newsKick.user.pk.eq(userPk).and(QNewsKick.newsKick.status.eq(DataStatus.ACTIVATED)));
         Optional<NewsKick> newsKick = newsKickRepository.findOne(predicate);
         return newsKick.orElse(null);
     }

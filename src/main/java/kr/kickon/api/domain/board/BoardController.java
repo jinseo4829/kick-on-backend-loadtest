@@ -88,11 +88,12 @@ public class BoardController {
     @GetMapping("")
     public ResponseEntity<ResponseDTO<List<BoardListDTO>>> getBoards(@Valid @ModelAttribute GetBoardsRequestDTO query){
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        UserFavoriteTeam userFavoriteTeam = null;
-        if(user!=null){
-            userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
+        if(query.getTeam()!=null){
+            Team team = teamService.findByPk(query.getTeam());
+            if(team==null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
         }
-        PaginatedBoardListDTO boards = boardService.findBoardsWithPagination(query.getTeam() != null ? userFavoriteTeam.getTeam().getPk() : null, query.getPage(), query.getSize(), query.getOrder());
+
+        PaginatedBoardListDTO boards = boardService.findBoardsWithPagination(query.getTeam() != null ? query.getTeam() : null, query.getPage(), query.getSize(), query.getOrder());
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, boards.getBoardList(), new PagedMetaDTO(boards.getCurrentPage(), boards.getPageSize(), boards.getTotalItems())));
     }
 
