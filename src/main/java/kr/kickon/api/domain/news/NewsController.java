@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import kr.kickon.api.domain.board.dto.BoardDetailDTO;
 import kr.kickon.api.domain.board.response.GetBoardDetailResponse;
 import kr.kickon.api.domain.board.response.GetHomeBoardsResponse;
+import kr.kickon.api.domain.league.LeagueService;
 import kr.kickon.api.domain.news.dto.HotNewsListDTO;
 import kr.kickon.api.domain.news.dto.NewsDetailDTO;
 import kr.kickon.api.domain.news.dto.NewsListDTO;
@@ -25,10 +26,7 @@ import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
 import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
-import kr.kickon.api.global.common.entities.News;
-import kr.kickon.api.global.common.entities.Team;
-import kr.kickon.api.global.common.entities.User;
-import kr.kickon.api.global.common.entities.UserFavoriteTeam;
+import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.ForbiddenException;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
@@ -52,6 +50,7 @@ public class NewsController {
     private final JwtTokenProvider jwtTokenProvider;
     private final TeamService teamService;
     private final UUIDGenerator uuidGenerator;
+    private final LeagueService leagueService;
 
     @Operation(summary = "홈화면 함께 볼만한 뉴스 리스트 조회", description = "응원팀이 있다면 관련 최신 게시글 기준으로 3개 리스트 반환")
     @ApiResponses({
@@ -124,6 +123,11 @@ public class NewsController {
         if(query.getTeam()!=null){
             Team team = teamService.findByPk(query.getTeam());
             if(team==null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
+        }
+
+        if(query.getLeague()!=null){
+            League league = leagueService.findByPk(query.getLeague());
+            if(league==null) throw new NotFoundException(ResponseCode.NOT_FOUND_LEAGUE);
         }
         PaginatedNewsListDTO news = newsService.findNewsWithPagination(query.getTeam() != null ? query.getTeam() : null, query.getPage(), query.getSize(),query.getOrder(), query.getLeague());
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, news.getNewsList(), new PagedMetaDTO(news.getCurrentPage(), news.getPageSize(), news.getTotalItems())));

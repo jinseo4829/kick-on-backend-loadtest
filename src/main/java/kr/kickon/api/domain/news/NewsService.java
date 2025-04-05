@@ -269,6 +269,7 @@ public class NewsService implements BaseService<News> {
                 .offset(offset)
                 .limit(size);
         if (leaguePk != null) dataQuery.where(news.team.pk.in(teamPks));
+        if (teamPk != null) dataQuery.where(news.team.pk.eq(teamPk));
 
         // ✅ 정렬 기준에 따른 동적 처리
         if ("hot".equalsIgnoreCase(sortBy)) {

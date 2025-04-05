@@ -162,7 +162,7 @@ public class BoardService implements BaseService<Board> {
         QUser user = QUser.user;
 
         Integer offset = (page - 1) * size;
-        LocalDateTime hotThreshold = LocalDateTime.now().minusHours(48); // 최근 48시간 기준
+        LocalDateTime hotThreshold = LocalDateTime.now().minusHours(200); // 최근 48시간 기준
 
         JPAQuery<Long> totalQuery = queryFactory.select(board.pk.count())
                 .from(board)
@@ -182,7 +182,7 @@ public class BoardService implements BaseService<Board> {
 
         if ("hot".equalsIgnoreCase(sortBy)) {
             dataQuery.where(board.createdAt.goe(hotThreshold)); // hot일 때 48시간 내 필터링
-            dataQuery.orderBy(boardViewHistory.pk.count().coalesce(0L).desc(), board.createdAt.desc()); // 조회수 + 최신순
+            dataQuery.orderBy(boardViewHistory.pk.countDistinct().coalesce(0L).desc(), board.createdAt.desc()); // 조회수 + 최신순
         } else {
             dataQuery.orderBy(board.createdAt.desc()); // 기본값: 최신순
         }
