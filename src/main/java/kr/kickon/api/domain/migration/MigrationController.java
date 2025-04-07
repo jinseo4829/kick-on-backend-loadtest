@@ -44,7 +44,7 @@ public class MigrationController {
     @Operation(summary = "팀 불러오기", description = "각 리그 별로 속한 팀 불러오기")
     @PostMapping("/teams")
     public ResponseEntity<ResponseDTO<Void>> fetchTeams(@RequestParam String season) {
-        List<League> leagues = leagueService.findAll();
+        List<League> leagues = leagueService.findAllBySeason(Integer.parseInt(season));
         List<ApiTeamDTO> teams = migrationService.fetchTeams(leagues,Integer.parseInt(season));
         migrationService.saveTeamsAndSeasonTeams(teams);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));

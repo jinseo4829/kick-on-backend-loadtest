@@ -4,6 +4,7 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.League;
+import kr.kickon.api.global.common.entities.QActualSeason;
 import kr.kickon.api.global.common.entities.QEventBoard;
 import kr.kickon.api.global.common.entities.QLeague;
 import kr.kickon.api.global.common.enums.DataStatus;
@@ -59,6 +60,15 @@ public class LeagueService implements BaseService<League> {
     public List<League> findAll(){
         return queryFactory.selectFrom(QLeague.league)
                 .where(QLeague.league.status.eq(DataStatus.ACTIVATED))
+                .fetch();
+    }
+
+    public List<League> findAllBySeason(Integer season){
+        QLeague league = QLeague.league;
+        QActualSeason actualSeason = QActualSeason.actualSeason;
+        return queryFactory.selectFrom(league)
+                .join(actualSeason).on(actualSeason.league.pk.eq(league.pk))
+                .where(league.status.eq(DataStatus.ACTIVATED).and(actualSeason.status.eq(DataStatus.ACTIVATED)).and(actualSeason.year.eq(season)))
                 .fetch();
     }
 }
