@@ -230,8 +230,8 @@ public class NewsService implements BaseService<News> {
         }).toList();
     }
 
-    public void save(News news){
-        newsRepository.save(news);
+    public News save(News news){
+        return newsRepository.save(news);
     }
 
     public PaginatedNewsListDTO findNewsWithPagination(Long teamPk, int page, int size, String sortBy, Long leaguePk) {

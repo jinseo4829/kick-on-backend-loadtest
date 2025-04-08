@@ -59,8 +59,12 @@ public class BoardController {
     }
 
     @Operation(summary = "게시글 생성", description = "회원가입한 유저만 게시글 생성 가능")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공",
+                    content = @Content(schema = @Schema(implementation = GetBoardDetailResponse.class))),
+    })
     @PostMapping()
-    public ResponseEntity<ResponseDTO<Void>> createBoard(@Valid @RequestBody CreateBoardRequestDTO request){
+    public ResponseEntity<ResponseDTO<BoardDetailDTO>> createBoard(@Valid @RequestBody CreateBoardRequestDTO request){
         User user = jwtTokenProvider.getUserFromSecurityContext();
         String id = uuidGenerator.generateUniqueUUID(boardService::findById);
         Board board = Board.builder()
@@ -76,8 +80,10 @@ public class BoardController {
             if(team==null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
             board.setTeam(team);
         }
-        boardService.save(board);
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
+        Board boardCreated = boardService.save(board);
+
+        BoardDetailDTO boardDetailDTO = boardService.findOneBoardListDTOByPk(boardCreated.getPk(),user);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, boardDetailDTO));
     }
 
     @Operation(summary = "게시글 리스트 조회", description = "페이징 처리 적용하여 게시글 리스트 조회")

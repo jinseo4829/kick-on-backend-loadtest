@@ -193,7 +193,7 @@ public class BoardService implements BaseService<Board> {
         return new PaginatedBoardListDTO(page, size, totalCount, boardList);
     }
 
-    public void save(Board board) {
-        boardRepository.save(board);
+    public Board save(Board board) {
+        return boardRepository.save(board);
     }
 }

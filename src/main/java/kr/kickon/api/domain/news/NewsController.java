@@ -87,8 +87,12 @@ public class NewsController {
     }
 
     @Operation(summary = "뉴스 생성", description = "회원가입한 유저만 뉴스 생성 가능")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공",
+                    content = @Content(schema = @Schema(implementation = GetNewsDetailResponse.class))),
+    })
     @PostMapping()
-    public ResponseEntity<ResponseDTO<Void>> createNews(@Valid @RequestBody CreateNewsRequestDTO request){
+    public ResponseEntity<ResponseDTO<NewsDetailDTO>> createNews(@Valid @RequestBody CreateNewsRequestDTO request){
         User user = jwtTokenProvider.getUserFromSecurityContext();
 
         String id = uuidGenerator.generateUniqueUUID(newsService::findById);
@@ -108,8 +112,9 @@ public class NewsController {
             news.setTeam(team);
         }
 
-        newsService.save(news);
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
+        News newsCreated = newsService.save(news);
+        NewsDetailDTO newsDetailDTO = newsService.findNewsDeatailDTOByPk(newsCreated.getPk(),user);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS,newsDetailDTO));
     }
 
     @Operation(summary = "뉴스 리스트 조회", description = "페이징 처리 적용하여 뉴스 리스트 조회")
