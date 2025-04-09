@@ -15,10 +15,10 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 public class League extends BaseEntity {
     @Column(nullable = false, length = 50)
-    private String enName;
+    private String nameEn;
 
     @Column(nullable = false, length = 50)
-    private String krName;
+    private String nameKr;
 
     @Column(length = 100)
     private String description;

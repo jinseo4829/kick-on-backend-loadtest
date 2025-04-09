@@ -3,12 +3,15 @@ package kr.kickon.api.domain.user;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.transaction.Transactional;
+import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.domain.user.request.PatchUserRequest;
 import kr.kickon.api.domain.user.request.PrivacyUpdateRequest;
+import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.auth.oauth.dto.OAuth2UserInfo;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.QUser;
 import kr.kickon.api.global.common.entities.User;
+import kr.kickon.api.global.common.entities.UserFavoriteTeam;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.ProviderType;
 import kr.kickon.api.global.common.enums.ResponseCode;
@@ -29,6 +32,7 @@ public class UserService implements BaseService<User> {
     private final UserRepository userRepository;
     private final JPAQueryFactory queryFactory;
     private final UUIDGenerator uuidGenerator;
+    private final UserFavoriteTeamService userFavoriteTeamService;
 
     public List<User> findUsersByStatus(DataStatus status){
         // QueryDSL Predicate 생성
@@ -49,7 +53,7 @@ public class UserService implements BaseService<User> {
     }
 
     public Optional<User> findUserByProviderAndProviderId(ProviderType provider, String providerId){
-        BooleanExpression predicate = QUser.user.provider.eq(provider).and(QUser.user.status.eq(DataStatus.ACTIVATED));
+        BooleanExpression predicate = QUser.user.provider.eq(provider).and(QUser.user.status.eq(DataStatus.ACTIVATED).and(QUser.user.providerId.eq(providerId)));
         return userRepository.findOne(predicate);
     }
 
@@ -89,11 +93,6 @@ public class UserService implements BaseService<User> {
         user.setPrivacyAgreedAt(request.getPrivacyAgreedAt());
         user.setMarketingAgreedAt(request.getMarketingAgreedAt());
 
-        userRepository.save(user);
-    }
-
-    public void updateUser(User user, PatchUserRequest request){
-        user.setNickname(request.getNickname());
         userRepository.save(user);
     }
 }

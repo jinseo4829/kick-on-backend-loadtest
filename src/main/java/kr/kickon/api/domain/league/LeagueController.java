@@ -40,8 +40,8 @@ public class LeagueController {
             LeagueDTO.builder()
                     .pk(league.getPk())
                     .leagueType(league.getType())
-                    .enName(league.getEnName())
-                    .krName(league.getKrName())
+                    .nameEn(league.getNameEn())
+                    .nameKr(league.getNameKr())
                     .logoUrl(league.getLogoUrl())
                     .build()
         ).toList();

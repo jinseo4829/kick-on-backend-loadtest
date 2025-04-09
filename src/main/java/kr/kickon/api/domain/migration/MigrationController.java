@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.kickon.api.domain.actualSeason.ActualSeasonService;
 import kr.kickon.api.domain.country.CountryService;
+import kr.kickon.api.domain.game.GameService;
 import kr.kickon.api.domain.league.LeagueService;
 import kr.kickon.api.domain.migration.dto.ApiGamesDTO;
 import kr.kickon.api.domain.migration.dto.ApiLeagueAndSeasonDTO;
@@ -12,6 +13,7 @@ import kr.kickon.api.domain.migration.dto.ApiTeamDTO;
 import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.Country;
+import kr.kickon.api.global.common.entities.Game;
 import kr.kickon.api.global.common.entities.League;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
@@ -20,10 +22,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -36,17 +35,16 @@ import java.util.List;
 @Tag(name = "마이그레이션 관련")
 @Slf4j
 public class MigrationController {
-    private final TeamService teamService;
     private final MigrationService migrationService;
     private final CountryService countryService;
     private final LeagueService leagueService;
+    private final GameService gameService;
     private final SlackService slackService;
-    private final ActualSeasonService actualSeasonService;
 
     @Operation(summary = "팀 불러오기", description = "각 리그 별로 속한 팀 불러오기")
     @PostMapping("/teams")
     public ResponseEntity<ResponseDTO<Void>> fetchTeams(@RequestParam String season) {
-        List<League> leagues = leagueService.findAll();
+        List<League> leagues = leagueService.findAllBySeason(Integer.parseInt(season));
         List<ApiTeamDTO> teams = migrationService.fetchTeams(leagues,Integer.parseInt(season));
         migrationService.saveTeamsAndSeasonTeams(teams);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
@@ -83,13 +81,26 @@ public class MigrationController {
     @PostMapping("/rankings")
     @Scheduled(cron = "0 10 * * * *")
     public ResponseEntity<ResponseDTO<Void>> fetchRanking() {
-        log.info("Scheduling: 랭킹 불러오기 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));
+//        slackService.sendLogMessage("Scheduling: 랭킹 불러오기 시작 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));
         List<League> leagues = leagueService.findAllLeagues();
 //        List<League> leagues = new ArrayList<>();
 //        leagues.add(leagueService.findByPk(Long.parseLong(league)));
 
         List<ApiRankingDTO> rankingsFromApi = migrationService.fetchRankings(leagues);
         migrationService.saveRankings(rankingsFromApi);
+//        slackService.sendLogMessage("Scheduling: 랭킹 불러오기 끝 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
+    }
+
+    @Operation(summary = "게임 결과 불러오기",description = "게임결과 API 불러와서, 승부예측 마감 진행. 포인트 지급. 매일 오전 0시에 업데이트")
+    @GetMapping("/gambles")
+    @Scheduled(cron = "0 0 0 * * *")
+    public ResponseEntity<ResponseDTO<Void>> fetchGambles() {
+        slackService.sendLogMessage("Scheduling: 게임 결과 불러오기 시작 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));
+        List<Game> games = gameService.findByToday();
+        List<ApiGamesDTO> apiGamesDTOS = migrationService.fetchGamesByApiIds(games);
+        migrationService.saveGamesAndUpdateGambles(apiGamesDTOS);
+        slackService.sendLogMessage("Scheduling: 게임 결과 불러오기 끝 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
     }
 }

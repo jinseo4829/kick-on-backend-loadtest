@@ -9,6 +9,7 @@ import kr.kickon.api.domain.board.dto.BoardListDTO;
 import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
 import kr.kickon.api.domain.news.dto.*;
 import kr.kickon.api.domain.newsKick.NewsKickService;
+import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
@@ -51,12 +52,14 @@ public class NewsService implements BaseService<News> {
         QNewsViewHistory newsViewHistory = QNewsViewHistory.newsViewHistory;
         QNewsReply newsReply = QNewsReply.newsReply;
         QUser user = QUser.user;
-        return queryFactory.select(news, user,
+        QTeam team = QTeam.team;
+        return queryFactory.select(news, user, team,
                         newsKick.pk.countDistinct().coalesce(0L).as("kickCount"),
                         newsViewHistory.pk.countDistinct().coalesce(0L).as("viewCount"),
                         newsReply.pk.countDistinct().coalesce(0L).as("replyCount"))
                 .from(news)
                 .join(user).on(news.user.pk.eq(user.pk))
+                .leftJoin(team).on(news.team.pk.eq(team.pk))
                 .leftJoin(newsKick).on(news.pk.eq(newsKick.news.pk).and(newsKick.status.eq(DataStatus.ACTIVATED)))
                 .leftJoin(newsViewHistory).on(news.pk.eq(newsViewHistory.news.pk).and(newsViewHistory.status.eq(DataStatus.ACTIVATED)))
                 .leftJoin(newsReply).on(news.pk.eq(newsReply.news.pk).and(newsReply.status.eq(DataStatus.ACTIVATED)))
@@ -67,41 +70,57 @@ public class NewsService implements BaseService<News> {
     public NewsListDTO tupleToNewsListDTO(Tuple tuple){
         QNews news = QNews.news;
         QUser user = QUser.user;
+        QTeam team = QTeam.team;
         News newsEntity = tuple.get(news);
         User userEntity = tuple.get(user);
-        return NewsListDTO.builder()
+        Team teamEntity = tuple.get(team);
+
+        NewsListDTO newsListDTO = NewsListDTO.builder()
                 .pk(newsEntity.getPk())
                 .title(newsEntity.getTitle())
                 .content(newsEntity.getContents())
                 .thumbnailUrl(newsEntity.getThumbnailUrl())
-                .category(newsEntity.getCategory())
+                .category(newsEntity.getCategory().getKoreanName())
                 .user(UserDTO.builder()
                         .id(userEntity.getId())
                         .nickname(userEntity.getNickname())
                         .profileImageUrl(userEntity.getProfileImageUrl())
                         .build())
                 .createdAt(newsEntity.getCreatedAt())
-                .likes(tuple.get(2, Long.class).intValue())
-                .views(tuple.get(3, Long.class).intValue())
-                .replies(tuple.get(4, Long.class).intValue())
+                .likes(tuple.get(3, Long.class).intValue())
+                .views(tuple.get(4, Long.class).intValue())
+                .replies(tuple.get(5, Long.class).intValue())
                 .build();
+
+
+        if(teamEntity!=null){
+            newsListDTO.setTeam(TeamDTO.builder()
+                    .pk(teamEntity.getPk())
+                    .logoUrl(teamEntity.getLogoUrl())
+                    .nameKr(teamEntity.getNameKr())
+                    .nameEn(teamEntity.getNameEn())
+                    .build());
+        }
+
+        return newsListDTO;
     }
 
-    public NewsDetailDTO findNewsDeatailDTOByPk(Long boardPk, Long userPk) {
+    public NewsDetailDTO findNewsDeatailDTOByPk(Long boardPk, User userData) {
         QNews news = QNews.news;
         QUser user = QUser.user;
+        QTeam team = QTeam.team;
+
         Tuple result = createNewsListDTOQuery()
                 .where(news.pk.eq(boardPk))
-                .groupBy(news.pk, user.pk)
+                .groupBy(news.pk)
                 .fetchOne();
         if(result == null) return null;
 
-        NewsKick newsKick = newsKickService.findByBoardAndUser(result.get(news).getPk(),userPk);
         News newsEntity = result.get(news);
         User userEntity = result.get(user);
+        Team teamEntity = result.get(team);
 
-        System.out.println(result);
-        return NewsDetailDTO.builder()
+        NewsDetailDTO newsDetailDTO = NewsDetailDTO.builder()
                 .pk(newsEntity.getPk())
                 .title(newsEntity.getTitle())
                 .user(UserDTO.builder()
@@ -109,14 +128,29 @@ public class NewsService implements BaseService<News> {
                         .nickname(userEntity.getNickname())
                         .profileImageUrl(userEntity.getProfileImageUrl())
                         .build())
-                .createdAt(result.get(news.createdAt))
                 .createdAt(newsEntity.getCreatedAt())
-                .likes(result.get(2, Long.class).intValue())
-                .views(result.get(3, Long.class).intValue())
-                .replies(result.get(4, Long.class).intValue())
-                .isKicked(newsKick!=null)
+                .likes(result.get(3, Long.class).intValue())
+                .views(result.get(4, Long.class).intValue())
+                .replies(result.get(5, Long.class).intValue())
                 .content(newsEntity.getContents())
+                .thumbnailUrl(newsEntity.getThumbnailUrl())
+                .category(newsEntity.getCategory().getKoreanName())
                 .build();
+
+        if(userData!=null){
+            NewsKick newsKick = newsKickService.findByNewsAndUser(result.get(news).getPk(), userData.getPk());
+            newsDetailDTO.setIsKicked(newsKick!=null);
+        }
+
+        if(teamEntity!=null){
+            newsDetailDTO.setTeam(TeamDTO.builder()
+                    .pk(teamEntity.getPk())
+                    .logoUrl(teamEntity.getLogoUrl())
+                    .nameKr(teamEntity.getNameKr())
+                    .nameEn(teamEntity.getNameEn())
+                    .build());
+        }
+        return newsDetailDTO;
     }
 
     public List<NewsListDTO> findRecent3News() {
@@ -145,44 +179,68 @@ public class NewsService implements BaseService<News> {
 
     public List<HotNewsListDTO> findTop5HotNews() {
         QNews news = QNews.news;
+        QTeam team = QTeam.team;
         QNewsViewHistory newsViewHistory = QNewsViewHistory.newsViewHistory;
+        QActualSeasonTeam actualSeasonTeam = QActualSeasonTeam.actualSeasonTeam;
+        QActualSeason actualSeason = QActualSeason.actualSeason;
+        QLeague league = QLeague.league;
 
-        List<Tuple> results = queryFactory.select(news,
-                        newsViewHistory.pk.count().coalesce(0L).as("viewCount"))
+        List<Tuple> results = queryFactory.select(news, team,
+                        newsViewHistory.pk.count().coalesce(0L).as("viewCount"),
+                        league.nameKr.as("leagueName"))
                 .from(news)
                 .leftJoin(newsViewHistory).on(news.pk.eq(newsViewHistory.news.pk)
                         .and(newsViewHistory.status.eq(DataStatus.ACTIVATED)))
+                .leftJoin(team).on(news.team.pk.eq(team.pk))
+                // 가장 최근 진행 중인 ActualSeasonTeam을 찾고, ActualSeason을 통해 League 가져오기
+                .leftJoin(actualSeasonTeam).on(team.pk.eq(actualSeasonTeam.team.pk)
+                        .and(actualSeasonTeam.status.eq(DataStatus.ACTIVATED)))
+                .leftJoin(actualSeason).on(actualSeasonTeam.actualSeason.pk.eq(actualSeason.pk))
+                .leftJoin(league).on(actualSeason.league.pk.eq(league.pk))
                 .where(news.status.eq(DataStatus.ACTIVATED)
                         .and(news.createdAt.goe(LocalDateTime.now().minusDays(1)))) // 최근 24시간 이내 뉴스만 조회
-                .groupBy(news.pk)
+                .groupBy(news.pk, league.pk) // 그룹핑 추가
                 .orderBy(newsViewHistory.pk.count().coalesce(0L).desc()) // 조회수 기준 내림차순 정렬
                 .limit(5)
                 .fetch();
 
         return results.stream().map(tuple -> {
             News newsEntity = tuple.get(news);
-            return HotNewsListDTO.builder()
+            Team teamEntity = tuple.get(team);
+            HotNewsListDTO.HotNewsListDTOBuilder builder = HotNewsListDTO.builder()
                     .pk(newsEntity.getPk())
                     .title(newsEntity.getTitle())
                     .thumbnailUrl(newsEntity.getThumbnailUrl())
-                    .category(newsEntity.getCategory())
-                    .views(tuple.get(1, Long.class).intValue()) // 조회수 가져오기
-                    .build();
+                    .category(newsEntity.getCategory().getKoreanName())
+                    .views(tuple.get(2, Long.class).intValue()); // 조회수 가져오기
+
+            if (teamEntity != null) {
+                builder.teamNameEn(teamEntity.getNameEn())
+                        .teamNameKr(teamEntity.getNameKr())
+                        .teamPk(teamEntity.getPk())
+                        .teamLogoUrl(teamEntity.getLogoUrl());
+            }
+
+            // League 정보 추가
+            if (tuple.get(3, String.class) != null) { // leagueName이 존재하면 추가
+                builder.leagueNameKr(tuple.get(3, String.class));
+            }
+
+            return builder.build();
         }).toList();
     }
 
-    public void save(News news){
-        newsRepository.save(news);
+    public News save(News news){
+        return newsRepository.save(news);
     }
 
-    public PaginatedNewsListDTO findNewsWithPagination(Long teamPk, int page, int size, String sortBy) {
+    public PaginatedNewsListDTO findNewsWithPagination(Long teamPk, int page, int size, String sortBy, Long leaguePk) {
         QNews news = QNews.news;
         QNewsViewHistory newsViewHistory = QNewsViewHistory.newsViewHistory;
         QUser user = QUser.user;
-
         Integer offset = (page - 1) * size;
         LocalDateTime hotThreshold = LocalDateTime.now().minusHours(48); // 최근 48시간 기준
-
+        List<Long> teamPks = List.of();
         // ✅ 전체 게시글 수 계산
         JPAQuery<Long> totalQuery = queryFactory.select(news.pk.count())
                 .from(news)
@@ -191,14 +249,26 @@ public class NewsService implements BaseService<News> {
                         .and(user.status.eq(DataStatus.ACTIVATED)));
         if (teamPk != null) totalQuery.where(news.team.pk.eq(teamPk));
         if ("hot".equalsIgnoreCase(sortBy)) totalQuery.where(news.createdAt.goe(hotThreshold)); // hot일 때 48시간 내 필터링
+        // ✅ 리그 기준 팀 필터링
+        if (leaguePk != null) {
+            QActualSeason actualSeason = QActualSeason.actualSeason;
+            QActualSeasonTeam actualSeasonTeam = QActualSeasonTeam.actualSeasonTeam;
 
+            teamPks = queryFactory.select(actualSeasonTeam.team.pk)
+                    .from(actualSeasonTeam)
+                    .join(actualSeason).on(actualSeasonTeam.actualSeason.pk.eq(actualSeason.pk))
+                    .where(actualSeason.league.pk.eq(leaguePk).and(actualSeasonTeam.status.eq(DataStatus.ACTIVATED)).and(actualSeason.status.eq(DataStatus.ACTIVATED)).and(actualSeasonTeam.team.status.eq(DataStatus.ACTIVATED)))
+                    .fetch();
+
+            totalQuery.where(news.team.pk.in(teamPks));
+        }
         Long totalCount = totalQuery.fetchOne();
 
         JPAQuery<Tuple> dataQuery = createNewsListDTOQuery()
                 .groupBy(news.pk, user.pk)
                 .offset(offset)
                 .limit(size);
-
+        if (leaguePk != null) dataQuery.where(news.team.pk.in(teamPks));
         if (teamPk != null) dataQuery.where(news.team.pk.eq(teamPk));
 
         // ✅ 정렬 기준에 따른 동적 처리
@@ -208,6 +278,8 @@ public class NewsService implements BaseService<News> {
         } else {
             dataQuery.orderBy(news.createdAt.desc()); // 기본값: 최신순
         }
+
+
 
         List<Tuple> results = dataQuery.fetch();
 

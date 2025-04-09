@@ -18,7 +18,6 @@ public class PrivacyUpdateRequest {
     @Schema(example = "2025-02-24T17:00:00Z", description = "The date and time when the user agreed to the privacy policy.")
     private LocalDateTime privacyAgreedAt;
 
-    @Null
     @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     @Schema(example = "2025-02-24T17:00:00Z", description = "The date and time when the user agreed to the marketing policy.")
     private LocalDateTime marketingAgreedAt;

@@ -20,8 +20,23 @@ public class HotNewsListDTO {
     @Schema(example = ExampleConstants.thumbnail, description = "뉴스 썸네일")
     private String thumbnailUrl;
 
-    @Schema(example = NewsCategory.VALUE.RENEWAL, description = "뉴스 카테고리")
-    private NewsCategory category;
+    @Schema(example = "이적", description = "뉴스 카테고리")
+    private String category;
+
+    @Schema(example = ExampleConstants.teamnameEn,description = "팀 이름 (영어)")
+    private String teamNameEn;
+
+    @Schema(example = ExampleConstants.teamKrName,description = "팀 이름 (한글)")
+    private String teamNameKr;
+
+    @Schema(example = ExampleConstants.teamLogoUrl,description = "팀 로고")
+    private String teamLogoUrl;
+
+    @Schema(example = "1",description = "팀 pk")
+    private Long teamPk;
+
+    @Schema(example = ExampleConstants.leagueKrName,description = "리그 이름 (한글)")
+    private String leagueNameKr;
 
     @Schema(example = "1233", description = "조회수")
     private Integer views;

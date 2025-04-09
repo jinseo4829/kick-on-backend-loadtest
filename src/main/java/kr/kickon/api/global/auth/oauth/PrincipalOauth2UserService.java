@@ -31,13 +31,11 @@ public class PrincipalOauth2UserService extends DefaultOAuth2UserService {
         OAuth2User oAuth2User = super.loadUser(userRequest);
         OAuth2UserInfo oAuth2UserInfo = null;
 
-        log.info(oAuth2User.getAttributes().toString());
-
         if(userRequest.getClientRegistration().getRegistrationId().equals("kakao"))
             oAuth2UserInfo = new KakaoUserInfo(oAuth2User.getAttributes());
         else if(userRequest.getClientRegistration().getRegistrationId().equals("naver"))
             oAuth2UserInfo = new NaverUserInfo((Map) oAuth2User.getAttributes().get("response"));
-        else log.info("지원하지 않는 소셜입니다.");
+        else log.error("지원하지 않는 소셜입니다.");
 
         assert oAuth2UserInfo != null;
         Optional<User> userEntity = userService.findUserByProviderAndProviderId(oAuth2UserInfo.getProvider(), oAuth2UserInfo.getProviderId());

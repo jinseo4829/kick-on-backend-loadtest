@@ -59,8 +59,12 @@ public class BoardController {
     }
 
     @Operation(summary = "게시글 생성", description = "회원가입한 유저만 게시글 생성 가능")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공",
+                    content = @Content(schema = @Schema(implementation = GetBoardDetailResponse.class))),
+    })
     @PostMapping()
-    public ResponseEntity<ResponseDTO<Void>> createBoard(@Valid @RequestBody CreateBoardRequestDTO request){
+    public ResponseEntity<ResponseDTO<BoardDetailDTO>> createBoard(@Valid @RequestBody CreateBoardRequestDTO request){
         User user = jwtTokenProvider.getUserFromSecurityContext();
         String id = uuidGenerator.generateUniqueUUID(boardService::findById);
         Board board = Board.builder()
@@ -68,6 +72,7 @@ public class BoardController {
                 .user(user)
                 .contents(request.getContents())
                 .title(request.getTitle())
+                .hasImage(request.getHasImage())
                 .build();
 
         if(request.getTeam()!=null){
@@ -75,8 +80,10 @@ public class BoardController {
             if(team==null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
             board.setTeam(team);
         }
-        boardService.save(board);
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
+        Board boardCreated = boardService.save(board);
+
+        BoardDetailDTO boardDetailDTO = boardService.findOneBoardListDTOByPk(boardCreated.getPk(),user);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, boardDetailDTO));
     }
 
     @Operation(summary = "게시글 리스트 조회", description = "페이징 처리 적용하여 게시글 리스트 조회")
@@ -87,9 +94,12 @@ public class BoardController {
     @GetMapping("")
     public ResponseEntity<ResponseDTO<List<BoardListDTO>>> getBoards(@Valid @ModelAttribute GetBoardsRequestDTO query){
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        UserFavoriteTeam userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
-        if(query.getTeam()!=null && !userFavoriteTeam.getTeam().getPk().equals(query.getTeam())) throw new ForbiddenException(ResponseCode.FORBIDDEN);
-        PaginatedBoardListDTO boards = boardService.findBoardsWithPagination(query.getTeam() != null ? userFavoriteTeam.getTeam().getPk() : null, query.getPage(), query.getSize(), query.getOrder());
+        if(query.getTeam()!=null){
+            Team team = teamService.findByPk(query.getTeam());
+            if(team==null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
+        }
+
+        PaginatedBoardListDTO boards = boardService.findBoardsWithPagination(query.getTeam() != null ? query.getTeam() : null, query.getPage(), query.getSize(), query.getOrder());
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, boards.getBoardList(), new PagedMetaDTO(boards.getCurrentPage(), boards.getPageSize(), boards.getTotalItems())));
     }
 
@@ -101,7 +111,7 @@ public class BoardController {
     @GetMapping("/{boardPk}")
     public ResponseEntity<ResponseDTO<BoardDetailDTO>> getBoardDetail(@PathVariable Long boardPk){
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        BoardDetailDTO boardDetailDTO = boardService.findOneBoardListDTOByPk(boardPk,user.getPk());
+        BoardDetailDTO boardDetailDTO = boardService.findOneBoardListDTOByPk(boardPk,user);
         if(boardDetailDTO==null) throw new NotFoundException(ResponseCode.NOT_FOUND_BOARD);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, boardDetailDTO));
     }

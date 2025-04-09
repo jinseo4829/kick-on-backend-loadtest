@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -49,24 +50,26 @@ public class GameService implements BaseService<Game> {
         throw new NotFoundException(ResponseCode.NOT_FOUND_GAME);
     }
 
-    public void save(Game game) {
-        gameRepository.save(game);
+    public Game save(Game game) {
+        return gameRepository.save(game);
     }
 
     public List<Game> findByActualSeason(Long actualSeasonPk, String gameStatus){
         JPAQuery<Game> query = queryFactory.selectFrom(QGame.game)
                 .where(QGame.game.status.eq(DataStatus.ACTIVATED).and(QGame.game.actualSeason.pk.eq(actualSeasonPk)));
 
+        LocalDateTime timeCondition = LocalDateTime.now();
         if (gameStatus.equals("finished")) {
+            timeCondition = timeCondition.minusHours(2);
             query.where(QGame.game.gameStatus.in(GameStatus.PROCEEDING, GameStatus.CANCELED, GameStatus.HOME,
-                    GameStatus.AWAY, GameStatus.DRAW))
-                    .orderBy(QGame.game.startedAt.desc());
+                    GameStatus.AWAY, GameStatus.DRAW));
         } else {
-            query.where(QGame.game.gameStatus.in(GameStatus.POSTPONED, GameStatus.PENDING))
-                    .orderBy(QGame.game.startedAt.asc());
+            timeCondition = timeCondition.plusHours(2);
+            query.where(QGame.game.gameStatus.in(GameStatus.POSTPONED, GameStatus.PENDING));
         }
+        query.where(QGame.game.startedAt.loe(timeCondition));
 
-        return query.limit(2).fetch();
+        return query.orderBy(QGame.game.startedAt.asc()).limit(2).fetch();
     }
 
     public List<Game> findByActualSeasonByFavoriteTeam(Long actualSeasonPk, String gameStatus, Long favoriteTeamPk) {
@@ -88,4 +91,23 @@ public class GameService implements BaseService<Game> {
         return query.limit(2).fetch();
     }
 
+    public List<Game> findByToday() {
+        // QGame 객체 생성
+        QGame game = QGame.game;
+
+        // 현재 시간과 24시간 전 시간 계산
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime past24Hours = now.minusHours(48);
+
+        // QueryDSL을 사용하여 24시간 이내에 시작한 게임 중 종료된 게임을 조회
+        return queryFactory
+                .selectFrom(game)
+                .where(
+                        game.startedAt.between(past24Hours, now),  // 24시간 이내 시작한 게임
+                        game.gameStatus.in(GameStatus.PENDING, GameStatus.POSTPONED),
+                        game.status.eq(DataStatus.ACTIVATED)
+                )
+                .orderBy(game.startedAt.desc()) // 최신순 정렬
+                .fetch();
+    }
 }

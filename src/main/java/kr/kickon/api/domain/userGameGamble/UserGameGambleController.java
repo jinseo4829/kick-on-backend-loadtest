@@ -84,7 +84,7 @@ public class UserGameGambleController {
     @Operation(summary = "승부예측 수정", description = "승부예측 ID를 기반으로 승부예측 수정")
     public ResponseEntity<ResponseDTO<Void>> updateUserGameGamble(@Valid @RequestBody UserGameGamblePatchRequest request) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        UserGameGamble userGameGamble = userGameGambleService.findByPk(Long.parseLong(request.getGamble()));
+        UserGameGamble userGameGamble = userGameGambleService.findById(request.getGamble());
         if(userGameGamble == null) throw new NotFoundException(ResponseCode.NOT_FOUND_USER_GAME_GAMBLE);
         if(!userGameGamble.getUser().getPk().equals(user.getPk())) throw new ForbiddenException(ResponseCode.FORBIDDEN);
 
