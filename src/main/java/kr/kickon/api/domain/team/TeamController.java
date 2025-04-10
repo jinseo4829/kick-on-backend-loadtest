@@ -14,6 +14,7 @@ import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.ActualSeason;
 import kr.kickon.api.global.common.entities.ActualSeasonTeam;
 import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.error.exceptions.BadRequestException;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +41,8 @@ public class TeamController {
                     content = @Content(schema = @Schema(implementation = GetTeamsResponseDTO.class)))
     })
     @GetMapping()
-    public ResponseEntity<ResponseDTO<List<TeamDTO>>> getTeams(@RequestParam Long league, @RequestParam String keyword) {
+    public ResponseEntity<ResponseDTO<List<TeamDTO>>> getTeams(@RequestParam(required = false) Long league, @RequestParam(required = false) String keyword) {
+        if(league==null && keyword==null) throw new BadRequestException(ResponseCode.INVALID_REQUEST);
         ActualSeason actualSeason = actualSeasonService.findRecentByLeaguePk(league);
         if(actualSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
         List<ActualSeasonTeam> actualSeasonTeamList = actualSeasonTeamService.findByActualSeason(actualSeason.getPk(), keyword);
