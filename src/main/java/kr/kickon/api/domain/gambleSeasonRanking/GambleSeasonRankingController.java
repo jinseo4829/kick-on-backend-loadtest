@@ -18,6 +18,7 @@ import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.ActualSeason;
 import kr.kickon.api.global.common.entities.GambleSeason;
+import kr.kickon.api.global.common.entities.GambleSeasonRanking;
 import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import lombok.RequiredArgsConstructor;
@@ -48,8 +49,14 @@ public class GambleSeasonRankingController {
     public ResponseEntity<ResponseDTO<List<GetGambleSeasonRankingDTO>>> getEventBoards(@Valid GetActualSeasonRankingRequestDTO paramDto) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         GambleSeason gambleSeason = gambleSeasonService.findRecentOperatingSeasonByLeaguePk(paramDto.getLeague());
-        List<GetGambleSeasonRankingDTO> gambleSeasonRankingDTOS = gambleSeasonRankingService.findRecentSeasonRankingByLeague(gambleSeason.getPk());
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, gambleSeasonRankingDTOS));
+        List<GambleSeasonRanking> gambleSeasonRankings = gambleSeasonRankingService.findRecentSeasonRankingByLeague(gambleSeason.getPk());
+        List<GetGambleSeasonRankingDTO>getGambleSeasonRankingDTOS = gambleSeasonRankings.stream().map(gambleSeasonRanking -> GetGambleSeasonRankingDTO.builder()
+                        .rankOrder(gambleSeasonRanking.getRankOrder())
+                        .points((double) gambleSeasonRanking.getPoints()/1000)
+                        .teamLogoUrl(gambleSeasonRanking.getTeam().getLogoUrl())
+                        .teamName(gambleSeasonRanking.getTeam().getNameKr()).build()).toList();
+
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, getGambleSeasonRankingDTOS));
     }
 
 }

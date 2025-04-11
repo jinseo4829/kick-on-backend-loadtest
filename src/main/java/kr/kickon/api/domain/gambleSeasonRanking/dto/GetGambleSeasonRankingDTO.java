@@ -3,11 +3,13 @@ package kr.kickon.api.domain.gambleSeasonRanking.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import kr.kickon.api.global.common.ExampleConstants;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@Builder
 public class GetGambleSeasonRankingDTO {
     @Schema(example = "1", description = "순위")
     private Integer rankOrder;
@@ -22,9 +24,9 @@ public class GetGambleSeasonRankingDTO {
     private Integer gameNum;
 
     @Schema(example = "12", description = "점수")
-    private Float points;
+    private Double points;
 
-    public GetGambleSeasonRankingDTO(Integer rankOrder, String teamLogoUrl, String teamName, Integer gameNum, Float points) {
+    public GetGambleSeasonRankingDTO(Integer rankOrder, String teamLogoUrl, String teamName, Integer gameNum, Double points) {
         this.rankOrder = rankOrder;
         this.teamLogoUrl = teamLogoUrl;
         this.teamName = teamName;

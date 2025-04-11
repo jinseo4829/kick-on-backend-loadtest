@@ -39,20 +39,12 @@ public class GambleSeasonRankingService implements BaseService<GambleSeasonRanki
         return gambleSeasonRanking.orElse(null);
     }
 
-    public List<GetGambleSeasonRankingDTO> findRecentSeasonRankingByLeague(Long gambleSeasonPk) {
+    public List<GambleSeasonRanking> findRecentSeasonRankingByLeague(Long gambleSeasonPk) {
         QGambleSeasonRanking gambleSeasonRanking = QGambleSeasonRanking.gambleSeasonRanking;
         QTeam team = QTeam.team;
 
         return queryFactory
-                .select(Projections.constructor(
-                        GetGambleSeasonRankingDTO.class,
-                        gambleSeasonRanking.rankOrder,
-                        team.logoUrl,
-                        team.nameKr,
-                        gambleSeasonRanking.gameNum,
-                        gambleSeasonRanking.points
-                ))
-                .from(gambleSeasonRanking)
+                .selectFrom(gambleSeasonRanking)
                 .join(gambleSeasonRanking.team, team)
                 .where(gambleSeasonRanking.status.eq(DataStatus.ACTIVATED)
                         .and(gambleSeasonRanking.gambleSeason.pk.eq(gambleSeasonPk).and(gambleSeasonRanking.status.eq(DataStatus.ACTIVATED))))
