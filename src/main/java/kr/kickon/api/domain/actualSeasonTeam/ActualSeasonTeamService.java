@@ -56,7 +56,7 @@ public class ActualSeasonTeamService implements BaseService<ActualSeasonTeam> {
                         actualSeasonTeam.actualSeason.operatingStatus.eq(OperatingStatus.PROCEEDING)
                 )
                 .orderBy(actualSeasonTeam.createdAt.desc());
-        if(!keyword.isEmpty()) query.where(actualSeasonTeam.team.nameKr.containsIgnoreCase(keyword)
+        if(keyword!=null) query.where(actualSeasonTeam.team.nameKr.containsIgnoreCase(keyword)
                 .or(actualSeasonTeam.team.nameEn.containsIgnoreCase(keyword)));
 //                .fetch();
         return query.fetch();
