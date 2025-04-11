@@ -14,6 +14,7 @@ import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.ActualSeason;
 import kr.kickon.api.global.common.entities.ActualSeasonTeam;
 import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.error.exceptions.BadRequestException;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,16 +35,17 @@ public class TeamController {
     private final ActualSeasonService actualSeasonService;
     private final ActualSeasonTeamService actualSeasonTeamService;
 
-    @Operation(summary = "팀 리스트 조회", description = "리그 pk 기반으로 팀 리스트 조회")
+    @Operation(summary = "팀 리스트 조회", description = "리그 pk 기반으로 팀 리스트 조회 / league만 보내면 리그 기준으로 모든 팀 조회, keyword를 보내면 검색어 기반 팀 검색")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공",
                     content = @Content(schema = @Schema(implementation = GetTeamsResponseDTO.class)))
     })
     @GetMapping()
-    public ResponseEntity<ResponseDTO<List<TeamDTO>>> getTeams(@RequestParam Long league) {
+    public ResponseEntity<ResponseDTO<List<TeamDTO>>> getTeams(@RequestParam(required = false) Long league, @RequestParam(required = false) String keyword) {
+        if(league==null && keyword==null) throw new BadRequestException(ResponseCode.INVALID_REQUEST);
         ActualSeason actualSeason = actualSeasonService.findRecentByLeaguePk(league);
         if(actualSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
-        List<ActualSeasonTeam> actualSeasonTeamList = actualSeasonTeamService.findByActualSeason(actualSeason.getPk());
+        List<ActualSeasonTeam> actualSeasonTeamList = actualSeasonTeamService.findByActualSeason(actualSeason.getPk(), keyword);
         List<TeamDTO> teamDTOList = actualSeasonTeamList.stream().map(actualSeasonTeam -> TeamDTO.builder()
                 .pk(actualSeasonTeam.getTeam().getPk())
                 .nameKr(actualSeasonTeam.getTeam().getNameKr())

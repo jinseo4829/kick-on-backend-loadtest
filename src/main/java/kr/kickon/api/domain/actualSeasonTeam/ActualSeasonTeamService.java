@@ -1,16 +1,14 @@
 package kr.kickon.api.domain.actualSeasonTeam;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.ActualSeason;
 import kr.kickon.api.global.common.entities.ActualSeasonTeam;
-import kr.kickon.api.global.common.entities.QActualSeason;
 import kr.kickon.api.global.common.entities.QActualSeasonTeam;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.OperatingStatus;
-import kr.kickon.api.global.common.enums.ResponseCode;
-import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,10 +44,10 @@ public class ActualSeasonTeamService implements BaseService<ActualSeasonTeam> {
         return actualSeasonTeam.orElse(null);
     }
 
-    public List<ActualSeasonTeam> findByActualSeason(Long actualSeasonPk){
+    public List<ActualSeasonTeam> findByActualSeason(Long actualSeasonPk, String keyword){
         QActualSeasonTeam actualSeasonTeam = QActualSeasonTeam.actualSeasonTeam;
 
-        return queryFactory
+        JPAQuery<ActualSeasonTeam> query = queryFactory
                 .selectFrom(actualSeasonTeam)
                 .where(
                         actualSeasonTeam.actualSeason.pk.eq(actualSeasonPk),
@@ -57,8 +55,11 @@ public class ActualSeasonTeamService implements BaseService<ActualSeasonTeam> {
                         actualSeasonTeam.team.status.eq(DataStatus.ACTIVATED),
                         actualSeasonTeam.actualSeason.operatingStatus.eq(OperatingStatus.PROCEEDING)
                 )
-                .orderBy(actualSeasonTeam.createdAt.desc())
-                .fetch();
+                .orderBy(actualSeasonTeam.createdAt.desc());
+        if(!keyword.isEmpty()) query.where(actualSeasonTeam.team.nameKr.containsIgnoreCase(keyword)
+                .or(actualSeasonTeam.team.nameEn.containsIgnoreCase(keyword)));
+//                .fetch();
+        return query.fetch();
     }
 
     public ActualSeasonTeam findLatestByTeam(Long teamPk) {

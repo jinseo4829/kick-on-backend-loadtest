@@ -53,4 +53,9 @@ public class Game extends BaseEntity {
 
     @Column
     private Integer awayPenaltyScore;
+
+    @Override
+    public String toString() {
+        return "Game [apiId=" + apiId + ", homeScore=" + homeScore + ", awayScore=" + awayScore + ", startedAt=" + startedAt + ", gameStatus=" + gameStatus;
+    }
 }
