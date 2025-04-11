@@ -24,4 +24,9 @@ public class ApiGamesDTO {
     private ActualSeason actualSeason;
     private Integer homePenaltyScore;
     private Integer awayPenaltyScore;
+
+    @Override
+    public String toString() {
+        return "ApiGamesDTO [id=" + id + ", round=" + round + ", date=" + date+ ", status=" + status+ ", homeScore="+homeScore+", awayScore="+awayScore+"]";
+    }
 }

@@ -45,5 +45,10 @@ public class UserGameGamble extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "supporting_team_pk", foreignKey = @ForeignKey(name = "fk_user_game_gamble_team"))
     private Team supportingTeam;
+
+    @Override
+    public String toString() {
+        return "UserGameGamble [predictedHomeScore=" + predictedHomeScore + ", predictedAwayScore=" + predictedAwayScore + ", predictedResult=" + predictedResult + ", user=" + user.getNickname() + ", supprorting = " + supportingTeam.getNameKr()+"]";
+    }
 }
 

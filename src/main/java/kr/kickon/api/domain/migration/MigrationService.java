@@ -80,6 +80,7 @@ public class MigrationService {
         List<String> rankingIds = new ArrayList<>();
         list.forEach(apiData -> {
             ActualSeasonRanking existActualSeasonRanking = actualSeasonRankingService.findByActualSeasonAndTeam(apiData.getActualSeason().getPk(),apiData.getTeam().getPk());
+
             ActualSeasonRanking actualSeasonRanking;
             if(existActualSeasonRanking == null) {
                 String rankingId = "";
@@ -119,7 +120,6 @@ public class MigrationService {
                 actualSeasonRanking.setRankOrder(apiData.getRankOrder());
                 actualSeasonRanking.setPoints(apiData.getPoints());
             }
-
             actualSeasonRankingService.save(actualSeasonRanking);
         });
     }
@@ -204,10 +204,10 @@ public class MigrationService {
                 List<UserGameGamble> userGameGambles = userGameGambleService.findByGameApiId(game.getApiId());
                 userGameGambleService.updateGambleStatusByApiGamesDTO(userGameGambles, apiData, gameStatus);
             }catch (NotFoundException ignore){
-                Optional<Team> homeTeam, awayTeam;
-                homeTeam = Optional.ofNullable(teamService.findByApiId(apiData.getHomeTeamId()));
-                awayTeam = Optional.ofNullable(teamService.findByApiId(apiData.getAwayTeamId()));
-                if(homeTeam.isEmpty() || awayTeam.isEmpty()){}
+                Team homeTeam, awayTeam;
+                homeTeam = teamService.findByApiId(apiData.getHomeTeamId());
+                awayTeam = teamService.findByApiId(apiData.getAwayTeamId());
+                if(homeTeam == null || awayTeam==null){}
                 else{
                     String gameId = "";
                     do {
@@ -232,8 +232,8 @@ public class MigrationService {
                             .homeScore(apiData.getHomeScore())
                             .awayScore(apiData.getAwayScore())
                             .round(apiData.getRound())
-                            .homeTeam(homeTeam.get())
-                            .awayTeam(awayTeam.get())
+                            .homeTeam(homeTeam)
+                            .awayTeam(awayTeam)
                             .startedAt(apiData.getDate())
                             .build();
                 }
@@ -249,6 +249,9 @@ public class MigrationService {
             List<UserGameGamble> awayTeamGambles = userGameGambles.stream()
                     .filter(g -> g.getSupportingTeam().getApiId().equals(apiData.getAwayTeamId()))
                     .toList();
+
+//            System.out.println("home gamble : " + Arrays.toString(homeTeamGambles.toArray()));
+//            System.out.println("away gamble : " + Arrays.toString(awayTeamGambles.toArray()));
 
             String homeGambleSeasonPointId = "";
             String awayGambleSeasonPointId = "";
@@ -267,6 +270,7 @@ public class MigrationService {
             double homeAvgPoints = calculateAveragePoints(homeTeamGambles);
 
             GambleSeasonTeam homeGambleSeasonTeam = gambleSeasonTeamService.findRecentOperatingByTeamPk(game.getHomeTeam().getPk());
+//            System.out.println(homeGambleSeasonTeam.getTeam());
             if(homeGambleSeasonTeam != null){
                 Team homeTeam = teamService.findByApiId(apiData.getHomeTeamId());
                 Team awayTeam = teamService.findByApiId(apiData.getAwayTeamId());
