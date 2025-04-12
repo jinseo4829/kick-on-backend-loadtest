@@ -80,7 +80,7 @@ public class MigrationController {
 
     @Operation(summary = "랭킹 불러오기", description = "각 리그의 랭킹을 불러오며, 하루하루 업데이트")
     @PostMapping("/rankings")
-    @Scheduled(cron = "0 10 * * * *")
+    @Scheduled(cron = "0 */5 * * * *")
     public ResponseEntity<ResponseDTO<Void>> fetchRanking() {
 //        slackService.sendLogMessage("Scheduling: 랭킹 불러오기 시작 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));
         List<League> leagues = leagueService.findAllLeagues();
