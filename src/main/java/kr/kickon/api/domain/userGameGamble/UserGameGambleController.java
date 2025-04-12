@@ -50,12 +50,12 @@ public class UserGameGambleController {
         UserGameGamble userGameGamble = userGameGambleService.findByUserAndGame(user.getPk(), game.getPk());
         if(userGameGamble != null) throw new BadRequestException(ResponseCode.DUPLICATED_USER_GAME_GAMBLE);
 
-        // 게임 시작 30분 전까지만 허용
+        // 게임 시작 2시간 전까지만 허용
         // 현재 시간과 게임 시작 시간 비교
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime gameStartTime = game.getStartedAt();
 
-        if (gameStartTime.isBefore(now.plusMinutes(30))) {
+        if (gameStartTime.isBefore(now.plusHours(2))) {
             throw new BadRequestException(ResponseCode.GAMBLE_CLOSED);
         }
 
@@ -88,7 +88,7 @@ public class UserGameGambleController {
         if(userGameGamble == null) throw new NotFoundException(ResponseCode.NOT_FOUND_USER_GAME_GAMBLE);
         if(!userGameGamble.getUser().getPk().equals(user.getPk())) throw new ForbiddenException(ResponseCode.FORBIDDEN);
 
-        // 게임 시작 30분 전까지만 허용
+        // 게임 시작 2시간 전까지만 허용
         // 현재 시간과 게임 시작 시간 비교
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime gameStartTime = userGameGamble.getGame().getStartedAt();

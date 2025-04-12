@@ -53,6 +53,7 @@ public class GambleSeasonRankingController {
         List<GetGambleSeasonRankingDTO>getGambleSeasonRankingDTOS = gambleSeasonRankings.stream().map(gambleSeasonRanking -> GetGambleSeasonRankingDTO.builder()
                         .rankOrder(gambleSeasonRanking.getRankOrder())
                         .points((double) gambleSeasonRanking.getPoints()/1000)
+                        .gameNum(gambleSeasonRanking.getGameNum())
                         .teamLogoUrl(gambleSeasonRanking.getTeam().getLogoUrl())
                         .teamName(gambleSeasonRanking.getTeam().getNameKr()).build()).toList();
 
