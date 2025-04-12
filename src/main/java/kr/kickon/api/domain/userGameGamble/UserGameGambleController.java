@@ -55,7 +55,7 @@ public class UserGameGambleController {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime gameStartTime = game.getStartedAt();
 
-        if (gameStartTime.isBefore(now.plusMinutes(30))) {
+        if (gameStartTime.isBefore(now.plusHours(2))) {
             throw new BadRequestException(ResponseCode.GAMBLE_CLOSED);
         }
 
