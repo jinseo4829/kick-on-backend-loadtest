@@ -95,7 +95,7 @@ public class MigrationController {
 
     @Operation(summary = "게임 결과 불러오기",description = "게임결과 API 불러와서, 승부예측 마감 진행. 포인트 지급. 매일 오전 0시에 업데이트")
     @GetMapping("/gambles")
-    @Scheduled(cron = "0 0 0 * * *")
+    @Scheduled(cron = "0 */30 * * * *")
     public ResponseEntity<ResponseDTO<Void>> fetchGambles() {
         slackService.sendLogMessage("Scheduling: 게임 결과 불러오기 시작 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));
         List<Game> games = gameService.findByToday();
