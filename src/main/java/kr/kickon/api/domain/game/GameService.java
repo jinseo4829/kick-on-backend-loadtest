@@ -59,13 +59,12 @@ public class GameService implements BaseService<Game> {
                 .where(QGame.game.status.eq(DataStatus.ACTIVATED).and(QGame.game.actualSeason.pk.eq(actualSeasonPk)));
 
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime oneHourAgo = now.minusHours(2);
         if (gameStatus.equals("finished")) {
             query.where(QGame.game.gameStatus.in(GameStatus.PROCEEDING, GameStatus.CANCELED, GameStatus.HOME,
-                            GameStatus.AWAY, GameStatus.DRAW).and(QGame.game.startedAt.lt(oneHourAgo)))
+                            GameStatus.AWAY, GameStatus.DRAW, GameStatus.PENDING).and(QGame.game.startedAt.lt(now.minusHours(2))))
                     .orderBy(QGame.game.startedAt.desc());
         } else {
-            query.where(QGame.game.gameStatus.in(GameStatus.POSTPONED, GameStatus.PENDING).and(QGame.game.startedAt.goe(oneHourAgo)))
+            query.where(QGame.game.gameStatus.in(GameStatus.POSTPONED, GameStatus.PENDING).and(QGame.game.startedAt.goe(now.plusHours(2))))
                     .orderBy(QGame.game.startedAt.asc());
         }
 
@@ -74,8 +73,6 @@ public class GameService implements BaseService<Game> {
 
     public List<Game> findByActualSeasonByFavoriteTeam(Long actualSeasonPk, String gameStatus, Long favoriteTeamPk) {
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime oneHourAgo = now.minusHours(2);
-        System.out.println(oneHourAgo);
         JPAQuery<Game> query = queryFactory.selectFrom(QGame.game)
                 .where(QGame.game.status.eq(DataStatus.ACTIVATED)
                         .and(QGame.game.actualSeason.pk.eq(actualSeasonPk))
@@ -84,10 +81,10 @@ public class GameService implements BaseService<Game> {
 
         if (gameStatus.equals("finished")) {
             query.where(QGame.game.gameStatus.in(GameStatus.PROCEEDING, GameStatus.CANCELED, GameStatus.HOME,
-                            GameStatus.AWAY, GameStatus.DRAW).and(QGame.game.startedAt.lt(oneHourAgo)))
+                            GameStatus.AWAY, GameStatus.DRAW, GameStatus.PENDING).and(QGame.game.startedAt.lt(now.minusHours(2))))
                     .orderBy(QGame.game.startedAt.desc());
         } else {
-            query.where(QGame.game.gameStatus.in(GameStatus.POSTPONED, GameStatus.PENDING).and(QGame.game.startedAt.goe(oneHourAgo)))
+            query.where(QGame.game.gameStatus.in(GameStatus.POSTPONED, GameStatus.PENDING).and(QGame.game.startedAt.goe(now.plusHours(2))))
                     .orderBy(QGame.game.startedAt.asc());
         }
 
