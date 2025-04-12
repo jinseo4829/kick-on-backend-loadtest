@@ -53,7 +53,8 @@ public class NewsReplyService implements BaseService<NewsReply> {
                 .where(reply.news.pk.eq(newsPk)
                         .and(reply.parentNewsReply.isNull())
                         .and(user.status.eq(DataStatus.ACTIVATED))
-                        .and(reply.status.eq(DataStatus.ACTIVATED)))
+                        .and(reply.status.eq(DataStatus.ACTIVATED))
+                        )
                 .fetchOne();
 
         List<Tuple> results = queryFactory.select(reply, user)
