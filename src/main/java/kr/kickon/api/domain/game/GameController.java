@@ -66,7 +66,7 @@ public class GameController {
         UserFavoriteTeam userFavoriteTeam = null;
         List<Game> games = null;
         if(user!=null) userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
-
+//        System.out.println(userFavoriteTeam.getTeam().getNameKr());
         if(userFavoriteTeam==null) {
             games = gameService.findByActualSeason(actualSeason.getPk(), paramDto.getStatus());
         } else{
