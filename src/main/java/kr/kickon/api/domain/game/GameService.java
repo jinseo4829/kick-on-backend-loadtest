@@ -75,6 +75,7 @@ public class GameService implements BaseService<Game> {
     public List<Game> findByActualSeasonByFavoriteTeam(Long actualSeasonPk, String gameStatus, Long favoriteTeamPk) {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime oneHourAgo = now.minusHours(2);
+        System.out.println(oneHourAgo);
         JPAQuery<Game> query = queryFactory.selectFrom(QGame.game)
                 .where(QGame.game.status.eq(DataStatus.ACTIVATED)
                         .and(QGame.game.actualSeason.pk.eq(actualSeasonPk))
