@@ -59,6 +59,7 @@ public class GameController {
     public ResponseEntity<ResponseDTO<LeagueDTO>> getGames(@Valid GetGamesRequestDTO paramDto) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         ActualSeason actualSeason = actualSeasonService.findRecentByLeaguePk(paramDto.getLeague());
+        System.out.println(actualSeason);
         if(actualSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
         LeagueDTO leagueDTO = new LeagueDTO();
         leagueDTO.setPk(actualSeason.getLeague().getPk());
@@ -66,11 +67,12 @@ public class GameController {
         UserFavoriteTeam userFavoriteTeam = null;
         List<Game> games = null;
         if(user!=null) userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
-//        System.out.println(userFavoriteTeam.getTeam().getNameKr());
+        System.out.println(userFavoriteTeam.getTeam().getNameKr());
         if(userFavoriteTeam==null) {
             games = gameService.findByActualSeason(actualSeason.getPk(), paramDto.getStatus());
         } else{
             ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findByActualSeasonTeam(actualSeason,userFavoriteTeam.getTeam().getPk());
+            System.out.println(actualSeasonTeam.getActualSeason().getLeague());
             if(actualSeasonTeam==null) games = gameService.findByActualSeason(actualSeason.getPk(), paramDto.getStatus());
             else games = gameService.findByActualSeasonByFavoriteTeam(actualSeason.getPk(), paramDto.getStatus(), userFavoriteTeam.getTeam().getPk());
         }
