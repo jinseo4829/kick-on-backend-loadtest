@@ -9,8 +9,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
+import kr.kickon.api.domain.league.dto.LeagueDTO;
 import kr.kickon.api.domain.team.TeamService;
-import kr.kickon.api.domain.user.dto.GetUserMeDTO;
+import kr.kickon.api.domain.team.dto.TeamDTO;
+import kr.kickon.api.domain.user.dto.UserMeDto;
 import kr.kickon.api.domain.user.request.PatchUserRequest;
 import kr.kickon.api.domain.user.request.PrivacyUpdateRequest;
 import kr.kickon.api.domain.user.response.GetUserMeResponse;
@@ -56,25 +58,24 @@ public class UserController {
                     content = @Content(schema = @Schema(implementation = GetUserMeResponse.class)))
     })
     @GetMapping("/me")
-    public ResponseEntity<ResponseDTO<GetUserMeDTO>> getUserMe() {
+    public ResponseEntity<ResponseDTO<UserMeDto>> getUserMe() {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         UserFavoriteTeam userFavoriteTeam = null;
-        GetUserMeDTO userDto = new GetUserMeDTO(user);;
+        UserMeDto userDto = new UserMeDto(user);
         userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
         League league = null;
         if(userFavoriteTeam != null && userFavoriteTeam.getTeam().getStatus() == DataStatus.ACTIVATED) {
-            userDto.setTeamPk(userFavoriteTeam.getTeam().getPk());
-            userDto.setTeamLogoUrl(userFavoriteTeam.getTeam().getLogoUrl());
-            userDto.setTeamName(userFavoriteTeam.getTeam().getNameKr()!=null?userFavoriteTeam.getTeam().getNameKr():userFavoriteTeam.getTeam().getNameEn());
+            userDto.setFavoriteTeam(
+                    new TeamDTO(userFavoriteTeam.getTeam())
+            );
+
             ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findLatestByTeam(userFavoriteTeam.getTeam().getPk());
             if(actualSeasonTeam != null) league = actualSeasonTeam.getActualSeason().getLeague();
-
-        }
-
-        if(league!=null) {
-            userDto.setLeaguePk(league.getPk());
-            userDto.setLeagueLogoUrl(league.getLogoUrl());
-            userDto.setLeagueName(league.getNameKr()!=null?league.getNameKr(): league.getNameEn());
+            if(league!=null) {
+                userDto.setLeague(
+                        new LeagueDTO(league)
+                );
+            }
         }
 
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS,userDto));
