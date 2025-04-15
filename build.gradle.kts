@@ -100,6 +100,7 @@ dependencies {
 	implementation("org.glassfish.tyrus.bundles:tyrus-standalone-client:1.20")
 	implementation("org.slf4j:slf4j-simple:1.7.36")
 	implementation("com.slack.api:bolt-jetty:1.45.3")
+	implementation(kotlin("script-runtime"))
 }
 
 tasks.withType<Test> {

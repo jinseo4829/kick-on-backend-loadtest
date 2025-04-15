@@ -97,14 +97,14 @@ public class GameService implements BaseService<Game> {
 
         // 현재 시간과 24시간 전 시간 계산
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime past24Hours = now.minusHours(48);
+        LocalDateTime past24Hours = now.minusHours(100);
 
         // QueryDSL을 사용하여 24시간 이내에 시작한 게임 중 종료된 게임을 조회
         return queryFactory
                 .selectFrom(game)
                 .where(
                         game.startedAt.between(past24Hours, now),  // 24시간 이내 시작한 게임
-                        game.gameStatus.in(GameStatus.PENDING, GameStatus.POSTPONED),
+                        game.gameStatus.in(GameStatus.PENDING, GameStatus.POSTPONED,GameStatus.PROCEEDING),
                         game.status.eq(DataStatus.ACTIVATED)
                 )
                 .orderBy(game.startedAt.desc()) // 최신순 정렬
