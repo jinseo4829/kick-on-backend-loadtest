@@ -50,6 +50,11 @@ public class UserService implements BaseService<User> {
 //                .fetch();
 //    }
 
+    public void deleteUser(User user){
+        user.setStatus(DataStatus.DEACTIVATED);
+        saveUser(user);
+    }
+
     @Transactional
     public void updateUser(User user, PatchUserRequest request) {
         if (!user.getNickname().equals(request.getNickname())) {

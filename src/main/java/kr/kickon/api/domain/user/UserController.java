@@ -95,6 +95,12 @@ public class UserController {
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
     }
 
-
+    @Operation(summary = "회원 탈퇴", description = "jwt 기반으로 회원 탈퇴")
+    @DeleteMapping("/me")
+    public ResponseEntity<ResponseDTO<Void>> deleteUser() {
+        User user = jwtTokenProvider.getUserFromSecurityContext();
+        userService.deleteUser(user);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
+    }
 
 }
