@@ -7,6 +7,7 @@ import kr.kickon.api.domain.news.dto.UserDTO;
 import kr.kickon.api.domain.newsReply.dto.PaginatedNewsReplyListDTO;
 import kr.kickon.api.domain.newsReply.dto.ReplyDTO;
 import kr.kickon.api.domain.newsReplyKick.NewsReplyKickService;
+import kr.kickon.api.domain.user.dto.BaseUserDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
@@ -90,7 +91,7 @@ public class NewsReplyService implements BaseService<NewsReply> {
                 .pk(parentReply.getPk())
                 .contents(parentReply.getContents())
                 .createdAt(parentReply.getCreatedAt())
-                .user(UserDTO.builder()
+                .user(BaseUserDTO.builder()
                         .id(replyUser.getId())
                         .nickname(replyUser.getNickname())
                         .profileImageUrl(replyUser.getProfileImageUrl())

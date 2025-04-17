@@ -8,7 +8,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import kr.kickon.api.domain.board.dto.BoardDetailDTO;
 import kr.kickon.api.domain.board.dto.BoardListDTO;
 import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
-import kr.kickon.api.domain.board.dto.UserDTO;
+import kr.kickon.api.domain.user.dto.BaseUserDTO;
 import kr.kickon.api.domain.boardKick.BoardKickService;
 import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.global.common.BaseService;
@@ -77,7 +77,7 @@ public class BoardService implements BaseService<Board> {
         BoardListDTO boardListDTO = BoardListDTO.builder()
                 .pk(boardEntity.getPk())
                 .title(boardEntity.getTitle())
-                .user(UserDTO.builder()
+                .user(BaseUserDTO.builder()
                         .id(userEntity.getId())
                         .nickname(userEntity.getNickname())
                         .profileImageUrl(userEntity.getProfileImageUrl())
@@ -126,7 +126,7 @@ public class BoardService implements BaseService<Board> {
         BoardDetailDTO boardDetailDTO = BoardDetailDTO.builder()
                 .pk(boardEntity.getPk())
                 .title(boardEntity.getTitle())
-                .user(UserDTO.builder()
+                .user(BaseUserDTO.builder()
                         .id(userEntity.getId())
                         .nickname(userEntity.getNickname())
                         .profileImageUrl(userEntity.getProfileImageUrl())

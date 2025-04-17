@@ -2,12 +2,11 @@ package kr.kickon.api.domain.boardReply;
 
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import kr.kickon.api.domain.boardReply.dto.PaginatedReplyListDTO;
 import kr.kickon.api.domain.boardReply.dto.ReplyDTO;
-import kr.kickon.api.domain.board.dto.UserDTO;
 import kr.kickon.api.domain.boardReplyKick.BoardReplyKickService;
+import kr.kickon.api.domain.user.dto.BaseUserDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
@@ -89,7 +88,7 @@ public class BoardReplyService implements BaseService<BoardReply> {
                 .pk(parentReply.getPk())
                 .contents(parentReply.getContents())
                 .createdAt(parentReply.getCreatedAt())
-                .user(UserDTO.builder()
+                .user(BaseUserDTO.builder()
                         .id(replyUser.getId())
                         .nickname(replyUser.getNickname())
                         .profileImageUrl(replyUser.getProfileImageUrl())

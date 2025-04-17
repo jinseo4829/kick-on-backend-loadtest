@@ -9,17 +9,16 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import kr.kickon.api.domain.actualSeason.ActualSeasonService;
-import kr.kickon.api.domain.actualSeasonRanking.request.GetActualSeasonRankingRequestDTO;
 import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
-import kr.kickon.api.domain.gambleSeason.GambleSeasonService;
-import kr.kickon.api.domain.gambleSeasonRanking.dto.GetGambleSeasonRankingDTO;
-import kr.kickon.api.domain.gambleSeasonRanking.response.GetGambleSeasonRankingResponse;
 import kr.kickon.api.domain.game.dto.*;
 import kr.kickon.api.domain.game.request.GetGamesRequestDTO;
 import kr.kickon.api.domain.game.response.GetGamesResponse;
+import kr.kickon.api.domain.game.response.LeagueWithGamesDTO;
+import kr.kickon.api.domain.league.dto.LeagueDTO;
+import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.domain.userGameGamble.UserGameGambleService;
-import kr.kickon.api.domain.userGameGamble.dto.GambleCountDTO;
+import kr.kickon.api.domain.userGameGamble.dto.UserGameGambleDTO;
 import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.*;
@@ -56,14 +55,11 @@ public class GameController {
                     content = @Content(schema = @Schema(implementation = GetGamesResponse.class))),
     })
     @GetMapping()
-    public ResponseEntity<ResponseDTO<LeagueDTO>> getGames(@Valid GetGamesRequestDTO paramDto) {
+    public ResponseEntity<ResponseDTO<LeagueWithGamesDTO>> getGames(@Valid GetGamesRequestDTO paramDto) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         ActualSeason actualSeason = actualSeasonService.findRecentByLeaguePk(paramDto.getLeague());
 //        System.out.println(actualSeason);
         if(actualSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
-        LeagueDTO leagueDTO = new LeagueDTO();
-        leagueDTO.setPk(actualSeason.getLeague().getPk());
-        leagueDTO.setName(actualSeason.getLeague().getNameKr());
         UserFavoriteTeam userFavoriteTeam = null;
         List<Game> games = null;
         if(user!=null) userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
@@ -79,34 +75,13 @@ public class GameController {
 
         // 게임 DTO 리스트 변환
         List<GameDTO> gameDTOs = games.stream().map(game -> {
-            GameDTO gameDTO = new GameDTO();
-
             // 홈팀과 어웨이팀 정보 설정
-            TeamDTO homeTeamDTO = new TeamDTO();
-            homeTeamDTO.setPk(game.getHomeTeam().getPk());
-            homeTeamDTO.setName(game.getHomeTeam().getNameKr());
-            homeTeamDTO.setLogoUrl(game.getHomeTeam().getLogoUrl());
-            gameDTO.setHomeTeam(homeTeamDTO);
+            TeamDTO homeTeamDTO = new TeamDTO(game.getHomeTeam());
 
-            TeamDTO awayTeamDTO = new TeamDTO();
-            awayTeamDTO.setPk(game.getAwayTeam().getPk());
-            awayTeamDTO.setName(game.getAwayTeam().getNameKr());
-            awayTeamDTO.setLogoUrl(game.getAwayTeam().getLogoUrl());
-            gameDTO.setAwayTeam(awayTeamDTO);
-
-
-            // 경기 관련 정보 설정
-            gameDTO.setGameStatus(game.getGameStatus());
-            gameDTO.setStartAt(game.getStartedAt());
-            gameDTO.setAwayPenaltyScore(game.getAwayPenaltyScore());
-            gameDTO.setHomePenaltyScore(game.getHomePenaltyScore());
-            gameDTO.setRound(game.getRound());
-            gameDTO.setHomeScore(game.getHomeScore());
-            gameDTO.setAwayScore(game.getAwayScore());
-            gameDTO.setPk(game.getPk());
+            TeamDTO awayTeamDTO = new TeamDTO(game.getAwayTeam());
 
             // 승부예측 현황
-            GambleResultDTO gambleResultDTO = new GambleResultDTO();
+
             Map<PredictedResult, Long> userGamblePredictedResult = userGameGambleService.findGambleCountByGamePk(game.getPk());
             long homeCount = userGamblePredictedResult.getOrDefault(PredictedResult.HOME, 0L);
             long awayCount = userGamblePredictedResult.getOrDefault(PredictedResult.AWAY, 0L);
@@ -118,34 +93,25 @@ public class GameController {
             int homeRatio = (totalParticipation > 0) ? (int) ((homeCount * 100) / totalParticipation) : 0;
             int awayRatio = (totalParticipation > 0) ? (int) ((awayCount * 100) / totalParticipation) : 0;
             int drawRatio = (totalParticipation > 0) ? (int) ((drawCount * 100) / totalParticipation) : 0;
-            gambleResultDTO.setHome(homeRatio);
-            gambleResultDTO.setAway(awayRatio);
-            gambleResultDTO.setDraw(drawRatio);
-            gambleResultDTO.setParticipationNumber(totalParticipation);
-            gameDTO.setGambleResult(gambleResultDTO);
+            GambleResultDTO gambleResultDTO = new GambleResultDTO(homeRatio,awayRatio,drawRatio,totalParticipation);
 
+            GameDTO gameDTO = new GameDTO(homeTeamDTO, awayTeamDTO, game, gambleResultDTO);
             if(user != null && user.getPk() > 0){
                 // 유저 승부 예측 결과
-                MyGambleResultDTO myGambleResultDTO = null;
+                UserGameGambleDTO myGambleResultDTO = null;
                 UserGameGamble myUserGameGamble = userGameGambleService.findByUserAndGame(user.getPk(),game.getPk());;
                 if (myUserGameGamble != null) {
-                    myGambleResultDTO = MyGambleResultDTO
-                            .builder()
-                            .id(myUserGameGamble.getId())
-                            .homeScore(myUserGameGamble.getPredictedHomeScore())
-                            .awayScore(myUserGameGamble.getPredictedAwayScore())
-                            .result(myUserGameGamble.getPredictedResult())
-                            .gambleStatus(myUserGameGamble.getGambleStatus()).build();
+                    myGambleResultDTO = new UserGameGambleDTO(myUserGameGamble);
                 }
                 gameDTO.setMyGambleResult(myGambleResultDTO);
             }
             return gameDTO;
         }).collect(Collectors.toList());
-
-        // 게임 리스트를 DTO에 설정
-        leagueDTO.setGames(gameDTOs);
-
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, leagueDTO));
+        League league = actualSeason.getLeague();
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, LeagueWithGamesDTO.builder()
+                .league(new LeagueDTO(league))
+                .games(gameDTOs)
+                .build()));
     }
 
 }
