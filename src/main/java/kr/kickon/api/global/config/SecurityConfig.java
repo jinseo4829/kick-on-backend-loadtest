@@ -32,7 +32,6 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
         http
                 .httpBasic(AbstractHttpConfigurer::disable) // ui 사용하는거 비활성화
                 .formLogin(AbstractHttpConfigurer::disable)
@@ -45,6 +44,7 @@ public class SecurityConfig {
                     authorizeRequests
                             .requestMatchers("/swagger-ui/*", "/oauth2/*", "/v3/**").permitAll() // ✅ OAuth2 로그인 경로, swagger 호출 허용
                             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                            .requestMatchers(HttpMethod.DELETE,"/api/user/me").hasAnyRole("OAUTH_FIRST_JOIN","USER")
                             .requestMatchers(HttpMethod.GET,
                                     "/api/user/me",
                                     "/api/user-point-event/ranking"
