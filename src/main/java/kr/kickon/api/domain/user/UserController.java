@@ -84,41 +84,14 @@ public class UserController {
 
     @Operation(summary = "내 정보 수정", description = "jwt 기반으로 내 정보 수정, jwt 없으면 접근 제한")
     @PatchMapping()
-    @Transactional
     public ResponseEntity<ResponseDTO<Void>> patchUser(@Valid @RequestBody PatchUserRequest request) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         // 닉네임 중복 검사
-
-        if (!user.getNickname().equals(request.getNickname())) {
-            boolean isDuplicated = userService.existsByNickname(request.getNickname());
-            System.out.println(isDuplicated);
-            if (isDuplicated) {
-                throw new BadRequestException(ResponseCode.DUPLICATED_NICKNAME); // ResponseCode에 정의 필요
-            }
-            user.setNickname(request.getNickname());
-            userService.saveUser(user);
+        boolean isDuplicated = userService.existsByNickname(request.getNickname());
+        if (isDuplicated) {
+            throw new BadRequestException(ResponseCode.DUPLICATED_NICKNAME); // ResponseCode에 정의 필요
         }
-
-        if(request.getTeam()!=null){
-            Team team = null;
-            team = teamService.findByPk(request.getTeam());
-            // ✅ 닉네임 중복 검사
-            if(team == null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
-            UserFavoriteTeam userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
-            if(userFavoriteTeam==null){
-                String id = uuidGenerator.generateUniqueUUID(userFavoriteTeamService::findById);
-                userFavoriteTeamService.save(
-                        UserFavoriteTeam.builder()
-                                .id(id)
-                                .user(user)
-                                .team(team)
-                                .build()
-                );
-            }else{
-                userFavoriteTeam.setTeam(team);
-                userFavoriteTeamService.save(userFavoriteTeam);
-            }
-        }
+        userService.updateUser(user, request);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
     }
 

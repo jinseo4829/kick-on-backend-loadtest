@@ -10,12 +10,14 @@ import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.auth.oauth.dto.OAuth2UserInfo;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.QUser;
+import kr.kickon.api.global.common.entities.Team;
 import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.entities.UserFavoriteTeam;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.ProviderType;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.common.enums.UserAccountStatus;
+import kr.kickon.api.global.error.exceptions.BadRequestException;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,7 @@ public class UserService implements BaseService<User> {
     private final UserRepository userRepository;
     private final JPAQueryFactory queryFactory;
     private final UUIDGenerator uuidGenerator;
+    private final TeamService teamService;
     private final UserFavoriteTeamService userFavoriteTeamService;
 
     public List<User> findUsersByStatus(DataStatus status){
@@ -46,6 +49,29 @@ public class UserService implements BaseService<User> {
 //                .where(QUser.user.email.eq(email))
 //                .fetch();
 //    }
+
+    @Transactional
+    public void updateUser(User user, PatchUserRequest request) {
+        if (!user.getNickname().equals(request.getNickname())) {
+            user.setNickname(request.getNickname());
+        }
+
+        if (request.getTeam() != null) {
+            Team team = teamService.findByPk(request.getTeam());
+            if (team == null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
+
+            UserFavoriteTeam uft = userFavoriteTeamService.findByUserPk(user.getPk());
+            if (uft == null) {
+                String id = uuidGenerator.generateUniqueUUID(userFavoriteTeamService::findById);
+                uft = UserFavoriteTeam.builder().id(id).user(user).team(team).build();
+            } else {
+                uft.setTeam(team);
+            }
+            userFavoriteTeamService.save(uft);
+        }
+
+        saveUser(user); // nickname이 변경됐을 수도 있으니까
+    }
 
     public  Optional<User> findUserByEmail(String email){
         BooleanExpression predicate = QUser.user.email.eq(email).and(QUser.user.status.eq(DataStatus.ACTIVATED));
