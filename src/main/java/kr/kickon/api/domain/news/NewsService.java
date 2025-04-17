@@ -4,12 +4,10 @@ import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import kr.kickon.api.domain.board.dto.BoardDetailDTO;
-import kr.kickon.api.domain.board.dto.BoardListDTO;
-import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
 import kr.kickon.api.domain.news.dto.*;
 import kr.kickon.api.domain.newsKick.NewsKickService;
 import kr.kickon.api.domain.team.dto.TeamDTO;
+import kr.kickon.api.domain.user.dto.BaseUserDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
@@ -19,8 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -81,7 +79,7 @@ public class NewsService implements BaseService<News> {
                 .content(newsEntity.getContents())
                 .thumbnailUrl(newsEntity.getThumbnailUrl())
                 .category(newsEntity.getCategory().getKoreanName())
-                .user(UserDTO.builder()
+                .user(BaseUserDTO.builder()
                         .id(userEntity.getId())
                         .nickname(userEntity.getNickname())
                         .profileImageUrl(userEntity.getProfileImageUrl())
@@ -120,36 +118,17 @@ public class NewsService implements BaseService<News> {
         User userEntity = result.get(user);
         Team teamEntity = result.get(team);
 
-        NewsDetailDTO newsDetailDTO = NewsDetailDTO.builder()
-                .pk(newsEntity.getPk())
-                .title(newsEntity.getTitle())
-                .user(UserDTO.builder()
-                        .id(userEntity.getId())
-                        .nickname(userEntity.getNickname())
-                        .profileImageUrl(userEntity.getProfileImageUrl())
-                        .build())
-                .createdAt(newsEntity.getCreatedAt())
-                .likes(result.get(3, Long.class).intValue())
-                .views(result.get(4, Long.class).intValue())
-                .replies(result.get(5, Long.class).intValue())
-                .content(newsEntity.getContents())
-                .thumbnailUrl(newsEntity.getThumbnailUrl())
-                .category(newsEntity.getCategory().getKoreanName())
-                .build();
+        NewsDetailDTO newsDetailDTO = new NewsDetailDTO(newsEntity, new BaseUserDTO(userEntity),result.get(3, Long.class).intValue(),result.get(4, Long.class).intValue(), result.get(5, Long.class).intValue());
 
         if(userData!=null){
-            NewsKick newsKick = newsKickService.findByNewsAndUser(result.get(news).getPk(), userData.getPk());
+            NewsKick newsKick = newsKickService.findByNewsAndUser(Objects.requireNonNull(result.get(news)).getPk(), userData.getPk());
             newsDetailDTO.setIsKicked(newsKick!=null);
         }
 
         if(teamEntity!=null){
-            newsDetailDTO.setTeam(TeamDTO.builder()
-                    .pk(teamEntity.getPk())
-                    .logoUrl(teamEntity.getLogoUrl())
-                    .nameKr(teamEntity.getNameKr())
-                    .nameEn(teamEntity.getNameEn())
-                    .build());
+            newsDetailDTO.setTeam(new TeamDTO(teamEntity));
         }
+
         return newsDetailDTO;
     }
 

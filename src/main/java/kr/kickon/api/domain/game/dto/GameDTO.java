@@ -2,6 +2,9 @@ package kr.kickon.api.domain.game.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
+import kr.kickon.api.domain.team.dto.TeamDTO;
+import kr.kickon.api.domain.userGameGamble.dto.UserGameGambleDTO;
+import kr.kickon.api.global.common.entities.Game;
 import kr.kickon.api.global.common.enums.GameStatus;
 import lombok.Data;
 
@@ -16,7 +19,7 @@ public class GameDTO {
 
     private GambleResultDTO gambleResult;
 
-    private MyGambleResultDTO myGambleResult;
+    private UserGameGambleDTO myGambleResult;
 
     @Schema(description = "게임 pk", example = "1")
     private Long pk;
@@ -41,5 +44,19 @@ public class GameDTO {
 
     @Schema(description = "경기 시작 일시", example = "2021-12-12 12:00:22")
     private LocalDateTime startAt;
+
+    public GameDTO(TeamDTO homeTeam, TeamDTO awayTeam, Game game, GambleResultDTO gambleResult) {
+        this.homeTeam = homeTeam;
+        this.awayTeam = awayTeam;
+        this.gambleResult = gambleResult;
+        pk = game.getPk();
+        homeScore = game.getHomeScore();
+        awayScore = game.getAwayScore();
+        round = game.getRound();
+        homePenaltyScore = game.getHomePenaltyScore();
+        awayPenaltyScore = game.getAwayPenaltyScore();
+        gameStatus = game.getGameStatus();
+        startAt = game.getStartedAt();
+    }
 }
 
