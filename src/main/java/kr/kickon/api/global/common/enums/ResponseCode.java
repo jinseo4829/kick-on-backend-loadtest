@@ -19,6 +19,7 @@ public enum ResponseCode {
     GAMBLE_CLOSED(HttpStatus.BAD_REQUEST, "GAMBLE_CLOSED", "게임 시작 30분 전까지만 승부 예측이 가능합니다."),
     DUPLICATED_USER_GAME_GAMBLE(HttpStatus.BAD_REQUEST, "DUPLICATED_USER_GAME_GAMBLE", "이미 게임에 대한 승부예측이 진행중입니다."),
     ALREADY_FINISHED_GAMBLE(HttpStatus.BAD_REQUEST, "ALREADY_FINISHED_GAMBLE", "이미 해당 승부예측이 종료 되었습니다."),
+    DUPLICATED_NICKNAME(HttpStatus.BAD_REQUEST, "DUPLICATED_NICKNAME", "이미 사용중인 닉네임 입니다."),
 
     // ✅ 401 Unauthorized
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "인증이 필요합니다. 로그인 후 이용해주세요."),

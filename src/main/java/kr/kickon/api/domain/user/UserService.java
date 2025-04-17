@@ -52,6 +52,10 @@ public class UserService implements BaseService<User> {
         return userRepository.findOne(predicate);
     }
 
+    public boolean existsByNickname(String nickname){
+        return userRepository.existsByNicknameAndStatus(nickname, DataStatus.ACTIVATED);
+    }
+
     public Optional<User> findUserByProviderAndProviderId(ProviderType provider, String providerId){
         BooleanExpression predicate = QUser.user.provider.eq(provider).and(QUser.user.status.eq(DataStatus.ACTIVATED).and(QUser.user.providerId.eq(providerId)));
         return userRepository.findOne(predicate);

@@ -22,6 +22,7 @@ import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.error.exceptions.BadRequestException;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
@@ -86,11 +87,22 @@ public class UserController {
     @Transactional
     public ResponseEntity<ResponseDTO<Void>> patchUser(@Valid @RequestBody PatchUserRequest request) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        user.setNickname(request.getNickname());
-        userService.saveUser(user);
+        // 닉네임 중복 검사
+
+        if (!user.getNickname().equals(request.getNickname())) {
+            boolean isDuplicated = userService.existsByNickname(request.getNickname());
+            System.out.println(isDuplicated);
+            if (isDuplicated) {
+                throw new BadRequestException(ResponseCode.DUPLICATED_NICKNAME); // ResponseCode에 정의 필요
+            }
+            user.setNickname(request.getNickname());
+            userService.saveUser(user);
+        }
+
         if(request.getTeam()!=null){
             Team team = null;
             team = teamService.findByPk(request.getTeam());
+            // ✅ 닉네임 중복 검사
             if(team == null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
             UserFavoriteTeam userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
             if(userFavoriteTeam==null){
