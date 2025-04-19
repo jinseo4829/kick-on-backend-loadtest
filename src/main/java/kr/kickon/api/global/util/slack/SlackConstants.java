@@ -1,4 +1,4 @@
-package kr.kickon.api.global.common;
+package kr.kickon.api.global.util.slack;
 
 public class SlackConstants {
     public static final String BATCH = "#배치작업";

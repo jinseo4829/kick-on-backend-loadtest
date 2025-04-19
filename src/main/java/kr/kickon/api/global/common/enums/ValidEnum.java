@@ -1,4 +1,4 @@
-package kr.kickon.api.global.common.annotations;
+package kr.kickon.api.global.common.enums;
 
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;

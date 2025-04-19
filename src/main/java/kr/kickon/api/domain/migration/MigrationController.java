@@ -2,7 +2,6 @@ package kr.kickon.api.domain.migration;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import kr.kickon.api.domain.actualSeason.ActualSeasonService;
 import kr.kickon.api.domain.country.CountryService;
 import kr.kickon.api.domain.game.GameService;
 import kr.kickon.api.domain.league.LeagueService;
@@ -10,7 +9,6 @@ import kr.kickon.api.domain.migration.dto.ApiGamesDTO;
 import kr.kickon.api.domain.migration.dto.ApiLeagueAndSeasonDTO;
 import kr.kickon.api.domain.migration.dto.ApiRankingDTO;
 import kr.kickon.api.domain.migration.dto.ApiTeamDTO;
-import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.Country;
 import kr.kickon.api.global.common.entities.Game;
@@ -24,10 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 @AllArgsConstructor
@@ -60,10 +55,16 @@ public class MigrationController {
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
     }
 
-    @PostMapping("/test")
-    public void fetchTest(){
-        throw new NotFoundException(ResponseCode.NOT_FOUND_USER);
+    @PostMapping("/test/{testId}")
+    public void fetchTest(@RequestParam String body, @PathVariable String testId){
+//        throw new NullPointerException();
+        throw new NotFoundException(ResponseCode.NOT_FOUND_LEAGUE);
     }
+
+//    @PostMapping("/test")
+//    public ResponseEntity<ResponseDTO<Void>> fetchTest(){
+//        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
+//    }
 
     @Operation(summary = "리그 경기 불러오기", description = "각 리그의 경기를 불러오며, 상태값 및 경기 결과를 자동 업데이트")
     @PostMapping("/games")
