@@ -24,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -88,14 +89,13 @@ public class UserService implements BaseService<User> {
     }
 
     public Optional<User> findUserByProviderAndProviderId(ProviderType provider, String providerId){
-        BooleanExpression predicate = QUser.user.provider.eq(provider).and(QUser.user.status.eq(DataStatus.ACTIVATED).and(QUser.user.providerId.eq(providerId)));
+        BooleanExpression predicate = QUser.user.provider.eq(provider).and(QUser.user.providerId.eq(providerId));
         return userRepository.findOne(predicate);
     }
 
     public void saveUser(User user){
         userRepository.save(user);
     }
-
     public User findByPk(Long pk){
         BooleanExpression predicate = QUser.user.pk.eq(pk).and(QUser.user.status.eq(DataStatus.ACTIVATED));
         Optional<User> user = userRepository.findOne(predicate);

@@ -7,15 +7,21 @@ import kr.kickon.api.global.auth.oauth.dto.NaverUserInfo;
 import kr.kickon.api.global.auth.oauth.dto.OAuth2UserInfo;
 import kr.kickon.api.global.auth.oauth.dto.PrincipalUserDetail;
 import kr.kickon.api.global.common.entities.User;
+import kr.kickon.api.global.common.enums.DataStatus;
+import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.common.enums.Role;
+import kr.kickon.api.global.error.exceptions.BadRequestException;
+import kr.kickon.api.global.error.exceptions.OAuth2RegistrationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
 
@@ -44,11 +50,15 @@ public class PrincipalOauth2UserService extends DefaultOAuth2UserService {
         String role = "OAUTH_FIRST_JOIN";
         if (userEntity.isPresent()) {
             user = userEntity.get();
-            userService.saveUser(user);
+            LocalDateTime deactivatedAt = user.getUpdatedAt(); // 또는 탈퇴 기록 기준
+            if (deactivatedAt != null && deactivatedAt.isAfter(LocalDateTime.now().minusDays(7))) {
+                throw new OAuth2RegistrationException(ResponseCode.FORBIDDEN_RESISTER);
+            }
             if(user.getPrivacyAgreedAt()!=null) role="USER";
 //            log.error("jwt role 확인 {}", role);
             // jwt 생성
         } else {
+            // 일주일 안에 탈퇴한 이력이 있는지 체크
             user = userService.saveSocialUser(oAuth2UserInfo);
         }
 

@@ -4,6 +4,7 @@ import kr.kickon.api.global.auth.jwt.CustomAccessDeniedHandler;
 import kr.kickon.api.global.auth.jwt.CustomAuthenticationEntryPoint;
 import kr.kickon.api.global.auth.jwt.JwtAuthenticationFilter;
 import kr.kickon.api.global.auth.oauth.CustomAuthorizationRequestResolver;
+import kr.kickon.api.global.auth.oauth.CustomOAuth2FailureHandler;
 import kr.kickon.api.global.auth.oauth.OAuth2SuccessHandler;
 import kr.kickon.api.global.auth.oauth.PrincipalOauth2UserService;
 import lombok.AllArgsConstructor;
@@ -29,6 +30,7 @@ public class SecurityConfig {
     private final CustomAuthorizationRequestResolver customAuthorizationRequestResolver;
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
     private final CustomAccessDeniedHandler accessDeniedHandler;
+    private final CustomOAuth2FailureHandler customOAuth2FailureHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -78,9 +80,15 @@ public class SecurityConfig {
 
                 })
                 .oauth2Login(oAuth2Login -> {
-                    oAuth2Login.userInfoEndpoint(userInfoEndpointConfig -> userInfoEndpointConfig.userService(principalOauth2UserService)).successHandler(oAuth2SuccessHandler).authorizationEndpoint(endpoint -> endpoint
-                            .authorizationRequestResolver(customAuthorizationRequestResolver));
-                        }
+                        oAuth2Login.userInfoEndpoint(
+                            userInfoEndpointConfig -> userInfoEndpointConfig.userService(principalOauth2UserService)
+                        )
+                        .successHandler(oAuth2SuccessHandler)
+                        .authorizationEndpoint(endpoint -> endpoint
+                            .authorizationRequestResolver(customAuthorizationRequestResolver)
+                        )
+                        .failureHandler(customOAuth2FailureHandler);
+                    }
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 // JWT 인증 실패 (401) → Custom EntryPoint
