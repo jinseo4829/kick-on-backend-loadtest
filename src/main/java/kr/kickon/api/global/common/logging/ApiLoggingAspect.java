@@ -22,8 +22,10 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 
 import java.lang.annotation.Annotation;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * API 요청/응답 시간 및 에러를 로깅하는 AOP 설정 클래스
@@ -156,7 +158,9 @@ public class ApiLoggingAspect {
         }
 
         if (queryParams != null && !queryParams.isEmpty()) {
-            logMessage.append(String.format("\n├─ QueryParams: %s", queryParams));
+            logMessage.append("\n├─ QueryParams: ");
+            queryParams.forEach((key, value) -> logMessage.append(key).append("=").append(String.join(",", value)).append(", "));
+            logMessage.setLength(logMessage.length() - 2); // 마지막 쉼표 제거
         }
 
         if (body != null && !body.isEmpty()) {
