@@ -28,6 +28,7 @@ public enum ResponseCode {
 
     // ✅ 403 Forbidden
     FORBIDDEN(HttpStatus.FORBIDDEN, "FORBIDDEN", "접근 권한이 없습니다."),
+    FORBIDDEN_RESISTER(HttpStatus.FORBIDDEN, "FORBIDDEN_RESISTER","탈퇴 후 7일이 지나지 않아 재가입할 수 없습니다."),
 
     // ✅ 404 Not Found
     NOT_FOUND_USER(HttpStatus.NOT_FOUND, "NOT_FOUND_USER", "해당 유저를 찾을 수 없습니다."),
