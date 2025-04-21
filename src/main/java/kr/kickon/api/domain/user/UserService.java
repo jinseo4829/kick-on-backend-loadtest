@@ -89,8 +89,17 @@ public class UserService implements BaseService<User> {
     }
 
     public Optional<User> findUserByProviderAndProviderId(ProviderType provider, String providerId){
-        BooleanExpression predicate = QUser.user.provider.eq(provider).and(QUser.user.providerId.eq(providerId));
-        return userRepository.findOne(predicate);
+        QUser user = QUser.user;
+
+        BooleanExpression predicate = user.provider.eq(provider)
+                .and(user.providerId.eq(providerId));
+
+        return Optional.ofNullable(
+                queryFactory.selectFrom(user)
+                        .where(predicate)
+                        .orderBy(user.createdAt.desc()) // 최신순 정렬
+                        .fetchFirst() // 하나만!
+        );
     }
 
     public void saveUser(User user){

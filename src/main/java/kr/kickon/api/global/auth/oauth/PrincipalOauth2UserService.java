@@ -51,7 +51,7 @@ public class PrincipalOauth2UserService extends DefaultOAuth2UserService {
         if (userEntity.isPresent()) {
             user = userEntity.get();
             LocalDateTime deactivatedAt = user.getUpdatedAt(); // 또는 탈퇴 기록 기준
-            if (deactivatedAt != null && deactivatedAt.isAfter(LocalDateTime.now().minusDays(7))) {
+            if (user.getStatus().equals(DataStatus.DEACTIVATED) && deactivatedAt != null && deactivatedAt.isAfter(LocalDateTime.now().minusDays(7))) {
                 throw new OAuth2RegistrationException(ResponseCode.FORBIDDEN_RESISTER);
             }
             if(user.getPrivacyAgreedAt()!=null) role="USER";
