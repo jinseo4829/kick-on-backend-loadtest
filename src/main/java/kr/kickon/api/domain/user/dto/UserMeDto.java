@@ -36,6 +36,7 @@ public class UserMeDto extends BaseUserDTO {
     private LeagueDTO league;
 
     public UserMeDto(User user) {
+        super(user);
         email = user.getEmail();
         providerType = user.getProvider();
         privacyAgreedAt = user.getPrivacyAgreedAt();
