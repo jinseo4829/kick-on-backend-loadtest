@@ -25,6 +25,7 @@ public enum ResponseCode {
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "인증이 필요합니다. 로그인 후 이용해주세요."),
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "INVALID_TOKEN", "유효하지 않은 토큰입니다. 다시 로그인해주세요."),
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "INVALID_REFRESH_TOKEN", "유효하지 않은 Refresh 토큰입니다."),
+    INVALID_PROVIDER(HttpStatus.UNAUTHORIZED, "INVALID_PROVIDER", "유효한 provider가 아닙니다."),
 
     // ✅ 403 Forbidden
     FORBIDDEN(HttpStatus.FORBIDDEN, "FORBIDDEN", "접근 권한이 없습니다."),

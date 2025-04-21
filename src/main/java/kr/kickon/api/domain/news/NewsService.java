@@ -1,5 +1,6 @@
 package kr.kickon.api.domain.news;
 
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
@@ -211,6 +212,80 @@ public class NewsService implements BaseService<News> {
 
     public News save(News news){
         return newsRepository.save(news);
+    }
+
+    public InfiniteScrollNewsListDTO findNewsForInfiniteScroll(
+            Long teamPk,
+            Long leaguePk,
+            String sortBy,
+            Long lastNewsPk,
+            int size
+    ) {
+        QNews news = QNews.news;
+        QNewsViewHistory newsViewHistory = QNewsViewHistory.newsViewHistory;
+        QUser user = QUser.user;
+
+        LocalDateTime hotThreshold = LocalDateTime.now().minusHours(48); // hot: 48시간 내
+        List<Long> teamPks = List.of();
+
+        // ✅ 리그 기준 팀 필터링
+        if (leaguePk != null) {
+            QActualSeason actualSeason = QActualSeason.actualSeason;
+            QActualSeasonTeam actualSeasonTeam = QActualSeasonTeam.actualSeasonTeam;
+
+            teamPks = queryFactory.select(actualSeasonTeam.team.pk)
+                    .from(actualSeasonTeam)
+                    .join(actualSeason).on(actualSeasonTeam.actualSeason.pk.eq(actualSeason.pk))
+                    .where(actualSeason.league.pk.eq(leaguePk)
+                            .and(actualSeasonTeam.status.eq(DataStatus.ACTIVATED))
+                            .and(actualSeason.status.eq(DataStatus.ACTIVATED))
+                            .and(actualSeasonTeam.team.status.eq(DataStatus.ACTIVATED)))
+                    .fetch();
+        }
+
+        // ✅ 메인 쿼리
+        JPAQuery<Tuple> dataQuery = createNewsListDTOQuery()
+                .groupBy(news.pk, user.pk)
+                .limit(size + 1); // → hasNext 판단용
+
+        // ✅ 조건 설정
+        BooleanBuilder condition = new BooleanBuilder()
+                .and(news.status.eq(DataStatus.ACTIVATED))
+                .and(user.status.eq(DataStatus.ACTIVATED));
+
+        if (lastNewsPk != null) {
+            condition.and(news.pk.lt(lastNewsPk));
+        }
+
+        if (teamPk != null) {
+            condition.and(news.team.pk.eq(teamPk));
+        }
+
+        if (leaguePk != null && !teamPks.isEmpty()) {
+            condition.and(news.team.pk.in(teamPks));
+        }
+
+        if ("hot".equalsIgnoreCase(sortBy)) {
+            condition.and(news.createdAt.goe(hotThreshold));
+            dataQuery.orderBy(newsViewHistory.pk.count().coalesce(0L).desc(), news.createdAt.desc());
+        } else {
+            dataQuery.orderBy(news.createdAt.desc());
+        }
+
+        dataQuery.where(condition);
+
+        List<Tuple> results = dataQuery.fetch();
+
+        // ✅ hasNext 처리
+        boolean hasNext = results.size() > size;
+        if (hasNext) {
+            results = results.subList(0, size); // 초과분 잘라내기
+        }
+
+        // ✅ DTO 변환
+        List<NewsListDTO> newsList = results.stream().map(this::tupleToNewsListDTO).toList();
+
+        return new InfiniteScrollNewsListDTO(newsList, hasNext);
     }
 
     public PaginatedNewsListDTO findNewsWithPagination(Long teamPk, int page, int size, String sortBy, Long leaguePk) {
