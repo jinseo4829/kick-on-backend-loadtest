@@ -48,17 +48,22 @@ public class PrincipalOauth2UserService extends DefaultOAuth2UserService {
 
         User user = null;
         String role = "OAUTH_FIRST_JOIN";
-        if (userEntity.isPresent()) {
+        if (userEntity.isPresent() && userEntity.get().getStatus().equals(DataStatus.ACTIVATED)) {
             user = userEntity.get();
-            LocalDateTime deactivatedAt = user.getUpdatedAt(); // 또는 탈퇴 기록 기준
-            if (user.getStatus().equals(DataStatus.DEACTIVATED) && deactivatedAt != null && deactivatedAt.isAfter(LocalDateTime.now().minusDays(7))) {
-                throw new OAuth2RegistrationException(ResponseCode.FORBIDDEN_RESISTER);
-            }
             if(user.getPrivacyAgreedAt()!=null) role="USER";
 //            log.error("jwt role 확인 {}", role);
             // jwt 생성
         } else {
+
             // 일주일 안에 탈퇴한 이력이 있는지 체크
+            if(userEntity.isPresent()){
+                user = userEntity.get();
+                LocalDateTime deactivatedAt = user.getUpdatedAt(); // 또는 탈퇴 기록 기준
+                if (user.getStatus().equals(DataStatus.DEACTIVATED) && deactivatedAt != null && deactivatedAt.isAfter(LocalDateTime.now().minusDays(7))) {
+                    throw new OAuth2RegistrationException(ResponseCode.FORBIDDEN_RESISTER);
+                }
+            }
+
             user = userService.saveSocialUser(oAuth2UserInfo);
         }
 
