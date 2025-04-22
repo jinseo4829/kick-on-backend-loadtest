@@ -39,4 +39,7 @@ public class GetNewsRequestDTO {
     @Schema(description = "마지막 게시글 뉴스 pk", example = "true")
     @Positive(message = "뉴스 pk는 양수로 입력해주세요.")
     private Long lastNews;
+
+    @Schema(description = "마지막 뉴스의 view Count", example = "123")
+    private Long lastViewCount;
 }

@@ -12,4 +12,9 @@ public class PaginatedNewsListDTO extends PagedMetaDTO {
         super(currentPage, pageSize, totalItems);
         this.newsList = news;
     }
+
+    public PaginatedNewsListDTO(List<NewsListDTO> news, Boolean hasNext){
+        super(hasNext);
+        this.newsList = news;
+    }
 }

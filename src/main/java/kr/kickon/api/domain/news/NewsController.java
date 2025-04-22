@@ -134,17 +134,12 @@ public class NewsController {
 
         // infinite == true → 무한스크롤: hasNext 반환
         // 무한 스크롤 처리
-        if (Boolean.TRUE.equals(query.getInfinite())) {
-            InfiniteScrollNewsListDTO news = newsService.findNewsForInfiniteScroll(
-                    query.getTeam(), query.getLeague(),query.getOrder(),  query.getLastNews(), query.getSize()
-            );
-
+        PaginatedNewsListDTO news = newsService.findNewsWithPagination(query.getTeam() != null ? query.getTeam() : null, query.getPage(), query.getSize(),query.getOrder(), query.getLeague(), query.getInfinite() != null ? query.getInfinite() : null, query.getLastNews(), query.getLastViewCount());
+        if(news.getHasNext()!=null){
             return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, news.getNewsList(), new PagedMetaDTO(news.getHasNext())));
         }else{
-            PaginatedNewsListDTO news = newsService.findNewsWithPagination(query.getTeam() != null ? query.getTeam() : null, query.getPage(), query.getSize(),query.getOrder(), query.getLeague());
             return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, news.getNewsList(), new PagedMetaDTO(news.getCurrentPage(), news.getPageSize(), news.getTotalItems())));
         }
-
     }
 
     @Operation(summary = "뉴스 상세 조회", description = "뉴스 PK 값으로 게시글 조회")

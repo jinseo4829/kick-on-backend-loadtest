@@ -3,6 +3,8 @@ package kr.kickon.api.domain.news;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.NumberTemplate;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import kr.kickon.api.domain.news.dto.*;
@@ -214,81 +216,7 @@ public class NewsService implements BaseService<News> {
         return newsRepository.save(news);
     }
 
-    public InfiniteScrollNewsListDTO findNewsForInfiniteScroll(
-            Long teamPk,
-            Long leaguePk,
-            String sortBy,
-            Long lastNewsPk,
-            int size
-    ) {
-        QNews news = QNews.news;
-        QNewsViewHistory newsViewHistory = QNewsViewHistory.newsViewHistory;
-        QUser user = QUser.user;
-
-        LocalDateTime hotThreshold = LocalDateTime.now().minusHours(48); // hot: 48시간 내
-        List<Long> teamPks = List.of();
-
-        // ✅ 리그 기준 팀 필터링
-        if (leaguePk != null) {
-            QActualSeason actualSeason = QActualSeason.actualSeason;
-            QActualSeasonTeam actualSeasonTeam = QActualSeasonTeam.actualSeasonTeam;
-
-            teamPks = queryFactory.select(actualSeasonTeam.team.pk)
-                    .from(actualSeasonTeam)
-                    .join(actualSeason).on(actualSeasonTeam.actualSeason.pk.eq(actualSeason.pk))
-                    .where(actualSeason.league.pk.eq(leaguePk)
-                            .and(actualSeasonTeam.status.eq(DataStatus.ACTIVATED))
-                            .and(actualSeason.status.eq(DataStatus.ACTIVATED))
-                            .and(actualSeasonTeam.team.status.eq(DataStatus.ACTIVATED)))
-                    .fetch();
-        }
-
-        // ✅ 메인 쿼리
-        JPAQuery<Tuple> dataQuery = createNewsListDTOQuery()
-                .groupBy(news.pk, user.pk)
-                .limit(size + 1); // → hasNext 판단용
-
-        // ✅ 조건 설정
-        BooleanBuilder condition = new BooleanBuilder()
-                .and(news.status.eq(DataStatus.ACTIVATED))
-                .and(user.status.eq(DataStatus.ACTIVATED));
-
-        if (lastNewsPk != null) {
-            condition.and(news.pk.lt(lastNewsPk));
-        }
-
-        if (teamPk != null) {
-            condition.and(news.team.pk.eq(teamPk));
-        }
-
-        if (leaguePk != null && !teamPks.isEmpty()) {
-            condition.and(news.team.pk.in(teamPks));
-        }
-
-        if ("hot".equalsIgnoreCase(sortBy)) {
-            condition.and(news.createdAt.goe(hotThreshold));
-            dataQuery.orderBy(newsViewHistory.pk.count().coalesce(0L).desc(), news.createdAt.desc());
-        } else {
-            dataQuery.orderBy(news.createdAt.desc());
-        }
-
-        dataQuery.where(condition);
-
-        List<Tuple> results = dataQuery.fetch();
-
-        // ✅ hasNext 처리
-        boolean hasNext = results.size() > size;
-        if (hasNext) {
-            results = results.subList(0, size); // 초과분 잘라내기
-        }
-
-        // ✅ DTO 변환
-        List<NewsListDTO> newsList = results.stream().map(this::tupleToNewsListDTO).toList();
-
-        return new InfiniteScrollNewsListDTO(newsList, hasNext);
-    }
-
-    public PaginatedNewsListDTO findNewsWithPagination(Long teamPk, int page, int size, String sortBy, Long leaguePk) {
+    public PaginatedNewsListDTO findNewsWithPagination(Long teamPk, int page, int size, String sortBy, Long leaguePk, Boolean infiniteFlag, Long lastNewsPk, Long lastViewCount) {
         QNews news = QNews.news;
         QNewsViewHistory newsViewHistory = QNewsViewHistory.newsViewHistory;
         QUser user = QUser.user;
@@ -301,9 +229,9 @@ public class NewsService implements BaseService<News> {
                 .join(user).on(news.user.pk.eq(user.pk))
                 .where(news.status.eq(DataStatus.ACTIVATED)
                         .and(user.status.eq(DataStatus.ACTIVATED)));
+
         if (teamPk != null) totalQuery.where(news.team.pk.eq(teamPk));
         if ("hot".equalsIgnoreCase(sortBy)) totalQuery.where(news.createdAt.goe(hotThreshold)); // hot일 때 48시간 내 필터링
-        // ✅ 리그 기준 팀 필터링
         if (leaguePk != null) {
             QActualSeason actualSeason = QActualSeason.actualSeason;
             QActualSeasonTeam actualSeasonTeam = QActualSeasonTeam.actualSeasonTeam;
@@ -318,29 +246,66 @@ public class NewsService implements BaseService<News> {
         }
         Long totalCount = totalQuery.fetchOne();
 
+        // 실제 데이터 쿼리
+        // ✅ 메인 쿼리
         JPAQuery<Tuple> dataQuery = createNewsListDTOQuery()
-                .groupBy(news.pk, user.pk)
-                .offset(offset)
-                .limit(size);
+                .groupBy(news.pk, user.pk);
+        List<Tuple> results = List.of();
         if (leaguePk != null) dataQuery.where(news.team.pk.in(teamPks));
         if (teamPk != null) dataQuery.where(news.team.pk.eq(teamPk));
-
         // ✅ 정렬 기준에 따른 동적 처리
         if ("hot".equalsIgnoreCase(sortBy)) {
-            dataQuery.where(news.createdAt.goe(hotThreshold)); // hot일 때 48시간 내 필터링
-            dataQuery.orderBy(newsViewHistory.pk.count().coalesce(0L).desc(), news.createdAt.desc()); // 조회수 + 최신순
+            dataQuery.where(news.createdAt.goe(hotThreshold)); // 최근 48시간 필터링
+
+            // ✅ 복합 정렬 기준 (조회수, pk)
+            dataQuery.orderBy(
+                    newsViewHistory.pk.countDistinct().coalesce(0L).desc(),
+                    news.pk.desc()
+            );
+
+            // ✅ 커서 조건
+            if (lastViewCount != null && lastNewsPk != null && lastNewsPk > 0) {
+                // group by 이후 having으로 거르기보다 subquery를 활용한 커서 기반 조회
+                NumberTemplate<Long> viewCountAlias = Expressions.numberTemplate(Long.class, "count(distinct {0})", newsViewHistory.pk);
+
+                dataQuery.having(
+                        viewCountAlias.lt(lastViewCount)
+                                .or(viewCountAlias.eq(lastViewCount).and(news.pk.lt(lastNewsPk)))
+                );
+            }
         } else {
-            dataQuery.orderBy(news.createdAt.desc()); // 기본값: 최신순
+            dataQuery.orderBy(news.createdAt.desc(), news.pk.desc()); // 최신순도 pk 정렬 추가
+            if (lastNewsPk != null && lastNewsPk > 0) {
+                dataQuery.where(news.pk.lt(lastNewsPk));
+            }
         }
 
+        // offset 설정
+        if(infiniteFlag){
+            // 무한 스크롤일 때
+            dataQuery.limit(size + 1); // → hasNext 판단용
+            results = dataQuery.fetch();
+            // ✅ hasNext 처리
+            System.out.println(results);
+            boolean hasNext = results.size() > size;
+            if (hasNext) {
+                results = results.subList(0, size); // 초과분 잘라내기
+            }
+            // ✅ DTO 변환
+            List<NewsListDTO> newsList = results.stream().map(this::tupleToNewsListDTO).toList();
 
+            // ✅ 메타데이터 포함한 결과 반환
+            return new PaginatedNewsListDTO(newsList, hasNext);
+        }else{
+            // 일반 페이지 네이션
+            dataQuery.offset(offset)
+                    .limit(size);
+            results = dataQuery.fetch();
+            // ✅ DTO 변환
+            List<NewsListDTO> newsList = results.stream().map(this::tupleToNewsListDTO).toList();
 
-        List<Tuple> results = dataQuery.fetch();
-
-        // ✅ DTO 변환
-        List<NewsListDTO> newsList = results.stream().map(this::tupleToNewsListDTO).toList();
-
-        // ✅ 메타데이터 포함한 결과 반환
-        return new PaginatedNewsListDTO(page, size, totalCount, newsList);
+            // ✅ 메타데이터 포함한 결과 반환
+            return new PaginatedNewsListDTO(page, size, totalCount, newsList);
+        }
     }
 }
