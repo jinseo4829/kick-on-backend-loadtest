@@ -220,6 +220,7 @@ public class NewsService implements BaseService<News> {
         QNews news = QNews.news;
         QNewsViewHistory newsViewHistory = QNewsViewHistory.newsViewHistory;
         QUser user = QUser.user;
+
         Integer offset = (page - 1) * size;
         LocalDateTime hotThreshold = LocalDateTime.now().minusHours(48); // 최근 48시간 기준
         List<Long> teamPks = List.of();
@@ -250,7 +251,7 @@ public class NewsService implements BaseService<News> {
         // ✅ 메인 쿼리
         JPAQuery<Tuple> dataQuery = createNewsListDTOQuery()
                 .groupBy(news.pk, user.pk);
-        List<Tuple> results = List.of();
+        List<Tuple> results;
         if (leaguePk != null) dataQuery.where(news.team.pk.in(teamPks));
         if (teamPk != null) dataQuery.where(news.team.pk.eq(teamPk));
         // ✅ 정렬 기준에 따른 동적 처리
@@ -281,7 +282,7 @@ public class NewsService implements BaseService<News> {
         }
 
         // offset 설정
-        if(infiniteFlag){
+        if(infiniteFlag!=null && infiniteFlag){
             // 무한 스크롤일 때
             dataQuery.limit(size + 1); // → hasNext 판단용
             results = dataQuery.fetch();
