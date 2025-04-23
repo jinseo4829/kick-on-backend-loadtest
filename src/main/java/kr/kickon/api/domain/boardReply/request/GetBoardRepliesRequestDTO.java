@@ -25,4 +25,11 @@ public class GetBoardRepliesRequestDTO {
     @Positive(message = "page는 양수로 입력해주세요.")
     @Schema(description = "이동할 페이지", example = "1")
     private Integer page;
+
+    @Schema(description = "true면 무한스크롤 방식 (hasNext 반환됨), false거나 null이면 일반 페이지네이션 방식", example = "false")
+    private Boolean infinite;
+
+    @Schema(description = "마지막 게시글 게시글 pk", example = "true")
+    @Positive(message = "게시글 pk는 양수로 입력해주세요.")
+    private Long lastReply;
 }
