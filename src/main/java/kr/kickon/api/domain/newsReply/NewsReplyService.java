@@ -2,11 +2,15 @@ package kr.kickon.api.domain.newsReply;
 
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import kr.kickon.api.domain.news.dto.UserDTO;
+import kr.kickon.api.domain.board.dto.BoardListDTO;
+import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
+import kr.kickon.api.domain.news.dto.NewsListDTO;
 import kr.kickon.api.domain.newsReply.dto.PaginatedNewsReplyListDTO;
 import kr.kickon.api.domain.newsReply.dto.ReplyDTO;
 import kr.kickon.api.domain.newsReplyKick.NewsReplyKickService;
+import kr.kickon.api.domain.user.dto.BaseUserDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
@@ -43,7 +47,7 @@ public class NewsReplyService implements BaseService<NewsReply> {
     }
 
 
-    public PaginatedNewsReplyListDTO getRepliesByNews(Long newsPk, Long userPk, Integer page, Integer size) {
+    public PaginatedNewsReplyListDTO getRepliesByNews(Long newsPk, Long userPk, Integer page, Integer size, Boolean infiniteFlag, Long lastReplyPk) {
         QNewsReply reply = QNewsReply.newsReply;
         QUser user = QUser.user;
         Integer offset = (page - 1) * size;
@@ -57,22 +61,46 @@ public class NewsReplyService implements BaseService<NewsReply> {
                         )
                 .fetchOne();
 
-        List<Tuple> results = queryFactory.select(reply, user)
+        JPAQuery<Tuple> dataQuery = queryFactory.select(reply, user)
                 .from(reply)
                 .join(user).on(reply.user.pk.eq(user.pk))
                 .where(reply.news.pk.eq(newsPk)
                         .and(reply.parentNewsReply.isNull())
                         .and(user.status.eq(DataStatus.ACTIVATED))
                         .and(reply.status.eq(DataStatus.ACTIVATED)))
-                .offset(offset)
-                .limit(size)
-                .orderBy(reply.createdAt.asc())
-                .fetch();
+                .orderBy(reply.createdAt.asc());
 
-        List<ReplyDTO> replyList = results.stream()
-                .map(tuple -> mapToReplyDTO(tuple, userPk))
-                .toList();
-        return new PaginatedNewsReplyListDTO(page, size, total, replyList);
+        List<Tuple> results;
+
+        if(infiniteFlag!=null && infiniteFlag){
+            // 무한 스크롤일 때
+            dataQuery.limit(size + 1); // → hasNext 판단용
+            if (lastReplyPk != null && lastReplyPk > 0) {
+                dataQuery.where(reply.pk.lt(lastReplyPk));
+            }
+
+            results = dataQuery.fetch();
+            // ✅ hasNext 처리
+            boolean hasNext = results.size() > size;
+            if (hasNext) {
+                results = results.subList(0, size); // 초과분 잘라내기
+            }
+            // ✅ DTO 변환
+            List<ReplyDTO> boardList = results.stream().map(tuple -> mapToReplyDTO(tuple, userPk)).toList();
+
+            // ✅ 메타데이터 포함한 결과 반환
+            return new PaginatedNewsReplyListDTO(boardList, hasNext);
+        }else{
+            // 일반 페이지 네이션
+            dataQuery.offset(offset)
+                    .limit(size);
+            results = dataQuery.fetch();
+            // ✅ DTO 변환
+            List<ReplyDTO> boardList = results.stream().map(tuple -> mapToReplyDTO(tuple, userPk)).toList();
+
+            // ✅ 메타데이터 포함한 결과 반환
+            return new PaginatedNewsReplyListDTO(page, size, total, boardList);
+        }
     }
 
     private ReplyDTO mapToReplyDTO(Tuple tuple, Long userPk) {
@@ -90,7 +118,7 @@ public class NewsReplyService implements BaseService<NewsReply> {
                 .pk(parentReply.getPk())
                 .contents(parentReply.getContents())
                 .createdAt(parentReply.getCreatedAt())
-                .user(UserDTO.builder()
+                .user(BaseUserDTO.builder()
                         .id(replyUser.getId())
                         .nickname(replyUser.getNickname())
                         .profileImageUrl(replyUser.getProfileImageUrl())

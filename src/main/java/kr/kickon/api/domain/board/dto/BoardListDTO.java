@@ -3,6 +3,7 @@ package kr.kickon.api.domain.board.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.MappedSuperclass;
 import kr.kickon.api.domain.team.dto.TeamDTO;
+import kr.kickon.api.domain.user.dto.BaseUserDTO;
 import kr.kickon.api.global.common.ExampleConstants;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -22,7 +23,7 @@ public class BoardListDTO {
     @Schema(example = ExampleConstants.title, description = "게시글 제목")
     private String title;
 
-    private UserDTO user;
+    private BaseUserDTO user;
 
     private TeamDTO team;
 

@@ -3,7 +3,9 @@ package kr.kickon.api.domain.news.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.MappedSuperclass;
 import kr.kickon.api.domain.team.dto.TeamDTO;
+import kr.kickon.api.domain.user.dto.BaseUserDTO;
 import kr.kickon.api.global.common.ExampleConstants;
+import kr.kickon.api.global.common.entities.News;
 import kr.kickon.api.global.common.enums.NewsCategory;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,7 +28,7 @@ public class NewsListDTO {
     @Schema(example = ExampleConstants.title, description = "뉴스 제목")
     private String title;
 
-    @Schema(example = ExampleConstants.content, description = "뉴스 제목")
+    @Schema(example = ExampleConstants.content, description = "뉴스 내용")
     private String content;
 
     @Schema(example = ExampleConstants.thumbnail, description = "뉴스 썸네일")
@@ -35,7 +37,7 @@ public class NewsListDTO {
     @Schema(example = NewsCategory.VALUE.RENEWAL, description = "뉴스 카테고리")
     private String category;
 
-    private UserDTO user;
+    private BaseUserDTO user;
 
     private TeamDTO team;
 
@@ -50,4 +52,17 @@ public class NewsListDTO {
 
     @Schema(example = "12354", description = "댓글 수")
     private Integer replies;
+
+    public NewsListDTO(News news, BaseUserDTO user, Integer likes,  Integer views,Integer replies){
+        pk = news.getPk();
+        title = news.getTitle();
+        content = news.getContents();
+        thumbnailUrl = news.getThumbnailUrl();
+        category = news.getCategory().getKoreanName();
+        this.user = user;
+        createdAt = news.getCreatedAt();
+        this.views = views;
+        this.likes = likes;
+        this.replies = replies;
+    }
 }

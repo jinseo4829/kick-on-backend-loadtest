@@ -1,15 +1,16 @@
 package kr.kickon.api.domain.news;
 
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.NumberTemplate;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import kr.kickon.api.domain.board.dto.BoardDetailDTO;
-import kr.kickon.api.domain.board.dto.BoardListDTO;
-import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
 import kr.kickon.api.domain.news.dto.*;
 import kr.kickon.api.domain.newsKick.NewsKickService;
 import kr.kickon.api.domain.team.dto.TeamDTO;
+import kr.kickon.api.domain.user.dto.BaseUserDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
@@ -19,8 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -81,7 +82,7 @@ public class NewsService implements BaseService<News> {
                 .content(newsEntity.getContents())
                 .thumbnailUrl(newsEntity.getThumbnailUrl())
                 .category(newsEntity.getCategory().getKoreanName())
-                .user(UserDTO.builder()
+                .user(BaseUserDTO.builder()
                         .id(userEntity.getId())
                         .nickname(userEntity.getNickname())
                         .profileImageUrl(userEntity.getProfileImageUrl())
@@ -120,36 +121,17 @@ public class NewsService implements BaseService<News> {
         User userEntity = result.get(user);
         Team teamEntity = result.get(team);
 
-        NewsDetailDTO newsDetailDTO = NewsDetailDTO.builder()
-                .pk(newsEntity.getPk())
-                .title(newsEntity.getTitle())
-                .user(UserDTO.builder()
-                        .id(userEntity.getId())
-                        .nickname(userEntity.getNickname())
-                        .profileImageUrl(userEntity.getProfileImageUrl())
-                        .build())
-                .createdAt(newsEntity.getCreatedAt())
-                .likes(result.get(3, Long.class).intValue())
-                .views(result.get(4, Long.class).intValue())
-                .replies(result.get(5, Long.class).intValue())
-                .content(newsEntity.getContents())
-                .thumbnailUrl(newsEntity.getThumbnailUrl())
-                .category(newsEntity.getCategory().getKoreanName())
-                .build();
+        NewsDetailDTO newsDetailDTO = new NewsDetailDTO(newsEntity, new BaseUserDTO(userEntity),result.get(3, Long.class).intValue(),result.get(4, Long.class).intValue(), result.get(5, Long.class).intValue());
 
         if(userData!=null){
-            NewsKick newsKick = newsKickService.findByNewsAndUser(result.get(news).getPk(), userData.getPk());
+            NewsKick newsKick = newsKickService.findByNewsAndUser(Objects.requireNonNull(result.get(news)).getPk(), userData.getPk());
             newsDetailDTO.setIsKicked(newsKick!=null);
         }
 
         if(teamEntity!=null){
-            newsDetailDTO.setTeam(TeamDTO.builder()
-                    .pk(teamEntity.getPk())
-                    .logoUrl(teamEntity.getLogoUrl())
-                    .nameKr(teamEntity.getNameKr())
-                    .nameEn(teamEntity.getNameEn())
-                    .build());
+            newsDetailDTO.setTeam(new TeamDTO(teamEntity));
         }
+
         return newsDetailDTO;
     }
 
@@ -234,10 +216,11 @@ public class NewsService implements BaseService<News> {
         return newsRepository.save(news);
     }
 
-    public PaginatedNewsListDTO findNewsWithPagination(Long teamPk, int page, int size, String sortBy, Long leaguePk) {
+    public PaginatedNewsListDTO findNewsWithPagination(Long teamPk, int page, int size, String sortBy, Long leaguePk, Boolean infiniteFlag, Long lastNewsPk, Long lastViewCount) {
         QNews news = QNews.news;
         QNewsViewHistory newsViewHistory = QNewsViewHistory.newsViewHistory;
         QUser user = QUser.user;
+
         Integer offset = (page - 1) * size;
         LocalDateTime hotThreshold = LocalDateTime.now().minusHours(48); // 최근 48시간 기준
         List<Long> teamPks = List.of();
@@ -247,9 +230,9 @@ public class NewsService implements BaseService<News> {
                 .join(user).on(news.user.pk.eq(user.pk))
                 .where(news.status.eq(DataStatus.ACTIVATED)
                         .and(user.status.eq(DataStatus.ACTIVATED)));
+
         if (teamPk != null) totalQuery.where(news.team.pk.eq(teamPk));
         if ("hot".equalsIgnoreCase(sortBy)) totalQuery.where(news.createdAt.goe(hotThreshold)); // hot일 때 48시간 내 필터링
-        // ✅ 리그 기준 팀 필터링
         if (leaguePk != null) {
             QActualSeason actualSeason = QActualSeason.actualSeason;
             QActualSeasonTeam actualSeasonTeam = QActualSeasonTeam.actualSeasonTeam;
@@ -264,29 +247,66 @@ public class NewsService implements BaseService<News> {
         }
         Long totalCount = totalQuery.fetchOne();
 
+        // 실제 데이터 쿼리
+        // ✅ 메인 쿼리
         JPAQuery<Tuple> dataQuery = createNewsListDTOQuery()
-                .groupBy(news.pk, user.pk)
-                .offset(offset)
-                .limit(size);
+                .groupBy(news.pk, user.pk);
+        List<Tuple> results;
         if (leaguePk != null) dataQuery.where(news.team.pk.in(teamPks));
         if (teamPk != null) dataQuery.where(news.team.pk.eq(teamPk));
-
         // ✅ 정렬 기준에 따른 동적 처리
         if ("hot".equalsIgnoreCase(sortBy)) {
-            dataQuery.where(news.createdAt.goe(hotThreshold)); // hot일 때 48시간 내 필터링
-            dataQuery.orderBy(newsViewHistory.pk.count().coalesce(0L).desc(), news.createdAt.desc()); // 조회수 + 최신순
+            dataQuery.where(news.createdAt.goe(hotThreshold)); // 최근 48시간 필터링
+
+            // ✅ 복합 정렬 기준 (조회수, pk)
+            dataQuery.orderBy(
+                    newsViewHistory.pk.countDistinct().coalesce(0L).desc(),
+                    news.pk.desc()
+            );
+
+            // ✅ 커서 조건
+            if (lastViewCount != null && lastNewsPk != null && lastNewsPk > 0) {
+                // group by 이후 having으로 거르기보다 subquery를 활용한 커서 기반 조회
+                NumberTemplate<Long> viewCountAlias = Expressions.numberTemplate(Long.class, "count(distinct {0})", newsViewHistory.pk);
+
+                dataQuery.having(
+                        viewCountAlias.lt(lastViewCount)
+                                .or(viewCountAlias.eq(lastViewCount).and(news.pk.lt(lastNewsPk)))
+                );
+            }
         } else {
-            dataQuery.orderBy(news.createdAt.desc()); // 기본값: 최신순
+            dataQuery.orderBy(news.createdAt.desc(), news.pk.desc()); // 최신순도 pk 정렬 추가
+            if (lastNewsPk != null && lastNewsPk > 0) {
+                dataQuery.where(news.pk.lt(lastNewsPk));
+            }
         }
 
+        // offset 설정
+        if(infiniteFlag!=null && infiniteFlag){
+            // 무한 스크롤일 때
+            dataQuery.limit(size + 1); // → hasNext 판단용
+            results = dataQuery.fetch();
+            // ✅ hasNext 처리
+            System.out.println(results);
+            boolean hasNext = results.size() > size;
+            if (hasNext) {
+                results = results.subList(0, size); // 초과분 잘라내기
+            }
+            // ✅ DTO 변환
+            List<NewsListDTO> newsList = results.stream().map(this::tupleToNewsListDTO).toList();
 
+            // ✅ 메타데이터 포함한 결과 반환
+            return new PaginatedNewsListDTO(newsList, hasNext);
+        }else{
+            // 일반 페이지 네이션
+            dataQuery.offset(offset)
+                    .limit(size);
+            results = dataQuery.fetch();
+            // ✅ DTO 변환
+            List<NewsListDTO> newsList = results.stream().map(this::tupleToNewsListDTO).toList();
 
-        List<Tuple> results = dataQuery.fetch();
-
-        // ✅ DTO 변환
-        List<NewsListDTO> newsList = results.stream().map(this::tupleToNewsListDTO).toList();
-
-        // ✅ 메타데이터 포함한 결과 반환
-        return new PaginatedNewsListDTO(page, size, totalCount, newsList);
+            // ✅ 메타데이터 포함한 결과 반환
+            return new PaginatedNewsListDTO(page, size, totalCount, newsList);
+        }
     }
 }

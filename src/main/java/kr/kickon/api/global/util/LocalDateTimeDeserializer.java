@@ -1,4 +1,4 @@
-package kr.kickon.api.global.config;
+package kr.kickon.api.global.util;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;

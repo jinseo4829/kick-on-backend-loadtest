@@ -11,10 +11,7 @@ import kr.kickon.api.domain.board.dto.BoardDetailDTO;
 import kr.kickon.api.domain.board.response.GetBoardDetailResponse;
 import kr.kickon.api.domain.board.response.GetHomeBoardsResponse;
 import kr.kickon.api.domain.league.LeagueService;
-import kr.kickon.api.domain.news.dto.HotNewsListDTO;
-import kr.kickon.api.domain.news.dto.NewsDetailDTO;
-import kr.kickon.api.domain.news.dto.NewsListDTO;
-import kr.kickon.api.domain.news.dto.PaginatedNewsListDTO;
+import kr.kickon.api.domain.news.dto.*;
 import kr.kickon.api.domain.news.request.CreateNewsRequestDTO;
 import kr.kickon.api.domain.news.request.GetNewsRequestDTO;
 import kr.kickon.api.domain.news.response.GetHomeNewsResponse;
@@ -134,8 +131,15 @@ public class NewsController {
             League league = leagueService.findByPk(query.getLeague());
             if(league==null) throw new NotFoundException(ResponseCode.NOT_FOUND_LEAGUE);
         }
-        PaginatedNewsListDTO news = newsService.findNewsWithPagination(query.getTeam() != null ? query.getTeam() : null, query.getPage(), query.getSize(),query.getOrder(), query.getLeague());
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, news.getNewsList(), new PagedMetaDTO(news.getCurrentPage(), news.getPageSize(), news.getTotalItems())));
+
+        // infinite == true → 무한스크롤: hasNext 반환
+        // 무한 스크롤 처리
+        PaginatedNewsListDTO news = newsService.findNewsWithPagination(query.getTeam() != null ? query.getTeam() : null, query.getPage(), query.getSize(),query.getOrder(), query.getLeague(), query.getInfinite() != null ? query.getInfinite() : null, query.getLastNews(), query.getLastViewCount());
+        if(news.getHasNext()!=null){
+            return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, news.getNewsList(), new PagedMetaDTO(news.getHasNext())));
+        }else{
+            return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, news.getNewsList(), new PagedMetaDTO(news.getCurrentPage(), news.getPageSize(), news.getTotalItems())));
+        }
     }
 
     @Operation(summary = "뉴스 상세 조회", description = "뉴스 PK 값으로 게시글 조회")

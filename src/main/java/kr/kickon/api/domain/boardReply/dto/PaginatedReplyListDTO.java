@@ -13,4 +13,8 @@ public class PaginatedReplyListDTO extends PagedMetaDTO {
         super(currentPage, pageSize, totalItems);
         this.replyList = replyList;
     }
+    public PaginatedReplyListDTO(List<ReplyDTO> replyList, Boolean hasNext){
+        super(hasNext);
+        this.replyList = replyList;
+    }
 }

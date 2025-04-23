@@ -10,18 +10,21 @@ import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.auth.oauth.dto.OAuth2UserInfo;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.QUser;
+import kr.kickon.api.global.common.entities.Team;
 import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.entities.UserFavoriteTeam;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.ProviderType;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.common.enums.UserAccountStatus;
+import kr.kickon.api.global.error.exceptions.BadRequestException;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,6 +35,7 @@ public class UserService implements BaseService<User> {
     private final UserRepository userRepository;
     private final JPAQueryFactory queryFactory;
     private final UUIDGenerator uuidGenerator;
+    private final TeamService teamService;
     private final UserFavoriteTeamService userFavoriteTeamService;
 
     public List<User> findUsersByStatus(DataStatus status){
@@ -47,20 +51,60 @@ public class UserService implements BaseService<User> {
 //                .fetch();
 //    }
 
+    public void deleteUser(User user){
+        user.setStatus(DataStatus.DEACTIVATED);
+        saveUser(user);
+    }
+
+    @Transactional
+    public void updateUser(User user, PatchUserRequest request) {
+        if (!user.getNickname().equals(request.getNickname())) {
+            user.setNickname(request.getNickname());
+        }
+
+        if (request.getTeam() != null) {
+            Team team = teamService.findByPk(request.getTeam());
+            if (team == null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
+
+            UserFavoriteTeam uft = userFavoriteTeamService.findByUserPk(user.getPk());
+            if (uft == null) {
+                String id = uuidGenerator.generateUniqueUUID(userFavoriteTeamService::findById);
+                uft = UserFavoriteTeam.builder().id(id).user(user).team(team).build();
+            } else {
+                uft.setTeam(team);
+            }
+            userFavoriteTeamService.save(uft);
+        }
+
+        saveUser(user); // nickname이 변경됐을 수도 있으니까
+    }
+
     public  Optional<User> findUserByEmail(String email){
         BooleanExpression predicate = QUser.user.email.eq(email).and(QUser.user.status.eq(DataStatus.ACTIVATED));
         return userRepository.findOne(predicate);
     }
 
+    public boolean existsByNickname(String nickname){
+        return userRepository.existsByNicknameAndStatus(nickname, DataStatus.ACTIVATED);
+    }
+
     public Optional<User> findUserByProviderAndProviderId(ProviderType provider, String providerId){
-        BooleanExpression predicate = QUser.user.provider.eq(provider).and(QUser.user.status.eq(DataStatus.ACTIVATED).and(QUser.user.providerId.eq(providerId)));
-        return userRepository.findOne(predicate);
+        QUser user = QUser.user;
+
+        BooleanExpression predicate = user.provider.eq(provider)
+                .and(user.providerId.eq(providerId));
+
+        return Optional.ofNullable(
+                queryFactory.selectFrom(user)
+                        .where(predicate)
+                        .orderBy(user.createdAt.desc()) // 최신순 정렬
+                        .fetchFirst() // 하나만!
+        );
     }
 
     public void saveUser(User user){
         userRepository.save(user);
     }
-
     public User findByPk(Long pk){
         BooleanExpression predicate = QUser.user.pk.eq(pk).and(QUser.user.status.eq(DataStatus.ACTIVATED));
         Optional<User> user = userRepository.findOne(predicate);

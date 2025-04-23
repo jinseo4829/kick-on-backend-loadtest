@@ -182,6 +182,7 @@ public class MigrationService {
         });
     }
 
+    @Transactional
     public void saveGamesAndUpdateGambles(List<ApiGamesDTO> list){
         // 게임 아이디 체크
         List<String> gameIds = new ArrayList<>();
@@ -296,14 +297,15 @@ public class MigrationService {
                 // 랭킹 업데이트
                 GambleSeasonRanking homeGambleSeasonRanking = gambleSeasonRankingService.findByTeamPk(homeSeasonPoint.getTeam().getPk());
                 homeGambleSeasonRanking.setPoints(homeGambleSeasonRanking.getPoints() + homeSeasonPoint.getAveragePoints());
-                homeGambleSeasonRanking.setGameNum(homeGambleSeasonRanking.getGameNum()+1);
                 GambleSeasonRanking awayGambleSeasonRanking = gambleSeasonRankingService.findByTeamPk(awaySeasonPoint.getTeam().getPk());
                 awayGambleSeasonRanking.setPoints(awayGambleSeasonRanking.getPoints() + awaySeasonPoint.getAveragePoints());
-                homeGambleSeasonRanking.setGameNum(awayGambleSeasonRanking.getGameNum()+1);
                 gambleSeasonRankingService.save(homeGambleSeasonRanking);
                 gambleSeasonRankingService.save(awayGambleSeasonRanking);
             }
+            gambleSeasonRankingService.updateGameNumOnlyByActualSeason(game.getActualSeason().getPk());
         });
+
+
         updateTeamRankings();
     }
 
@@ -787,4 +789,6 @@ public class MigrationService {
         }
         return list;
     }
+
+
 }

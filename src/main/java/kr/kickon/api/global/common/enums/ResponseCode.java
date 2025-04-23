@@ -19,14 +19,17 @@ public enum ResponseCode {
     GAMBLE_CLOSED(HttpStatus.BAD_REQUEST, "GAMBLE_CLOSED", "게임 시작 30분 전까지만 승부 예측이 가능합니다."),
     DUPLICATED_USER_GAME_GAMBLE(HttpStatus.BAD_REQUEST, "DUPLICATED_USER_GAME_GAMBLE", "이미 게임에 대한 승부예측이 진행중입니다."),
     ALREADY_FINISHED_GAMBLE(HttpStatus.BAD_REQUEST, "ALREADY_FINISHED_GAMBLE", "이미 해당 승부예측이 종료 되었습니다."),
+    DUPLICATED_NICKNAME(HttpStatus.BAD_REQUEST, "DUPLICATED_NICKNAME", "이미 사용중인 닉네임 입니다."),
 
     // ✅ 401 Unauthorized
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "인증이 필요합니다. 로그인 후 이용해주세요."),
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "INVALID_TOKEN", "유효하지 않은 토큰입니다. 다시 로그인해주세요."),
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "INVALID_REFRESH_TOKEN", "유효하지 않은 Refresh 토큰입니다."),
+    INVALID_PROVIDER(HttpStatus.UNAUTHORIZED, "INVALID_PROVIDER", "유효한 provider가 아닙니다."),
 
     // ✅ 403 Forbidden
     FORBIDDEN(HttpStatus.FORBIDDEN, "FORBIDDEN", "접근 권한이 없습니다."),
+    FORBIDDEN_RESISTER(HttpStatus.FORBIDDEN, "FORBIDDEN_RESISTER","탈퇴 후 7일이 지나지 않아 재가입할 수 없습니다."),
 
     // ✅ 404 Not Found
     NOT_FOUND_USER(HttpStatus.NOT_FOUND, "NOT_FOUND_USER", "해당 유저를 찾을 수 없습니다."),
