@@ -75,7 +75,7 @@ public class GlobalExceptionHandler {
     // jwt 403 관련
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ResponseDTO<Void>> handleAccessDeniedException(AccessDeniedException e) {
-        log.warn("Access Denied: {}", e.getMessage()); // ❗ 경고 로그 남기기
+//        log.warn("Access Denied: {}", e.getMessage()); // ❗ 경고 로그 남기기
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ResponseDTO.error(ResponseCode.FORBIDDEN));
     }
@@ -83,7 +83,7 @@ public class GlobalExceptionHandler {
     // jwt 401 관련
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ResponseDTO<Void>> handleAccessDeniedException(AuthenticationException e) {
-        log.warn("Authentication Error: {}", e.getMessage()); // ❗ 경고 로그 남기기
+//        log.warn("Authentication Error: {}", e.getMessage()); // ❗ 경고 로그 남기기
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ResponseDTO.error(ResponseCode.UNAUTHORIZED));
     }
@@ -93,8 +93,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ResponseDTO<Void>> handleServerError(Exception e) {
         int httpCode = 500;
         String error = e.getMessage();
-        log.error("Exception: {}", e.getClass().getSimpleName());
-        log.error("Validation errors: {}", error);
+//        log.error("Exception: {}", e.getClass().getSimpleName());
+//        log.error("Validation errors: {}", error);
 
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
         String uri = request.getRequestURI();

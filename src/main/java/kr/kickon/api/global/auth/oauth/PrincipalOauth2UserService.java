@@ -10,10 +10,10 @@ import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.common.enums.Role;
-import kr.kickon.api.global.error.exceptions.BadRequestException;
 import kr.kickon.api.global.error.exceptions.OAuth2RegistrationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -41,7 +41,7 @@ public class PrincipalOauth2UserService extends DefaultOAuth2UserService {
             oAuth2UserInfo = new KakaoUserInfo(oAuth2User.getAttributes());
         else if(userRequest.getClientRegistration().getRegistrationId().equals("naver"))
             oAuth2UserInfo = new NaverUserInfo((Map) oAuth2User.getAttributes().get("response"));
-        else log.error("지원하지 않는 소셜입니다.");
+        else throw new OAuth2RegistrationException(ResponseCode.INVALID_PROVIDER);
 
         assert oAuth2UserInfo != null;
         Optional<User> userEntity = userService.findUserByProviderAndProviderId(oAuth2UserInfo.getProvider(), oAuth2UserInfo.getProviderId());
