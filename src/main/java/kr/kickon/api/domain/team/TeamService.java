@@ -52,6 +52,15 @@ public class TeamService implements BaseService<Team> {
         return team.orElse(null);
     }
 
+    public List<Team> findByKeyword(String keyword) {
+        QTeam team = QTeam.team;
+        return queryFactory.selectFrom(team)
+                .where(team.nameKr.containsIgnoreCase(keyword)
+                        .or(team.nameEn.containsIgnoreCase(keyword)))
+                .where(team.status.eq(DataStatus.ACTIVATED))
+                .fetch();
+    }
+
     @Transactional
     public Team save(Team team) {
         return teamRepository.save(team);
