@@ -15,6 +15,7 @@ import kr.kickon.api.global.common.entities.Game;
 import kr.kickon.api.global.common.entities.League;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
+import kr.kickon.api.global.kafka.KafkaGameProducer;
 import kr.kickon.api.global.util.slack.SlackService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +36,7 @@ public class MigrationController {
     private final CountryService countryService;
     private final LeagueService leagueService;
     private final GameService gameService;
-    private final SlackService slackService;
+    private final KafkaGameProducer kafkaGameProducer;
 
     @Operation(summary = "팀 불러오기", description = "각 리그 별로 속한 팀 불러오기")
     @PostMapping("/teams")
@@ -101,6 +102,10 @@ public class MigrationController {
 //        slackService.sendLogMessage("Scheduling: 게임 결과 불러오기 시작 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));
         List<Game> games = gameService.findByToday();
         List<ApiGamesDTO> apiGamesDTOS = migrationService.fetchGamesByApiIds(games);
+        // 👇 여기 추가
+//        for (ApiGamesDTO apiGame : apiGamesDTOS) {
+//            kafkaGameProducer.sendGameResultProcessing(apiGame.getId().toString(),apiGame);
+//        }
 //        System.out.println(Arrays.toString(apiGamesDTOS.toArray()));
         migrationService.saveGamesAndUpdateGambles(apiGamesDTOS);
 //        slackService.sendLogMessage("Scheduling: 게임 결과 불러오기 끝 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));

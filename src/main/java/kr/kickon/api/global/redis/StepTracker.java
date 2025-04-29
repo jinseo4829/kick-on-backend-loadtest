@@ -17,9 +17,6 @@ public class StepTracker {
 
     private static final int TOTAL_STEPS = 4;
 
-    /**
-     * step 예시: step1, step2, ...
-     */
     public void markStepComplete(String gameId, String step) {
         String completeKey = "game:step-complete:" + gameId;
         String logKey = "game:step-log:" + gameId;
@@ -33,7 +30,7 @@ public class StepTracker {
         redisTemplate.expire(completeKey, Duration.ofHours(1));
 
         if (completedSteps != null && completedSteps >= TOTAL_STEPS) {
-            kafkaProducer.sendStep5Trigger(gameId);
+            kafkaProducer.sendStep5Trigger(gameId, null);
         }
     }
 

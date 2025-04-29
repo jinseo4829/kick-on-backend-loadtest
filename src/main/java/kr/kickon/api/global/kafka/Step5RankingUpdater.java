@@ -1,5 +1,6 @@
 package kr.kickon.api.global.kafka;
 
+import kr.kickon.api.domain.migration.dto.ApiGamesDTO;
 import kr.kickon.api.global.redis.StepTracker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,11 +21,10 @@ public class Step5RankingUpdater {
             groupId = "step5-ranking-group",
             containerFactory = "kafkaListenerContainerFactory"
     )
-    public void handleStep5(String message, @Header(KafkaHeaders.RECEIVED_KEY) String gameId,
+    public void handleStep5(@Header(KafkaHeaders.RECEIVED_KEY) String gameId,
+                            ApiGamesDTO gameData,
                             Acknowledgment ack) {
         try {
-
-
             updateFinalTeamRanking(gameId); // step 5 수행
 
             stepTracker.clearStepTracker(gameId);

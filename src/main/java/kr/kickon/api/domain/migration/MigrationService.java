@@ -33,6 +33,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static kr.kickon.api.domain.game.GameService.getGameStatus;
+
 @Service
 @Slf4j
 public class MigrationService {
@@ -333,35 +335,6 @@ public class MigrationService {
             if(rankings == null) continue;
             gambleSeasonRankingService.recalculateRanking(rankings);
         }
-    }
-
-    private static @NotNull GameStatus getGameStatus(ApiGamesDTO apiData, List<String> scheduledStatus, List<String> finishedStatus) {
-        GameStatus gameStatus;
-        if(scheduledStatus.contains(apiData.getStatus())){
-            // 시작 안한 경기
-            gameStatus = GameStatus.PENDING;
-        }
-
-        else if(finishedStatus.contains(apiData.getStatus())){
-            // 끝난 경기
-            if(apiData.getStatus().equals("PEN")){
-                // 승부차기인지 체크
-                gameStatus = apiData.getHomePenaltyScore() > apiData.getAwayPenaltyScore() ? GameStatus.HOME : GameStatus.AWAY;
-            } else {
-                // 일반적으로 경기 마무리 된 경우
-                gameStatus = apiData.getHomeScore().equals(apiData.getAwayScore()) ? GameStatus.DRAW : apiData.getHomeScore() > apiData.getAwayScore() ? GameStatus.HOME : GameStatus.AWAY;
-            }
-        } else if(apiData.getStatus().equals("PST")){
-            // 연기된 경기
-            gameStatus = GameStatus.POSTPONED;
-        } else if(apiData.getStatus().equals("CANC") || apiData.getStatus().equals("ABD")){
-            // 취소된 경기
-            gameStatus = GameStatus.CANCELED;
-        } else {
-            // 진행중인 경기
-            gameStatus = GameStatus.PROCEEDING;
-        }
-        return gameStatus;
     }
 
 
