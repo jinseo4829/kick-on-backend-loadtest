@@ -16,15 +16,16 @@ import kr.kickon.api.global.common.entities.League;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.kafka.KafkaGameProducer;
-import kr.kickon.api.global.util.slack.SlackService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @AllArgsConstructor
 @RestController
@@ -101,13 +102,22 @@ public class MigrationController {
     public ResponseEntity<ResponseDTO<Void>> fetchGambles() {
 //        slackService.sendLogMessage("Scheduling: 게임 결과 불러오기 시작 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));
         List<Game> games = gameService.findByToday();
+        System.out.println(games.toString());
         List<ApiGamesDTO> apiGamesDTOS = migrationService.fetchGamesByApiIds(games);
+        System.out.println(apiGamesDTOS.toString());
         // 👇 여기 추가
-//        for (ApiGamesDTO apiGame : apiGamesDTOS) {
-//            kafkaGameProducer.sendGameResultProcessing(apiGame.getId().toString(),apiGame);
-//        }
+        List<CompletableFuture<SendResult<String, ApiGamesDTO>>> futures = new ArrayList<>();
+        for (ApiGamesDTO apiGame : apiGamesDTOS) {
+            CompletableFuture<SendResult<String, ApiGamesDTO>> future =
+                    kafkaGameProducer.sendGameResultProcessing(apiGame.getId().toString(), apiGame);
+            futures.add(future);
+        }
+
+// 모든 메시지 전송 완료 대기
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        migrationService.updateFinalTeamRanking();
 //        System.out.println(Arrays.toString(apiGamesDTOS.toArray()));
-        migrationService.saveGamesAndUpdateGambles(apiGamesDTOS);
+//        migrationService.saveGamesAndUpdateGambles(apiGamesDTOS);
 //        slackService.sendLogMessage("Scheduling: 게임 결과 불러오기 끝 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
     }

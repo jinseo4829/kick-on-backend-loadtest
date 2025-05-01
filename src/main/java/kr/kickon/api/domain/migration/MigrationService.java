@@ -763,5 +763,19 @@ public class MigrationService {
         return list;
     }
 
+    public void updateFinalTeamRanking() {
+        List<League> leagues = leagueService.findAll();
+        for(League league : leagues) {
+            GambleSeason gambleSeason;
+            try {
+                gambleSeason = gambleSeasonService.findRecentOperatingSeasonByLeaguePk(league.getPk());
+            }catch (Exception e) {
+                continue;
+            }
 
+            List<GambleSeasonRanking> rankings = gambleSeasonRankingService.findRecentSeasonRankingByGambleSeason(gambleSeason.getPk());
+            if(rankings == null) continue;
+            gambleSeasonRankingService.recalculateRanking(rankings);
+        }
+    }
 }

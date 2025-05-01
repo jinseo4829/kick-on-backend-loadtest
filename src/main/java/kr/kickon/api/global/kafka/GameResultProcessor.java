@@ -1,7 +1,12 @@
 package kr.kickon.api.global.kafka;
 
 import jakarta.transaction.Transactional;
+import kr.kickon.api.domain.gambleSeason.GambleSeasonService;
+import kr.kickon.api.domain.gambleSeasonPoint.GambleSeasonPointService;
+import kr.kickon.api.domain.gambleSeasonRanking.GambleSeasonRankingService;
+import kr.kickon.api.domain.gambleSeasonTeam.GambleSeasonTeamService;
 import kr.kickon.api.domain.game.GameService;
+import kr.kickon.api.domain.league.LeagueService;
 import kr.kickon.api.domain.migration.dto.ApiGamesDTO;
 import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.domain.userGameGamble.UserGameGambleService;
@@ -10,13 +15,14 @@ import kr.kickon.api.domain.userPointEvent.UserPointEventService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.*;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
-import kr.kickon.api.global.redis.StepTracker;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.kafka.support.KafkaHeaders;
 
@@ -26,7 +32,7 @@ import java.util.List;
 
 import static kr.kickon.api.domain.game.GameService.getGameStatus;
 
-@Service
+@Component
 @RequiredArgsConstructor
 @Slf4j
 public class GameResultProcessor {
@@ -34,17 +40,20 @@ public class GameResultProcessor {
     private final GameService gameService;
     private final UserGameGambleService userGameGambleService;
     private final TeamService teamService;
-    private final StepTracker stepTracker;
     private final UUIDGenerator uuidGenerator;
     private final UserPointDetailService userPointDetailService;
     private final UserPointEventService userPointEventService;
+    private final GambleSeasonPointService gambleSeasonPointService;
+    private final GambleSeasonRankingService gambleSeasonRankingService;
+    private final GambleSeasonTeamService gambleSeasonTeamService;
+
     private static List<String> scheduledStatus = new ArrayList<>(Arrays.asList(GameService.ScheduledStatus));
     private static List<String> finishedStatus = new ArrayList<>(Arrays.asList(GameService.FinishedStatus));
     private static GameStatus gameStatus;
 
     @Transactional
     @KafkaListener(
-            topics = "game-result-processing",
+            topics = "${spring.kafka.topic.game-result}",
             groupId = "result-processing-group",
             containerFactory = "kafkaListenerContainerFactory"
     )
@@ -55,14 +64,14 @@ public class GameResultProcessor {
             log.info("[GameId: {}] Processing game result", gameId);
 
             // Step 1
-            Game game = saveGameResult(gameId, gameData);
+            Game game = saveGameResult(gameData);
             gameStatus = getGameStatus(gameData, scheduledStatus, finishedStatus);
             // step 2
-            processUserPredictions(gameId, game, gameData, gameStatus);
+            processUserPredictions(game, gameData, gameStatus);
             // Step 3
-            updateTeamAvgPoints(gameId);
+            updateTeamAvgPoints(game,gameData);
             // Step 4
-            updateTeamRankingStats(gameId);
+            updateTeamRankingStats(game);
 
             ack.acknowledge();
         } catch (Exception e) {
@@ -70,7 +79,7 @@ public class GameResultProcessor {
             throw e; // 반드시 다시 던져야 Kafka가 "얘 실패했네" 인식함
         }
     }
-    private Game saveGameResult(String gameId, ApiGamesDTO apiData) {
+    private Game saveGameResult(ApiGamesDTO apiData) {
         // TODO: step1 구현 함수 호출
         Game game = null;
 
@@ -107,11 +116,11 @@ public class GameResultProcessor {
             }
         }
         gameService.save(game);
-        stepTracker.markStepComplete(gameId,"step1");
         return game;
     }
 
-    private void processUserPredictions(String gameId, Game game, ApiGamesDTO apiGamesDTO, GameStatus gameStatus) {
+    private void processUserPredictions(Game game, ApiGamesDTO apiGamesDTO, GameStatus gameStatus) {
+        // 유저 Gamble Status 업데이트 하는거임
         List<UserGameGamble> userGameGambles = userGameGambleService.findByGameApiId(game.getApiId());
         List<String> userPointEventIds = new ArrayList<>();
         List<String> userPointDetailIds = new ArrayList<>();
@@ -183,26 +192,81 @@ public class GameResultProcessor {
             }
         }
         userGameGambleService.saveAll(userGameGambles);
-        stepTracker.markStepComplete(gameId,"step2");
     }
 
-    private void updateTeamAvgPoints(String gameId, Game game) {
+    private void updateTeamAvgPoints(Game game, ApiGamesDTO apiGamesDTO) {
         // TODO: step3 구현 함수 호출
-        game = gameService.save(game);
+        List<String> homeGambleSeasonPointIds = new ArrayList<>();
+        List<String> awayGambleSeasonPointIds = new ArrayList<>();
         List<UserGameGamble> userGameGambles = userGameGambleService.findByGameApiId(game.getApiId());
         // 홈팀과 어웨이팀으로 구분
         List<UserGameGamble> homeTeamGambles = userGameGambles.stream()
-                .filter(g -> g.getSupportingTeam().getApiId().equals(apiData.getHomeTeamId()))
+                .filter(g -> g.getSupportingTeam().getApiId().equals(apiGamesDTO.getHomeTeamId()))
                 .toList();
 
         List<UserGameGamble> awayTeamGambles = userGameGambles.stream()
-                .filter(g -> g.getSupportingTeam().getApiId().equals(apiData.getAwayTeamId()))
+                .filter(g -> g.getSupportingTeam().getApiId().equals(apiGamesDTO.getAwayTeamId()))
                 .toList();
-        stepTracker.markStepComplete(gameId,"step3");
+        String homeGambleSeasonPointId = "";
+        String awayGambleSeasonPointId = "";
+        do {
+            homeGambleSeasonPointId = uuidGenerator.generateUniqueUUID(gambleSeasonPointService::findById);
+            // 이미 생성된 ID가 배열에 있는지 확인
+        } while (homeGambleSeasonPointIds.contains(homeGambleSeasonPointId)); // 중복이 있을 경우 다시 생성
+        do {
+            awayGambleSeasonPointId = uuidGenerator.generateUniqueUUID(gambleSeasonPointService::findById);
+            // 이미 생성된 ID가 배열에 있는지 확인
+        } while (awayGambleSeasonPointIds.contains(awayGambleSeasonPointId)); // 중복이 있을 경우 다시 생성
+        homeGambleSeasonPointIds.add(homeGambleSeasonPointId);
+        awayGambleSeasonPointIds.add(awayGambleSeasonPointId);
+
+        // 홈팀 평균 포인트 저장
+        double homeAvgPoints = calculateAveragePoints(homeTeamGambles);
+
+        GambleSeasonTeam homeGambleSeasonTeam = gambleSeasonTeamService.findRecentOperatingByTeamPk(game.getHomeTeam().getPk());
+//            System.out.println(homeGambleSeasonTeam.getTeam());
+        if(homeGambleSeasonTeam != null){
+            Team homeTeam = teamService.findByApiId(apiGamesDTO.getHomeTeamId());
+            Team awayTeam = teamService.findByApiId(apiGamesDTO.getAwayTeamId());
+            GambleSeasonPoint homeSeasonPoint = GambleSeasonPoint.builder()
+                    .id(homeGambleSeasonPointId)
+                    .gambleSeason(homeGambleSeasonTeam.getGambleSeason())
+                    .averagePoints((int) Math.round(homeAvgPoints * 1000))
+                    .team(homeTeam)
+                    .game(game)
+                    .build();
+            gambleSeasonPointService.save(homeSeasonPoint);
+
+            // 어웨이팀 평균 포인트 저장
+            double awayAvgPoints = calculateAveragePoints(awayTeamGambles);
+            GambleSeasonPoint awaySeasonPoint = GambleSeasonPoint.builder()
+                    .id(awayGambleSeasonPointId)
+                    .gambleSeason(homeGambleSeasonTeam.getGambleSeason())
+                    .averagePoints((int) Math.round(awayAvgPoints * 1000))
+                    .team(awayTeam)
+                    .game(game)
+                    .build();
+            gambleSeasonPointService.save(awaySeasonPoint);
+            // 랭킹 업데이트
+            GambleSeasonRanking homeGambleSeasonRanking = gambleSeasonRankingService.findByTeamPk(homeSeasonPoint.getTeam().getPk());
+            homeGambleSeasonRanking.setPoints(homeGambleSeasonRanking.getPoints() + homeSeasonPoint.getAveragePoints());
+            GambleSeasonRanking awayGambleSeasonRanking = gambleSeasonRankingService.findByTeamPk(awaySeasonPoint.getTeam().getPk());
+            awayGambleSeasonRanking.setPoints(awayGambleSeasonRanking.getPoints() + awaySeasonPoint.getAveragePoints());
+            gambleSeasonRankingService.save(homeGambleSeasonRanking);
+            gambleSeasonRankingService.save(awayGambleSeasonRanking);
+        }
     }
 
-    private void updateTeamRankingStats(String gameId) {
-        // TODO: step4 구현 함수 호출
-        stepTracker.markStepComplete(gameId,"step4");
+    private void updateTeamRankingStats(Game game) {
+        gambleSeasonRankingService.updateGameNumOnlyByActualSeason(game.getActualSeason().getPk());
+    }
+
+    // 평균 포인트 계산 메서드
+    double calculateAveragePoints(List<UserGameGamble> gambles) {
+        return gambles.stream()
+                .filter(g -> g.getGambleStatus() == GambleStatus.SUCCEED || g.getGambleStatus() == GambleStatus.PERFECT)
+                .mapToInt(g -> g.getGambleStatus() == GambleStatus.PERFECT ? 3 : 1)
+                .average()
+                .orElse(0.0);
     }
 }
