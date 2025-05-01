@@ -13,6 +13,7 @@ import kr.kickon.api.domain.league.dto.LeagueDTO;
 import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.domain.user.dto.UserMeDto;
+import kr.kickon.api.domain.user.request.DeleteUserRequest;
 import kr.kickon.api.domain.user.request.PatchUserRequest;
 import kr.kickon.api.domain.user.request.PrivacyUpdateRequest;
 import kr.kickon.api.domain.user.response.GetUserMeResponse;
@@ -97,8 +98,10 @@ public class UserController {
 
     @Operation(summary = "회원 탈퇴", description = "jwt 기반으로 회원 탈퇴")
     @DeleteMapping("/me")
-    public ResponseEntity<ResponseDTO<Void>> deleteUser() {
+    public ResponseEntity<ResponseDTO<Void>> deleteUser(@Valid @RequestBody DeleteUserRequest request) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
+        user.setReason(request.getReason());
+        userService.saveUser(user);
         userService.deleteUser(user);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
