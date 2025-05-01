@@ -23,8 +23,6 @@ import org.springframework.kafka.support.SendResult;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -86,38 +84,20 @@ public class MigrationController {
     @Operation(summary = "랭킹 불러오기", description = "각 리그의 랭킹을 불러오며, 하루하루 업데이트")
     @PostMapping("/rankings")
     @Scheduled(cron = "0 */5 * * * *")
-    public ResponseEntity<ResponseDTO<Void>> fetchRanking() {
-//        slackService.sendLogMessage("Scheduling: 랭킹 불러오기 시작 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));
+    public void fetchRanking() {
         List<League> leagues = leagueService.findAllLeagues();
-//        List<League> leagues = new ArrayList<>();
-//        leagues.add(leagueService.findByPk(Long.parseLong(league)));
 
         List<ApiRankingDTO> rankingsFromApi = migrationService.fetchRankings(leagues);
         migrationService.saveRankings(rankingsFromApi);
-//        slackService.sendLogMessage("Scheduling: 랭킹 불러오기 끝 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
     }
 
     @Operation(summary = "게임 결과 불러오기",description = "게임결과 API 불러와서, 승부예측 마감 진행. 포인트 지급. 매일 오전 0시에 업데이트")
     @GetMapping("/gambles")
     @Scheduled(cron = "0 0 */3 * * *")
-    public ResponseEntity<ResponseDTO<Void>> fetchGambles() {
-//        slackService.sendLogMessage("Scheduling: 게임 결과 불러오기 시작 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));
+    public void fetchGambles() {
         List<Game> games = gameService.findByToday();
-//        List<ApiGamesDTO> apiGamesDTOS = migrationService.fetchGamesByApiIds(games);
-        ApiGamesDTO apiGamesDto = ApiGamesDTO.builder()
-                .id(1337613L)
-                .date(OffsetDateTime.parse("2025-04-27T05:00:00+00:00")
-                        .toLocalDateTime())
-                .round("Regular Season - 9")
-                .status("FT")
-                .homeScore(1)
-                .awayScore(1)
-                .homeTeamId(7078L)
-                .awayTeamId(2760L)
-                .build();
-        List<ApiGamesDTO> apiGamesDTOS = new ArrayList<>();
-        apiGamesDTOS.add(apiGamesDto);
+        List<ApiGamesDTO> apiGamesDTOS = migrationService.fetchGamesByApiIds(games);
+
         // 👇 여기 추가
         List<CompletableFuture<SendResult<String, ApiGamesDTO>>> futures = new ArrayList<>();
         for (ApiGamesDTO apiGame : apiGamesDTOS) {
@@ -126,12 +106,7 @@ public class MigrationController {
             futures.add(future);
         }
 
-// 모든 메시지 전송 완료 대기
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
         migrationService.updateFinalTeamRanking();
-//        System.out.println(Arrays.toString(apiGamesDTOS.toArray()));
-//        migrationService.saveGamesAndUpdateGambles(apiGamesDTOS);
-//        slackService.sendLogMessage("Scheduling: 게임 결과 불러오기 끝 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
     }
 }
