@@ -3,15 +3,15 @@ package kr.kickon.api.domain.migration.dto;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import kr.kickon.api.global.common.entities.ActualSeason;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Builder
+
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class ApiGamesDTO {
     private Long id;
     private String round;

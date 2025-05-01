@@ -216,7 +216,7 @@ public class BoardService implements BaseService<Board> {
             dataQuery.limit(size + 1); // → hasNext 판단용
             results = dataQuery.fetch();
             // ✅ hasNext 처리
-            System.out.println(results);
+//            System.out.println(results);
             boolean hasNext = results.size() > size;
             if (hasNext) {
                 results = results.subList(0, size); // 초과분 잘라내기

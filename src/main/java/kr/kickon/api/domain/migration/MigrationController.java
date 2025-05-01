@@ -23,6 +23,8 @@ import org.springframework.kafka.support.SendResult;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -102,9 +104,20 @@ public class MigrationController {
     public ResponseEntity<ResponseDTO<Void>> fetchGambles() {
 //        slackService.sendLogMessage("Scheduling: 게임 결과 불러오기 시작 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));
         List<Game> games = gameService.findByToday();
-        System.out.println(games.toString());
-        List<ApiGamesDTO> apiGamesDTOS = migrationService.fetchGamesByApiIds(games);
-        System.out.println(apiGamesDTOS.toString());
+//        List<ApiGamesDTO> apiGamesDTOS = migrationService.fetchGamesByApiIds(games);
+        ApiGamesDTO apiGamesDto = ApiGamesDTO.builder()
+                .id(1337613L)
+                .date(OffsetDateTime.parse("2025-04-27T05:00:00+00:00")
+                        .toLocalDateTime())
+                .round("Regular Season - 9")
+                .status("FT")
+                .homeScore(1)
+                .awayScore(1)
+                .homeTeamId(7078L)
+                .awayTeamId(2760L)
+                .build();
+        List<ApiGamesDTO> apiGamesDTOS = new ArrayList<>();
+        apiGamesDTOS.add(apiGamesDto);
         // 👇 여기 추가
         List<CompletableFuture<SendResult<String, ApiGamesDTO>>> futures = new ArrayList<>();
         for (ApiGamesDTO apiGame : apiGamesDTOS) {

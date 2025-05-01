@@ -123,12 +123,12 @@ public class GlobalExceptionHandler {
         }
 
         // 스택트레이스 첫 줄
-        StackTraceElement topStack = e.getStackTrace()[0];
+        StackTraceElement[] topStack = e.getStackTrace();
 
         // 로그 포맷
         String fullErrorLog = String.format(
                 "[%s] %s (%s)\n└─ Message: %s\n└─ StackTrace: %s%s",
-                method, uri, e.getClass().getSimpleName(), error, topStack, params
+                method, uri, e.getClass().getSimpleName(), error, Arrays.toString(topStack), params
         );
 
         errorLogger.error(fullErrorLog);

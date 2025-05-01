@@ -17,6 +17,17 @@ public class KafkaGameProducer {
     public String GAME_RESULT_TOPIC;
 
     public CompletableFuture<SendResult<String, ApiGamesDTO>> sendGameResultProcessing(String gameId, ApiGamesDTO gameData) {
-        return kafkaTemplate.send(GAME_RESULT_TOPIC, gameId, gameData);
+        System.out.println(gameId + gameData);
+        CompletableFuture<SendResult<String, ApiGamesDTO>> future = kafkaTemplate.send(GAME_RESULT_TOPIC, gameId, gameData);
+
+        future.thenAccept(result -> {
+            System.out.println("✅ Kafka Send Success: " + result.getRecordMetadata());
+        }).exceptionally(ex -> {
+            System.err.println("❌ Kafka Send Failed: " + ex.getMessage());
+            ex.printStackTrace();
+            return null;
+        });
+
+        return future;
     }
 }

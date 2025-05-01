@@ -49,7 +49,6 @@ public class GameResultProcessor {
 
     private static List<String> scheduledStatus = new ArrayList<>(Arrays.asList(GameService.ScheduledStatus));
     private static List<String> finishedStatus = new ArrayList<>(Arrays.asList(GameService.FinishedStatus));
-    private static GameStatus gameStatus;
 
     @Transactional
     @KafkaListener(
@@ -61,17 +60,20 @@ public class GameResultProcessor {
                                  ApiGamesDTO gameData,
                                  Acknowledgment ack) {
         try {
+            System.out.println(gameId + "----------------------------------");
             log.info("[GameId: {}] Processing game result", gameId);
 
-            // Step 1
-            Game game = saveGameResult(gameData);
-            gameStatus = getGameStatus(gameData, scheduledStatus, finishedStatus);
-            // step 2
-            processUserPredictions(game, gameData, gameStatus);
-            // Step 3
-            updateTeamAvgPoints(game,gameData);
-            // Step 4
-            updateTeamRankingStats(game);
+            GameStatus gameStatus = getGameStatus(gameData, scheduledStatus, finishedStatus);
+            Game game = saveGameResult(gameData,gameStatus);
+
+            if (gameStatus == GameStatus.PENDING || gameStatus == GameStatus.PROCEEDING ||
+                    gameStatus == GameStatus.CANCELED || gameStatus == GameStatus.POSTPONED) {
+
+            }else{
+                processUserPredictions(game, gameData, gameStatus);
+                updateTeamAvgPoints(game,gameData);
+                updateTeamRankingStats(game);
+            }
 
             ack.acknowledge();
         } catch (Exception e) {
@@ -79,10 +81,10 @@ public class GameResultProcessor {
             throw e; // 반드시 다시 던져야 Kafka가 "얘 실패했네" 인식함
         }
     }
-    private Game saveGameResult(ApiGamesDTO apiData) {
+    private Game saveGameResult(ApiGamesDTO apiData, GameStatus gameStatus) {
         // TODO: step1 구현 함수 호출
         Game game = null;
-
+        System.out.println(apiData);
         try{
             // 필수 값 체크
             game = gameService.findByApiId(apiData.getId());
@@ -125,12 +127,6 @@ public class GameResultProcessor {
         List<String> userPointEventIds = new ArrayList<>();
         List<String> userPointDetailIds = new ArrayList<>();
         for(UserGameGamble userGameGamble : userGameGambles) {
-            // 경기 결과가 확정되지 않은 경우, 상태를 변경하지 않음
-            if (gameStatus == GameStatus.PENDING || gameStatus == GameStatus.PROCEEDING ||
-                    gameStatus == GameStatus.CANCELED || gameStatus == GameStatus.POSTPONED) {
-                continue;
-            }
-
             PredictedResult predictedResult = userGameGamble.getPredictedResult();
             GambleStatus gambleStatus;
 
@@ -196,8 +192,6 @@ public class GameResultProcessor {
 
     private void updateTeamAvgPoints(Game game, ApiGamesDTO apiGamesDTO) {
         // TODO: step3 구현 함수 호출
-        List<String> homeGambleSeasonPointIds = new ArrayList<>();
-        List<String> awayGambleSeasonPointIds = new ArrayList<>();
         List<UserGameGamble> userGameGambles = userGameGambleService.findByGameApiId(game.getApiId());
         // 홈팀과 어웨이팀으로 구분
         List<UserGameGamble> homeTeamGambles = userGameGambles.stream()
@@ -207,51 +201,52 @@ public class GameResultProcessor {
         List<UserGameGamble> awayTeamGambles = userGameGambles.stream()
                 .filter(g -> g.getSupportingTeam().getApiId().equals(apiGamesDTO.getAwayTeamId()))
                 .toList();
-        String homeGambleSeasonPointId = "";
-        String awayGambleSeasonPointId = "";
-        do {
-            homeGambleSeasonPointId = uuidGenerator.generateUniqueUUID(gambleSeasonPointService::findById);
-            // 이미 생성된 ID가 배열에 있는지 확인
-        } while (homeGambleSeasonPointIds.contains(homeGambleSeasonPointId)); // 중복이 있을 경우 다시 생성
-        do {
-            awayGambleSeasonPointId = uuidGenerator.generateUniqueUUID(gambleSeasonPointService::findById);
-            // 이미 생성된 ID가 배열에 있는지 확인
-        } while (awayGambleSeasonPointIds.contains(awayGambleSeasonPointId)); // 중복이 있을 경우 다시 생성
-        homeGambleSeasonPointIds.add(homeGambleSeasonPointId);
-        awayGambleSeasonPointIds.add(awayGambleSeasonPointId);
-
-        // 홈팀 평균 포인트 저장
-        double homeAvgPoints = calculateAveragePoints(homeTeamGambles);
-
+        String homeGambleSeasonPointId = uuidGenerator.generateUniqueUUID(gambleSeasonPointService::findById);
+        String awayGambleSeasonPointId = uuidGenerator.generateUniqueUUID(gambleSeasonPointService::findById);
         GambleSeasonTeam homeGambleSeasonTeam = gambleSeasonTeamService.findRecentOperatingByTeamPk(game.getHomeTeam().getPk());
 //            System.out.println(homeGambleSeasonTeam.getTeam());
         if(homeGambleSeasonTeam != null){
             Team homeTeam = teamService.findByApiId(apiGamesDTO.getHomeTeamId());
             Team awayTeam = teamService.findByApiId(apiGamesDTO.getAwayTeamId());
-            GambleSeasonPoint homeSeasonPoint = GambleSeasonPoint.builder()
-                    .id(homeGambleSeasonPointId)
-                    .gambleSeason(homeGambleSeasonTeam.getGambleSeason())
-                    .averagePoints((int) Math.round(homeAvgPoints * 1000))
-                    .team(homeTeam)
-                    .game(game)
-                    .build();
-            gambleSeasonPointService.save(homeSeasonPoint);
-
+            // 홈팀 평균 포인트 저장
+            double homeAvgPoints = calculateAveragePoints(homeTeamGambles);
             // 어웨이팀 평균 포인트 저장
             double awayAvgPoints = calculateAveragePoints(awayTeamGambles);
-            GambleSeasonPoint awaySeasonPoint = GambleSeasonPoint.builder()
-                    .id(awayGambleSeasonPointId)
-                    .gambleSeason(homeGambleSeasonTeam.getGambleSeason())
-                    .averagePoints((int) Math.round(awayAvgPoints * 1000))
-                    .team(awayTeam)
-                    .game(game)
-                    .build();
-            gambleSeasonPointService.save(awaySeasonPoint);
+            GambleSeasonPoint homeGambleSeasonPoint = gambleSeasonPointService.findByTeamPkAndGamePk(homeTeam.getPk(),game.getPk());
+            GambleSeasonPoint awayGambleSeasonPoint = gambleSeasonPointService.findByTeamPkAndGamePk(awayTeam.getPk(),game.getPk());
+            if(homeGambleSeasonPoint!=null){
+                homeGambleSeasonPoint.setAveragePoints((int) Math.round(homeAvgPoints * 1000));
+                gambleSeasonPointService.save(homeGambleSeasonPoint);
+            }else{
+                homeGambleSeasonPoint = GambleSeasonPoint.builder()
+                        .id(homeGambleSeasonPointId)
+                        .gambleSeason(homeGambleSeasonTeam.getGambleSeason())
+                        .averagePoints((int) Math.round(homeAvgPoints * 1000))
+                        .team(homeTeam)
+                        .game(game)
+                        .build();
+                gambleSeasonPointService.save(homeGambleSeasonPoint);
+            }
+
+            if(awayGambleSeasonPoint!=null){
+                awayGambleSeasonPoint.setAveragePoints((int) Math.round(awayAvgPoints * 1000));
+                gambleSeasonPointService.save(awayGambleSeasonPoint);
+            }else{
+                awayGambleSeasonPoint = GambleSeasonPoint.builder()
+                        .id(awayGambleSeasonPointId)
+                        .gambleSeason(homeGambleSeasonTeam.getGambleSeason())
+                        .averagePoints((int) Math.round(awayAvgPoints * 1000))
+                        .team(awayTeam)
+                        .game(game)
+                        .build();
+                gambleSeasonPointService.save(awayGambleSeasonPoint);
+            }
+
             // 랭킹 업데이트
-            GambleSeasonRanking homeGambleSeasonRanking = gambleSeasonRankingService.findByTeamPk(homeSeasonPoint.getTeam().getPk());
-            homeGambleSeasonRanking.setPoints(homeGambleSeasonRanking.getPoints() + homeSeasonPoint.getAveragePoints());
-            GambleSeasonRanking awayGambleSeasonRanking = gambleSeasonRankingService.findByTeamPk(awaySeasonPoint.getTeam().getPk());
-            awayGambleSeasonRanking.setPoints(awayGambleSeasonRanking.getPoints() + awaySeasonPoint.getAveragePoints());
+            GambleSeasonRanking homeGambleSeasonRanking = gambleSeasonRankingService.findByTeamPk(homeGambleSeasonPoint.getTeam().getPk());
+            homeGambleSeasonRanking.setPoints(homeGambleSeasonRanking.getPoints() + homeGambleSeasonPoint.getAveragePoints());
+            GambleSeasonRanking awayGambleSeasonRanking = gambleSeasonRankingService.findByTeamPk(awayGambleSeasonPoint.getTeam().getPk());
+            awayGambleSeasonRanking.setPoints(awayGambleSeasonRanking.getPoints() + awayGambleSeasonPoint.getAveragePoints());
             gambleSeasonRankingService.save(homeGambleSeasonRanking);
             gambleSeasonRankingService.save(awayGambleSeasonRanking);
         }
