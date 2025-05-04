@@ -15,15 +15,17 @@ import kr.kickon.api.global.common.entities.Game;
 import kr.kickon.api.global.common.entities.League;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
-import kr.kickon.api.global.util.slack.SlackService;
+import kr.kickon.api.global.kafka.KafkaGameProducer;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @AllArgsConstructor
 @RestController
@@ -35,7 +37,7 @@ public class MigrationController {
     private final CountryService countryService;
     private final LeagueService leagueService;
     private final GameService gameService;
-    private final SlackService slackService;
+    private final KafkaGameProducer kafkaGameProducer;
 
     @Operation(summary = "팀 불러오기", description = "각 리그 별로 속한 팀 불러오기")
     @PostMapping("/teams")
@@ -82,28 +84,29 @@ public class MigrationController {
     @Operation(summary = "랭킹 불러오기", description = "각 리그의 랭킹을 불러오며, 하루하루 업데이트")
     @PostMapping("/rankings")
     @Scheduled(cron = "0 */5 * * * *")
-    public ResponseEntity<ResponseDTO<Void>> fetchRanking() {
-//        slackService.sendLogMessage("Scheduling: 랭킹 불러오기 시작 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));
+    public void fetchRanking() {
         List<League> leagues = leagueService.findAllLeagues();
-//        List<League> leagues = new ArrayList<>();
-//        leagues.add(leagueService.findByPk(Long.parseLong(league)));
 
         List<ApiRankingDTO> rankingsFromApi = migrationService.fetchRankings(leagues);
         migrationService.saveRankings(rankingsFromApi);
-//        slackService.sendLogMessage("Scheduling: 랭킹 불러오기 끝 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
     }
 
     @Operation(summary = "게임 결과 불러오기",description = "게임결과 API 불러와서, 승부예측 마감 진행. 포인트 지급. 매일 오전 0시에 업데이트")
     @GetMapping("/gambles")
     @Scheduled(cron = "0 0 */3 * * *")
-    public ResponseEntity<ResponseDTO<Void>> fetchGambles() {
-//        slackService.sendLogMessage("Scheduling: 게임 결과 불러오기 시작 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));
+    public void fetchGambles() {
         List<Game> games = gameService.findByToday();
         List<ApiGamesDTO> apiGamesDTOS = migrationService.fetchGamesByApiIds(games);
-//        System.out.println(Arrays.toString(apiGamesDTOS.toArray()));
-        migrationService.saveGamesAndUpdateGambles(apiGamesDTOS);
-//        slackService.sendLogMessage("Scheduling: 게임 결과 불러오기 끝 => " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd / HH:mm:ss")));
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
+
+        // 👇 여기 추가
+        List<CompletableFuture<SendResult<String, ApiGamesDTO>>> futures = new ArrayList<>();
+        for (ApiGamesDTO apiGame : apiGamesDTOS) {
+            CompletableFuture<SendResult<String, ApiGamesDTO>> future =
+                    kafkaGameProducer.sendGameResultProcessing(apiGame.getId().toString(), apiGame);
+            futures.add(future);
+        }
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        migrationService.updateFinalTeamRanking();
     }
 }

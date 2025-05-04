@@ -4,6 +4,7 @@ import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import kr.kickon.api.domain.actualSeasonRanking.dto.GetActualSeasonRankingDTO;
+import kr.kickon.api.domain.gambleSeasonPoint.GambleSeasonPointService;
 import kr.kickon.api.domain.gambleSeasonRanking.dto.GetGambleSeasonRankingDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
@@ -23,6 +24,7 @@ public class GambleSeasonRankingService implements BaseService<GambleSeasonRanki
     private final GambleSeasonRankingRepository gambleSeasonRankingRepository;
     private final JPAQueryFactory queryFactory;
     private final UUIDGenerator uuidGenerator;
+    private final GambleSeasonPointService gambleSeasonPointService;
 
     @Override
     public GambleSeasonRanking findById(String uuid) {
@@ -78,7 +80,9 @@ public class GambleSeasonRankingService implements BaseService<GambleSeasonRanki
         int currentRank = 1;
 
         for (GambleSeasonRanking current : ranking) {
+            Integer gambleSeasonPoints = gambleSeasonPointService.findTotalPointByGambleSeasonAndTeam(current.getGambleSeason().getPk(), current.getTeam().getPk());
             current.setRankOrder(currentRank);
+            current.setPoints(gambleSeasonPoints);
             currentRank++; // 다음 순위 증가
         }
 
