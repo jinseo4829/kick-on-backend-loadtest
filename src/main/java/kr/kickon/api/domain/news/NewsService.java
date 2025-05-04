@@ -4,15 +4,15 @@ import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import kr.kickon.api.domain.board.dto.BoardDetailDTO;
-import kr.kickon.api.domain.board.dto.BoardListDTO;
-import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
+import jakarta.transaction.Transactional;
+import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.news.dto.*;
 import kr.kickon.api.domain.newsKick.NewsKickService;
 import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
+import kr.kickon.api.global.common.enums.UsedInType;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +31,7 @@ public class NewsService implements BaseService<News> {
     private final JPAQueryFactory queryFactory;
     private final UUIDGenerator uuidGenerator;
     private final NewsKickService newsKickService;
+    private final AwsFileReferenceService awsFileReferenceService;
 
     @Override
     public News findById(String uuid) {
@@ -44,6 +45,21 @@ public class NewsService implements BaseService<News> {
         BooleanExpression predicate = QNews.news.pk.eq(pk).and(QNews.news.status.eq(DataStatus.ACTIVATED));
         Optional<News> news = newsRepository.findOne(predicate);
         return news.orElse(null);
+    }
+
+    @Transactional
+    public News createNewsWithImages(News news, String[] usedImageKeys) {
+        News saved = newsRepository.save(news);
+
+        if (usedImageKeys != null) {
+            awsFileReferenceService.updateFilesAsUsed(
+                    Arrays.asList(usedImageKeys),
+                    UsedInType.BOARD,
+                    saved.getPk()
+            );
+        }
+
+        return saved;
     }
 
     public JPAQuery<Tuple> createNewsListDTOQuery(){
@@ -105,13 +121,13 @@ public class NewsService implements BaseService<News> {
         return newsListDTO;
     }
 
-    public NewsDetailDTO findNewsDeatailDTOByPk(Long boardPk, User userData) {
+    public NewsDetailDTO findNewsDeatailDTOByPk(Long newsPk, User userData) {
         QNews news = QNews.news;
         QUser user = QUser.user;
         QTeam team = QTeam.team;
 
         Tuple result = createNewsListDTOQuery()
-                .where(news.pk.eq(boardPk))
+                .where(news.pk.eq(newsPk))
                 .groupBy(news.pk)
                 .fetchOne();
         if(result == null) return null;

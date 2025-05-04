@@ -4,6 +4,8 @@ import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import jakarta.transaction.Transactional;
+import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.boardReply.dto.PaginatedReplyListDTO;
 import kr.kickon.api.domain.boardReply.dto.ReplyDTO;
 import kr.kickon.api.domain.board.dto.UserDTO;
@@ -11,11 +13,13 @@ import kr.kickon.api.domain.boardReplyKick.BoardReplyKickService;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
+import kr.kickon.api.global.common.enums.UsedInType;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -28,6 +32,7 @@ public class BoardReplyService implements BaseService<BoardReply> {
     private final BoardReplyKickService boardReplyKickService;
     private final JPAQueryFactory queryFactory;
     private final UUIDGenerator uuidGenerator;
+    private final AwsFileReferenceService awsFileReferenceService;
 
     @Override
     public BoardReply findById(String uuid) {
@@ -115,6 +120,21 @@ public class BoardReplyService implements BaseService<BoardReply> {
         return results.stream()
                 .map(tuple -> mapToReplyDTO(tuple, userPk))
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public BoardReply createBoardReplyWithImages(BoardReply boardReply, String[] usedImageKeys) {
+        BoardReply saved = boardReplyRepository.save(boardReply);
+
+        if (usedImageKeys != null) {
+            awsFileReferenceService.updateFilesAsUsed(
+                    Arrays.asList(usedImageKeys),
+                    UsedInType.BOARD_REPLY,
+                    saved.getPk()
+            );
+        }
+
+        return saved;
     }
 
     public void save(BoardReply boardReply) {

@@ -3,6 +3,8 @@ package kr.kickon.api.domain.newsReply;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import jakarta.transaction.Transactional;
+import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.news.dto.UserDTO;
 import kr.kickon.api.domain.newsReply.dto.PaginatedNewsReplyListDTO;
 import kr.kickon.api.domain.newsReply.dto.ReplyDTO;
@@ -10,11 +12,13 @@ import kr.kickon.api.domain.newsReplyKick.NewsReplyKickService;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
+import kr.kickon.api.global.common.enums.UsedInType;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -27,6 +31,7 @@ public class NewsReplyService implements BaseService<NewsReply> {
     private final JPAQueryFactory queryFactory;
     private final NewsReplyKickService newsReplyKickService;
     private final UUIDGenerator uuidGenerator;
+    private final AwsFileReferenceService awsFileReferenceService;
 
     @Override
     public NewsReply findById(String uuid) {
@@ -42,6 +47,20 @@ public class NewsReplyService implements BaseService<NewsReply> {
         return newsReply.orElse(null);
     }
 
+    @Transactional
+    public NewsReply createNewsReplyWithImages(NewsReply newsReply, String[] usedImageKeys) {
+        NewsReply saved = newsReplyRepository.save(newsReply);
+
+        if (usedImageKeys != null) {
+            awsFileReferenceService.updateFilesAsUsed(
+                    Arrays.asList(usedImageKeys),
+                    UsedInType.BOARD_REPLY,
+                    saved.getPk()
+            );
+        }
+
+        return saved;
+    }
 
     public PaginatedNewsReplyListDTO getRepliesByNews(Long newsPk, Long userPk, Integer page, Integer size) {
         QNewsReply reply = QNewsReply.newsReply;

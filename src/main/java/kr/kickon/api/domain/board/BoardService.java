@@ -5,6 +5,8 @@ import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import jakarta.transaction.Transactional;
+import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.board.dto.BoardDetailDTO;
 import kr.kickon.api.domain.board.dto.BoardListDTO;
 import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
@@ -14,6 +16,7 @@ import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
+import kr.kickon.api.global.common.enums.UsedInType;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +35,7 @@ public class BoardService implements BaseService<Board> {
     private final JPAQueryFactory queryFactory;
     private final BoardKickService boardKickService;
     private final UUIDGenerator uuidGenerator;
+    private final AwsFileReferenceService awsFileReferenceService;
 
     @Override
     public Board findById(String uuid) {
@@ -45,6 +49,21 @@ public class BoardService implements BaseService<Board> {
         BooleanExpression predicate = QBoard.board.pk.eq(pk).and(QBoard.board.status.eq(DataStatus.ACTIVATED));
         Optional<Board> actualSeasonRanking = boardRepository.findOne(predicate);
         return actualSeasonRanking.orElse(null);
+    }
+
+    @Transactional
+    public Board createBoardWithImages(Board board, String[] usedImageKeys) {
+        Board saved = boardRepository.save(board);
+
+        if (usedImageKeys != null) {
+            awsFileReferenceService.updateFilesAsUsed(
+                    Arrays.asList(usedImageKeys),
+                    UsedInType.BOARD,
+                    saved.getPk()
+            );
+        }
+
+        return saved;
     }
 
     public JPAQuery<Tuple> createBoardListDTOQuery() {

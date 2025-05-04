@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.board.dto.BoardDetailDTO;
 import kr.kickon.api.domain.board.dto.BoardListDTO;
 import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
@@ -43,7 +44,6 @@ public class BoardController {
     private final BoardService boardService;
     private final JwtTokenProvider jwtTokenProvider;
     private final TeamService teamService;
-    private final UserFavoriteTeamService userFavoriteTeamService;
     private final UUIDGenerator uuidGenerator;
 
     @Operation(summary = "홈화면 함께 볼만한 게시글 리스트 조회", description = "응원팀 여부에 상관없이 최신 게시글 기준으로 10개 리스트 반환")
@@ -80,7 +80,7 @@ public class BoardController {
             if(team==null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
             board.setTeam(team);
         }
-        Board boardCreated = boardService.save(board);
+        Board boardCreated = boardService.createBoardWithImages(board, request.getUsedImageKeys());
 
         BoardDetailDTO boardDetailDTO = boardService.findOneBoardListDTOByPk(boardCreated.getPk(),user);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, boardDetailDTO));
