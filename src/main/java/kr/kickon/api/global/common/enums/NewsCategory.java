@@ -3,12 +3,12 @@ package kr.kickon.api.global.common.enums;
 public enum NewsCategory {
     INJURY("부상"),
     TRANSFER("이적"),
-    HEADCOACH("감독"),
-    RENEWAL("계약 갱신"),
-    UNHAPPY("불만"),
+    HEADCOACH("감독 교체"),
+    RENEWAL("재계약"),
+    UNHAPPY("불화설"),
     RETIRE("은퇴"),
     INTERVIEW("인터뷰"),
-    LOCAL("지역"),
+    LOCAL("현지 팬 반응"),
     ETC("기타");
 
     private final String koreanName;

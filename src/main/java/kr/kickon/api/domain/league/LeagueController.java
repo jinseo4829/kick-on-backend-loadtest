@@ -39,7 +39,7 @@ public class LeagueController {
         List<LeagueDTO> leagueData = leagues.stream().map(league ->
             LeagueDTO.builder()
                     .pk(league.getPk())
-                    .leagueType(league.getType())
+                    .type(league.getType())
                     .nameEn(league.getNameEn())
                     .nameKr(league.getNameKr())
                     .logoUrl(league.getLogoUrl())

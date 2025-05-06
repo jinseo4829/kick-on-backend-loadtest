@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import kr.kickon.api.global.common.ExampleConstants;
-import kr.kickon.api.global.common.annotations.ValidEnum;
+import kr.kickon.api.global.common.enums.ValidEnum;
 import kr.kickon.api.global.common.enums.NewsCategory;
 import lombok.Data;
 import lombok.NoArgsConstructor;

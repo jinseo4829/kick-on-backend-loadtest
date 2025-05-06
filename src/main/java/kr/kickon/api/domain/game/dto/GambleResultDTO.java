@@ -1,10 +1,12 @@
 package kr.kickon.api.domain.game.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
 @Schema(description = "승부예측 현황 DTO")
+@AllArgsConstructor
 public class GambleResultDTO {
     @Schema(description = "홈 선택 비율", example = "12")
     private Integer home;

@@ -41,6 +41,9 @@ public class User extends BaseEntity{
     @Column(length = 10)
     private String nickname;
 
+    @Column(length = 500)
+    private String reason;
+
     @Column()
     private LocalDateTime privacyAgreedAt;
 

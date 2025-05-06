@@ -8,8 +8,8 @@ import jakarta.transaction.Transactional;
 import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.boardReply.dto.PaginatedReplyListDTO;
 import kr.kickon.api.domain.boardReply.dto.ReplyDTO;
-import kr.kickon.api.domain.board.dto.UserDTO;
 import kr.kickon.api.domain.boardReplyKick.BoardReplyKickService;
+import kr.kickon.api.domain.user.dto.BaseUserDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
@@ -48,7 +48,7 @@ public class BoardReplyService implements BaseService<BoardReply> {
         return boardReply.orElse(null);
     }
 
-    public PaginatedReplyListDTO getRepliesByBoard(Long boardPk, Long userPk, Integer page, Integer size) {
+    public PaginatedReplyListDTO getRepliesByBoard(Long boardPk, Long userPk, Integer page, Integer size, Boolean infiniteFlag, Long lastReplyPk) {
         QBoardReply reply = QBoardReply.boardReply;
         QUser user = QUser.user;
         Integer offset = (page - 1) * size;
@@ -61,22 +61,47 @@ public class BoardReplyService implements BaseService<BoardReply> {
                         .and(reply.status.eq(DataStatus.ACTIVATED)))
                 .fetchOne();
 
-        List<Tuple> results = queryFactory.select(reply, user)
+
+        JPAQuery<Tuple> dataQuery = queryFactory.select(reply, user)
                 .from(reply)
                 .join(user).on(reply.user.pk.eq(user.pk))
                 .where(reply.board.pk.eq(boardPk)
                         .and(reply.parentBoardReply.isNull())
                         .and(user.status.eq(DataStatus.ACTIVATED))
                         .and(reply.status.eq(DataStatus.ACTIVATED)))
-                .offset(offset)
-                .limit(size)
-                .orderBy(reply.createdAt.asc())
-                .fetch();
+                .orderBy(reply.createdAt.asc());
 
-        List<ReplyDTO> replyList = results.stream()
-                .map(tuple -> mapToReplyDTO(tuple, userPk))
-                .toList();
-        return new PaginatedReplyListDTO(page, size, total, replyList);
+        List<Tuple> results;
+
+        if(infiniteFlag!=null && infiniteFlag){
+            // 무한 스크롤일 때
+            dataQuery.limit(size + 1); // → hasNext 판단용
+            if (lastReplyPk != null && lastReplyPk > 0) {
+                dataQuery.where(reply.pk.lt(lastReplyPk));
+            }
+
+            results = dataQuery.fetch();
+            // ✅ hasNext 처리
+            boolean hasNext = results.size() > size;
+            if (hasNext) {
+                results = results.subList(0, size); // 초과분 잘라내기
+            }
+            // ✅ DTO 변환
+            List<ReplyDTO> boardList = results.stream().map(tuple -> mapToReplyDTO(tuple, userPk)).toList();
+
+            // ✅ 메타데이터 포함한 결과 반환
+            return new PaginatedReplyListDTO(boardList, hasNext);
+        }else{
+            // 일반 페이지 네이션
+            dataQuery.offset(offset)
+                    .limit(size);
+            results = dataQuery.fetch();
+            // ✅ DTO 변환
+            List<ReplyDTO> boardList = results.stream().map(tuple -> mapToReplyDTO(tuple, userPk)).toList();
+
+            // ✅ 메타데이터 포함한 결과 반환
+            return new PaginatedReplyListDTO(page, size, total, boardList);
+        }
     }
 
     private ReplyDTO mapToReplyDTO(Tuple tuple, Long userPk) {
@@ -94,7 +119,7 @@ public class BoardReplyService implements BaseService<BoardReply> {
                 .pk(parentReply.getPk())
                 .contents(parentReply.getContents())
                 .createdAt(parentReply.getCreatedAt())
-                .user(UserDTO.builder()
+                .user(BaseUserDTO.builder()
                         .id(replyUser.getId())
                         .nickname(replyUser.getNickname())
                         .profileImageUrl(replyUser.getProfileImageUrl())

@@ -82,8 +82,13 @@ public class NewsReplyController {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         News newsData = newsService.findByPk(query.getNews());
         if(newsData == null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS);
-        PaginatedNewsReplyListDTO paginatedReplyListDTO = newsReplyService.getRepliesByNews(query.getNews(),user!=null ? user.getPk() : null, query.getPage(), query.getSize());
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS,paginatedReplyListDTO.getReplyList(),
-                new PagedMetaDTO(paginatedReplyListDTO.getCurrentPage(), paginatedReplyListDTO.getPageSize(), paginatedReplyListDTO.getTotalItems())));
+        PaginatedNewsReplyListDTO paginatedReplyListDTO = newsReplyService.getRepliesByNews(query.getNews(),user!=null ? user.getPk() : null, query.getPage(), query.getSize(), query.getInfinite() != null ? query.getInfinite() : null, query.getLastReply());
+        if(paginatedReplyListDTO.getHasNext()!=null){
+            return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS,paginatedReplyListDTO.getReplyList(),
+                    new PagedMetaDTO(paginatedReplyListDTO.getHasNext())));
+        }else{
+            return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS,paginatedReplyListDTO.getReplyList(),
+                    new PagedMetaDTO(paginatedReplyListDTO.getCurrentPage(), paginatedReplyListDTO.getPageSize(), paginatedReplyListDTO.getTotalItems())));
+        }
     }
 }

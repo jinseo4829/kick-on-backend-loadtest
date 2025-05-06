@@ -7,15 +7,21 @@ import kr.kickon.api.global.auth.oauth.dto.NaverUserInfo;
 import kr.kickon.api.global.auth.oauth.dto.OAuth2UserInfo;
 import kr.kickon.api.global.auth.oauth.dto.PrincipalUserDetail;
 import kr.kickon.api.global.common.entities.User;
+import kr.kickon.api.global.common.enums.DataStatus;
+import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.common.enums.Role;
+import kr.kickon.api.global.error.exceptions.OAuth2RegistrationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
 
@@ -35,20 +41,29 @@ public class PrincipalOauth2UserService extends DefaultOAuth2UserService {
             oAuth2UserInfo = new KakaoUserInfo(oAuth2User.getAttributes());
         else if(userRequest.getClientRegistration().getRegistrationId().equals("naver"))
             oAuth2UserInfo = new NaverUserInfo((Map) oAuth2User.getAttributes().get("response"));
-        else log.error("지원하지 않는 소셜입니다.");
+        else throw new OAuth2RegistrationException(ResponseCode.INVALID_PROVIDER);
 
         assert oAuth2UserInfo != null;
         Optional<User> userEntity = userService.findUserByProviderAndProviderId(oAuth2UserInfo.getProvider(), oAuth2UserInfo.getProviderId());
 
         User user = null;
         String role = "OAUTH_FIRST_JOIN";
-        if (userEntity.isPresent()) {
+        if (userEntity.isPresent() && userEntity.get().getStatus().equals(DataStatus.ACTIVATED)) {
             user = userEntity.get();
-            userService.saveUser(user);
             if(user.getPrivacyAgreedAt()!=null) role="USER";
 //            log.error("jwt role 확인 {}", role);
             // jwt 생성
         } else {
+
+            // 일주일 안에 탈퇴한 이력이 있는지 체크
+            if(userEntity.isPresent()){
+                user = userEntity.get();
+                LocalDateTime deactivatedAt = user.getUpdatedAt(); // 또는 탈퇴 기록 기준
+                if (user.getStatus().equals(DataStatus.DEACTIVATED) && deactivatedAt != null && deactivatedAt.isAfter(LocalDateTime.now().minusDays(7))) {
+                    throw new OAuth2RegistrationException(ResponseCode.FORBIDDEN_RESISTER);
+                }
+            }
+
             user = userService.saveSocialUser(oAuth2UserInfo);
         }
 

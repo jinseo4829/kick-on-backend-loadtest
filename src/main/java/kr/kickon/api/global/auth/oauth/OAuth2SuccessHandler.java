@@ -27,7 +27,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         // 클라이언트에서 전달한 redirect_uri 파라미터를 얻기
         String redirectUri = request.getParameter("state");
-        log.info("OAuth2 Success - Redirect URI: {}", redirectUri);
+//        log.info("OAuth2 Success - Redirect URI: {}", redirectUri);
         // redirect_uri가 없으면 기본값을 설정하거나 예외 처리
         if (redirectUri == null || redirectUri.isEmpty()) {
             redirectUri = "http://localhost:3000";  // 예시로 기본 프론트엔드 URL 설정

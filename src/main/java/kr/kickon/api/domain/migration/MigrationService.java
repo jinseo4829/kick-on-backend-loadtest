@@ -33,6 +33,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static kr.kickon.api.domain.game.GameService.getGameStatus;
+
 @Service
 @Slf4j
 public class MigrationService {
@@ -181,187 +183,6 @@ public class MigrationService {
             gameService.save(game);
         });
     }
-
-    public void saveGamesAndUpdateGambles(List<ApiGamesDTO> list){
-        // 게임 아이디 체크
-        List<String> gameIds = new ArrayList<>();
-        List<String> scheduledStatus = new ArrayList<>(Arrays.asList(GameService.ScheduledStatus));
-        List<String> finishedStatus = new ArrayList<>(Arrays.asList(GameService.FinishedStatus));
-        List<String> homeGambleSeasonPointIds = new ArrayList<>();
-        List<String> awayGambleSeasonPointIds = new ArrayList<>();
-        list.forEach(apiData -> {
-
-            Game game = null;
-            GameStatus gameStatus = getGameStatus(apiData, scheduledStatus, finishedStatus);
-            try{
-                // 필수 값 체크
-                game = gameService.findByApiId(apiData.getId());
-                game.setGameStatus(gameStatus);
-                game.setAwayPenaltyScore(apiData.getAwayPenaltyScore());
-                game.setHomePenaltyScore(apiData.getHomePenaltyScore());
-                game.setHomeScore(apiData.getHomeScore());
-                game.setAwayScore(apiData.getAwayScore());
-                List<UserGameGamble> userGameGambles = userGameGambleService.findByGameApiId(game.getApiId());
-                userGameGambleService.updateGambleStatusByApiGamesDTO(userGameGambles, apiData, gameStatus);
-            }catch (NotFoundException ignore){
-                Team homeTeam, awayTeam;
-                homeTeam = teamService.findByApiId(apiData.getHomeTeamId());
-                awayTeam = teamService.findByApiId(apiData.getAwayTeamId());
-                if(homeTeam == null || awayTeam==null){}
-                else{
-                    String gameId = "";
-                    do {
-                        try{
-                            gameId = uuidGenerator.generateUniqueUUID(leagueService::findById);
-                        }catch (NotFoundException ignore2){
-                        }
-                        // 이미 생성된 ID가 배열에 있는지 확인
-                        if(!gameIds.contains(gameId)) {
-                            break;
-                        }
-                    } while (true); // 중복이 있을 경우 다시 생성
-                    gameIds.add(gameId);
-
-                    game = Game.builder()
-                            .id(gameId)
-                            .gameStatus(gameStatus)
-                            .awayPenaltyScore(apiData.getAwayPenaltyScore())
-                            .homePenaltyScore(apiData.getHomePenaltyScore())
-                            .actualSeason(apiData.getActualSeason())
-                            .apiId(apiData.getId())
-                            .homeScore(apiData.getHomeScore())
-                            .awayScore(apiData.getAwayScore())
-                            .round(apiData.getRound())
-                            .homeTeam(homeTeam)
-                            .awayTeam(awayTeam)
-                            .startedAt(apiData.getDate())
-                            .build();
-                }
-
-            }
-            game = gameService.save(game);
-            List<UserGameGamble> userGameGambles = userGameGambleService.findByGameApiId(game.getApiId());
-            // 홈팀과 어웨이팀으로 구분
-            List<UserGameGamble> homeTeamGambles = userGameGambles.stream()
-                    .filter(g -> g.getSupportingTeam().getApiId().equals(apiData.getHomeTeamId()))
-                    .toList();
-
-            List<UserGameGamble> awayTeamGambles = userGameGambles.stream()
-                    .filter(g -> g.getSupportingTeam().getApiId().equals(apiData.getAwayTeamId()))
-                    .toList();
-
-//            System.out.println("home gamble : " + Arrays.toString(homeTeamGambles.toArray()));
-//            System.out.println("away gamble : " + Arrays.toString(awayTeamGambles.toArray()));
-
-            String homeGambleSeasonPointId = "";
-            String awayGambleSeasonPointId = "";
-            do {
-                homeGambleSeasonPointId = uuidGenerator.generateUniqueUUID(gambleSeasonPointService::findById);
-                // 이미 생성된 ID가 배열에 있는지 확인
-            } while (homeGambleSeasonPointIds.contains(homeGambleSeasonPointId)); // 중복이 있을 경우 다시 생성
-            do {
-                awayGambleSeasonPointId = uuidGenerator.generateUniqueUUID(gambleSeasonPointService::findById);
-                // 이미 생성된 ID가 배열에 있는지 확인
-            } while (awayGambleSeasonPointIds.contains(awayGambleSeasonPointId)); // 중복이 있을 경우 다시 생성
-            homeGambleSeasonPointIds.add(homeGambleSeasonPointId);
-            awayGambleSeasonPointIds.add(awayGambleSeasonPointId);
-
-            // 홈팀 평균 포인트 저장
-            double homeAvgPoints = calculateAveragePoints(homeTeamGambles);
-
-            GambleSeasonTeam homeGambleSeasonTeam = gambleSeasonTeamService.findRecentOperatingByTeamPk(game.getHomeTeam().getPk());
-//            System.out.println(homeGambleSeasonTeam.getTeam());
-            if(homeGambleSeasonTeam != null){
-                Team homeTeam = teamService.findByApiId(apiData.getHomeTeamId());
-                Team awayTeam = teamService.findByApiId(apiData.getAwayTeamId());
-                GambleSeasonPoint homeSeasonPoint = GambleSeasonPoint.builder()
-                        .id(homeGambleSeasonPointId)
-                        .gambleSeason(homeGambleSeasonTeam.getGambleSeason())
-                        .averagePoints((int) Math.round(homeAvgPoints * 1000))
-                        .team(homeTeam)
-                        .game(game)
-                        .build();
-                gambleSeasonPointService.save(homeSeasonPoint);
-
-                // 어웨이팀 평균 포인트 저장
-                double awayAvgPoints = calculateAveragePoints(awayTeamGambles);
-                GambleSeasonPoint awaySeasonPoint = GambleSeasonPoint.builder()
-                        .id(awayGambleSeasonPointId)
-                        .gambleSeason(homeGambleSeasonTeam.getGambleSeason())
-                        .averagePoints((int) Math.round(awayAvgPoints * 1000))
-                        .team(awayTeam)
-                        .game(game)
-                        .build();
-                gambleSeasonPointService.save(awaySeasonPoint);
-                // 랭킹 업데이트
-                GambleSeasonRanking homeGambleSeasonRanking = gambleSeasonRankingService.findByTeamPk(homeSeasonPoint.getTeam().getPk());
-                homeGambleSeasonRanking.setPoints(homeGambleSeasonRanking.getPoints() + homeSeasonPoint.getAveragePoints());
-                homeGambleSeasonRanking.setGameNum(homeGambleSeasonRanking.getGameNum()+1);
-                GambleSeasonRanking awayGambleSeasonRanking = gambleSeasonRankingService.findByTeamPk(awaySeasonPoint.getTeam().getPk());
-                awayGambleSeasonRanking.setPoints(awayGambleSeasonRanking.getPoints() + awaySeasonPoint.getAveragePoints());
-                homeGambleSeasonRanking.setGameNum(awayGambleSeasonRanking.getGameNum()+1);
-                gambleSeasonRankingService.save(homeGambleSeasonRanking);
-                gambleSeasonRankingService.save(awayGambleSeasonRanking);
-            }
-        });
-        updateTeamRankings();
-    }
-
-    // 평균 포인트 계산 메서드
-    double calculateAveragePoints(List<UserGameGamble> gambles) {
-        return gambles.stream()
-                .filter(g -> g.getGambleStatus() == GambleStatus.SUCCEED || g.getGambleStatus() == GambleStatus.PERFECT)
-                .mapToInt(g -> g.getGambleStatus() == GambleStatus.PERFECT ? 3 : 1)
-                .average()
-                .orElse(0.0);
-    }
-
-    private void updateTeamRankings() {
-        // 팀 랭킹을 업데이트하고 rank_order를 새로 계산
-        List<League> leagues = leagueService.findAll();
-        for(League league : leagues) {
-            GambleSeason gambleSeason;
-            try {
-                gambleSeason = gambleSeasonService.findRecentOperatingSeasonByLeaguePk(league.getPk());
-            }catch (Exception e) {
-                continue;
-            }
-
-            List<GambleSeasonRanking> rankings = gambleSeasonRankingService.findRecentSeasonRankingByGambleSeason(gambleSeason.getPk());
-            if(rankings == null) continue;
-            gambleSeasonRankingService.recalculateRanking(rankings);
-        }
-    }
-
-    private static @NotNull GameStatus getGameStatus(ApiGamesDTO apiData, List<String> scheduledStatus, List<String> finishedStatus) {
-        GameStatus gameStatus;
-        if(scheduledStatus.contains(apiData.getStatus())){
-            // 시작 안한 경기
-            gameStatus = GameStatus.PENDING;
-        }
-
-        else if(finishedStatus.contains(apiData.getStatus())){
-            // 끝난 경기
-            if(apiData.getStatus().equals("PEN")){
-                // 승부차기인지 체크
-                gameStatus = apiData.getHomePenaltyScore() > apiData.getAwayPenaltyScore() ? GameStatus.HOME : GameStatus.AWAY;
-            } else {
-                // 일반적으로 경기 마무리 된 경우
-                gameStatus = apiData.getHomeScore().equals(apiData.getAwayScore()) ? GameStatus.DRAW : apiData.getHomeScore() > apiData.getAwayScore() ? GameStatus.HOME : GameStatus.AWAY;
-            }
-        } else if(apiData.getStatus().equals("PST")){
-            // 연기된 경기
-            gameStatus = GameStatus.POSTPONED;
-        } else if(apiData.getStatus().equals("CANC") || apiData.getStatus().equals("ABD")){
-            // 취소된 경기
-            gameStatus = GameStatus.CANCELED;
-        } else {
-            // 진행중인 경기
-            gameStatus = GameStatus.PROCEEDING;
-        }
-        return gameStatus;
-    }
-
 
     @Transactional
     public void saveLeagueAndSeason(List<ApiLeagueAndSeasonDTO> list){
@@ -786,5 +607,21 @@ public class MigrationService {
                     .forEach(list::add); // 결과를 리스트에 추가
         }
         return list;
+    }
+
+    public void updateFinalTeamRanking() {
+        List<League> leagues = leagueService.findAll();
+        for(League league : leagues) {
+            GambleSeason gambleSeason;
+            try {
+                gambleSeason = gambleSeasonService.findRecentOperatingSeasonByLeaguePk(league.getPk());
+            }catch (Exception e) {
+                continue;
+            }
+
+            List<GambleSeasonRanking> rankings = gambleSeasonRankingService.findRecentSeasonRankingByGambleSeason(gambleSeason.getPk());
+            if(rankings == null) continue;
+            gambleSeasonRankingService.recalculateRanking(rankings);
+        }
     }
 }

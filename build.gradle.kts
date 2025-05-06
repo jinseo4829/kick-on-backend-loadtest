@@ -43,6 +43,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
+	implementation("org.springframework.boot:spring-boot-starter-aop")
 
 	// http Client
 	implementation("org.springframework.boot:spring-boot-starter-webflux")
@@ -100,6 +101,12 @@ dependencies {
 	implementation("org.glassfish.tyrus.bundles:tyrus-standalone-client:1.20")
 	implementation("org.slf4j:slf4j-simple:1.7.36")
 	implementation("com.slack.api:bolt-jetty:1.45.3")
+
+	// kafka
+	implementation("org.springframework.kafka:spring-kafka")
+
+	// redis
+	implementation("org.springframework.boot:spring-boot-starter-data-redis")
 	implementation(kotlin("script-runtime"))
 }
 
