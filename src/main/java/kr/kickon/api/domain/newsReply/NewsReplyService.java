@@ -17,6 +17,7 @@ import kr.kickon.api.global.common.enums.UsedInType;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -33,6 +34,9 @@ public class NewsReplyService implements BaseService<NewsReply> {
     private final NewsReplyKickService newsReplyKickService;
     private final UUIDGenerator uuidGenerator;
     private final AwsFileReferenceService awsFileReferenceService;
+
+    @Value("${spring.config.activate.on-profile}")
+    private String env;
 
     @Override
     public NewsReply findById(String uuid) {
@@ -53,9 +57,13 @@ public class NewsReplyService implements BaseService<NewsReply> {
         NewsReply saved = newsReplyRepository.save(newsReply);
 
         if (usedImageKeys != null) {
+            List<String> fullKeys = Arrays.stream(usedImageKeys)
+                    .map(key -> env + "/news-reply-files/" + key)
+                    .collect(Collectors.toList());
+
             awsFileReferenceService.updateFilesAsUsed(
-                    Arrays.asList(usedImageKeys),
-                    UsedInType.BOARD_REPLY,
+                    fullKeys,
+                    UsedInType.NEWS_REPLY,
                     saved.getPk()
             );
         }

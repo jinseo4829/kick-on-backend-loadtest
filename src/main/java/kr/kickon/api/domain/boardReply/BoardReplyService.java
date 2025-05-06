@@ -17,6 +17,7 @@ import kr.kickon.api.global.common.enums.UsedInType;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -33,6 +34,8 @@ public class BoardReplyService implements BaseService<BoardReply> {
     private final JPAQueryFactory queryFactory;
     private final UUIDGenerator uuidGenerator;
     private final AwsFileReferenceService awsFileReferenceService;
+    @Value("${spring.config.activate.on-profile}")
+    private String env;
 
     @Override
     public BoardReply findById(String uuid) {
@@ -152,8 +155,11 @@ public class BoardReplyService implements BaseService<BoardReply> {
         BoardReply saved = boardReplyRepository.save(boardReply);
 
         if (usedImageKeys != null) {
+            List<String> fullKeys = Arrays.stream(usedImageKeys)
+                    .map(key -> env + "/board-reply-files/" + key)
+                    .collect(Collectors.toList());
             awsFileReferenceService.updateFilesAsUsed(
-                    Arrays.asList(usedImageKeys),
+                    fullKeys,
                     UsedInType.BOARD_REPLY,
                     saved.getPk()
             );

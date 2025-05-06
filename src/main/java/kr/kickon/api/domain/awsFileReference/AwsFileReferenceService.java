@@ -12,6 +12,7 @@ import kr.kickon.api.global.error.exceptions.BadRequestException;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -62,7 +63,7 @@ public class AwsFileReferenceService implements BaseService<AwsFileReference> {
     }
 
     public List<AwsFileReference> findUnusedOlderThan3Days() {
-        LocalDateTime threeDaysAgo = LocalDateTime.now().minusDays(3);
+        LocalDateTime threeDaysAgo = LocalDateTime.now().minusDays(2);
         return awsFileReferenceRepository.findByReferencePkIsNullAndCreatedAtBefore(threeDaysAgo);
     }
 

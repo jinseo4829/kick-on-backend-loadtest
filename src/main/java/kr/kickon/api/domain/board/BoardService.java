@@ -24,12 +24,14 @@ import kr.kickon.api.global.common.enums.UsedInType;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -40,6 +42,8 @@ public class BoardService implements BaseService<Board> {
     private final BoardKickService boardKickService;
     private final UUIDGenerator uuidGenerator;
     private final AwsFileReferenceService awsFileReferenceService;
+    @Value("${spring.config.activate.on-profile}")
+    private String env;
 
     @Override
     public Board findById(String uuid) {
@@ -60,8 +64,12 @@ public class BoardService implements BaseService<Board> {
         Board saved = boardRepository.save(board);
 
         if (usedImageKeys != null) {
+            List<String> fullKeys = Arrays.stream(usedImageKeys)
+                    .map(key -> env + "/board-files/" + key)
+                    .collect(Collectors.toList());
+
             awsFileReferenceService.updateFilesAsUsed(
-                    Arrays.asList(usedImageKeys),
+                    fullKeys,
                     UsedInType.BOARD,
                     saved.getPk()
             );

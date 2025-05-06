@@ -3,6 +3,7 @@ package kr.kickon.api.domain.aws;
 import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.global.common.entities.AwsFileReference;
 import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.common.enums.UsedInType;
 import kr.kickon.api.global.error.exceptions.BadRequestException;
 import kr.kickon.api.global.error.exceptions.InternalServerException;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import java.net.URL;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -45,6 +47,17 @@ public class AwsService{
 
             PresignedPutObjectRequest presignedRequest = presigner.presignPutObject(presignRequest);
 
+            // 2. AwsFileReference DB 등록
+            AwsFileReference awsFileReference = AwsFileReference.builder()
+                    .id(UUID.randomUUID().toString())
+                    .s3Key(keyName)
+                    .usedIn(UsedInType.TEMP)
+                    .build();
+            awsFileReferenceService.save(
+                    awsFileReference
+            );
+            System.out.println(awsFileReference);
+
             return presignedRequest.url().toString();
         }catch (Exception e) {
             throw new InternalServerException(ResponseCode.AWS_PRESIGNED_ERROR, e.getMessage());
@@ -61,7 +74,7 @@ public class AwsService{
 
     public void cleanupUnusedFiles() {
         List<AwsFileReference> unusedFiles = awsFileReferenceService.findUnusedOlderThan3Days();
-
+        System.out.println(unusedFiles);
         if (unusedFiles.isEmpty()) {
             return;
         }
@@ -75,6 +88,7 @@ public class AwsService{
                             .build());
                     awsFileReferenceService.delete(file);
                 } catch (Exception e) {
+                    System.out.println(e);
                     throw new InternalServerException(ResponseCode.INTERNAL_SERVER_ERROR,e.getCause());
                 }
             }

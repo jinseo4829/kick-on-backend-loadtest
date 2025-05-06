@@ -20,6 +20,7 @@ import kr.kickon.api.global.common.enums.UsedInType;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -27,6 +28,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -37,6 +39,9 @@ public class NewsService implements BaseService<News> {
     private final UUIDGenerator uuidGenerator;
     private final NewsKickService newsKickService;
     private final AwsFileReferenceService awsFileReferenceService;
+
+    @Value("${spring.config.activate.on-profile}")
+    private String env;
 
     @Override
     public News findById(String uuid) {
@@ -55,11 +60,14 @@ public class NewsService implements BaseService<News> {
     @Transactional
     public News createNewsWithImages(News news, String[] usedImageKeys) {
         News saved = newsRepository.save(news);
-
+        System.out.println(env);
         if (usedImageKeys != null) {
+            List<String> fullKeys = Arrays.stream(usedImageKeys)
+                    .map(key -> env + "/news-files/" + key)
+                    .collect(Collectors.toList());
             awsFileReferenceService.updateFilesAsUsed(
-                    Arrays.asList(usedImageKeys),
-                    UsedInType.BOARD,
+                    fullKeys,
+                    UsedInType.NEWS,
                     saved.getPk()
             );
         }
