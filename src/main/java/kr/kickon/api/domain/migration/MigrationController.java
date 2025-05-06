@@ -96,6 +96,7 @@ public class MigrationController {
     @Scheduled(cron = "0 0 */3 * * *")
     public void fetchGambles() {
         List<Game> games = gameService.findByToday();
+
         List<ApiGamesDTO> apiGamesDTOS = migrationService.fetchGamesByApiIds(games);
 
         // 👇 여기 추가

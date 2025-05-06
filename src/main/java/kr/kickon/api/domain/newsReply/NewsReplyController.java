@@ -67,7 +67,7 @@ public class NewsReplyController {
 
         NewsReply newsReply = newsReplyBuilder.build();
 
-        newsReplyService.save(newsReply);
+        newsReply = newsReplyService.createNewsReplyWithImages(newsReply, request.getUsedImageKeys());
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
 

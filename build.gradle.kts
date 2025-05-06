@@ -107,6 +107,7 @@ dependencies {
 
 	// redis
 	implementation("org.springframework.boot:spring-boot-starter-data-redis")
+	implementation(kotlin("script-runtime"))
 }
 
 tasks.withType<Test> {

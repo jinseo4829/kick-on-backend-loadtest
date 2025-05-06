@@ -109,7 +109,8 @@ public class NewsController {
             news.setTeam(team);
         }
 
-        News newsCreated = newsService.save(news);
+        News newsCreated = newsService.createNewsWithImages(news, request.getUsedImageKeys());
+
         NewsDetailDTO newsDetailDTO = newsService.findNewsDeatailDTOByPk(newsCreated.getPk(),user);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS,newsDetailDTO));
     }

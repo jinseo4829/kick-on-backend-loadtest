@@ -70,8 +70,7 @@ public class BoardReplyController {
         }
 
         BoardReply boardReply = boardReplyBuilder.build();
-
-        boardReplyService.save(boardReply);
+        boardReply = boardReplyService.createBoardReplyWithImages(boardReply,request.getUsedImageKeys());
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
 

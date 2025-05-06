@@ -24,4 +24,7 @@ public class CreateNewsReplyRequestDTO {
     @Length(min = 1, max = 1000,message = "댓글은 1000자 이하로 작성해주세요.")
     @Schema(description = "부모 댓글 content", example = ExampleConstants.replyContent)
     private String contents;
+
+    @Schema(description = "게시글 내 사용된 이미지 S3 키 배열", example = "[\"board-images/user1-2025-05-01-10-00-00.png\"]")
+    private String[] usedImageKeys;
 }

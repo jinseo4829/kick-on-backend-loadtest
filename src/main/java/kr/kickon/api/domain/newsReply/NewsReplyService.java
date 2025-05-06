@@ -4,9 +4,8 @@ import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import kr.kickon.api.domain.board.dto.BoardListDTO;
-import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
-import kr.kickon.api.domain.news.dto.NewsListDTO;
+import jakarta.transaction.Transactional;
+import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.newsReply.dto.PaginatedNewsReplyListDTO;
 import kr.kickon.api.domain.newsReply.dto.ReplyDTO;
 import kr.kickon.api.domain.newsReplyKick.NewsReplyKickService;
@@ -14,11 +13,14 @@ import kr.kickon.api.domain.user.dto.BaseUserDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
+import kr.kickon.api.global.common.enums.UsedInType;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -31,6 +33,10 @@ public class NewsReplyService implements BaseService<NewsReply> {
     private final JPAQueryFactory queryFactory;
     private final NewsReplyKickService newsReplyKickService;
     private final UUIDGenerator uuidGenerator;
+    private final AwsFileReferenceService awsFileReferenceService;
+
+    @Value("${spring.config.activate.on-profile}")
+    private String env;
 
     @Override
     public NewsReply findById(String uuid) {
@@ -46,6 +52,24 @@ public class NewsReplyService implements BaseService<NewsReply> {
         return newsReply.orElse(null);
     }
 
+    @Transactional
+    public NewsReply createNewsReplyWithImages(NewsReply newsReply, String[] usedImageKeys) {
+        NewsReply saved = newsReplyRepository.save(newsReply);
+
+        if (usedImageKeys != null) {
+            List<String> fullKeys = Arrays.stream(usedImageKeys)
+                    .map(key -> env + "/news-reply-files/" + key)
+                    .collect(Collectors.toList());
+
+            awsFileReferenceService.updateFilesAsUsed(
+                    fullKeys,
+                    UsedInType.NEWS_REPLY,
+                    saved.getPk()
+            );
+        }
+
+        return saved;
+    }
 
     public PaginatedNewsReplyListDTO getRepliesByNews(Long newsPk, Long userPk, Integer page, Integer size, Boolean infiniteFlag, Long lastReplyPk) {
         QNewsReply reply = QNewsReply.newsReply;
