@@ -33,6 +33,6 @@ public class CreateNewsRequestDTO {
     @ValidEnum(enumClass = NewsCategory.class, message = "허용되지 않는 카테고리입니다.")
     private NewsCategory category = NewsCategory.ETC;
 
-    @Schema(description = "게시글 내 사용된 이미지 S3 키 배열", example = "[\"board-images/user1-2025-05-01-10-00-00.png\"]")
+    @Schema(description = "게시글 내 사용된 이미지 S3 키 배열", example = "[\"user1-2025-05-01-10-00-00.png\"]")
     private String[] usedImageKeys;
 }
