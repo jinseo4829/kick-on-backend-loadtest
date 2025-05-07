@@ -1,14 +1,13 @@
 package kr.kickon.api.domain.userGameGamble;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import kr.kickon.api.domain.game.GameService;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.domain.userGameGamble.request.UserGameGamblePatchRequest;
 import kr.kickon.api.domain.userGameGamble.request.UserGameGamblePostRequest;
-import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
+import kr.kickon.api.global.auth.jwt.user.JwtTokenProvider;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.Game;
 import kr.kickon.api.global.common.entities.User;

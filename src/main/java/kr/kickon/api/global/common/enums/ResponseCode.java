@@ -53,6 +53,7 @@ public enum ResponseCode {
     NOT_FOUND_BOARD_REPLY(HttpStatus.NOT_FOUND,"NOT_FOUND_BOARD_REPLY", "해당 게시글 댓글을 찾을 수 없습니다."),
     NOT_FOUND_NEWS_REPLY(HttpStatus.NOT_FOUND,"NOT_FOUND_NEWS_REPLY", "해당 뉴스 댓글을 찾을 수 없습니다."),
     NOT_FOUND_AWS_FILE(HttpStatus.NOT_FOUND,"NOT_FOUND_AWS_FILE", "AWS 파일이 존재하지 않습니다."),
+    NOT_FOUND_ADMIN(HttpStatus.NOT_FOUND,"NOT_FOUND_ADMIN", "어드민이 존재하지 않습니다."),
 
     // ✅ 500 Internal Server Error
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다."),
