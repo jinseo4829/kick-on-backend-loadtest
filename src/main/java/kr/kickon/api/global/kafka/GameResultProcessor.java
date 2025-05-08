@@ -60,7 +60,7 @@ public class GameResultProcessor {
                                  ApiGamesDTO gameData,
                                  Acknowledgment ack) {
         try {
-            System.out.println(gameId + "----------------------------------");
+//            System.out.println(gameId + "----------------------------------");
             log.info("[GameId: {}] Processing game result", gameId);
 
             GameStatus gameStatus = getGameStatus(gameData, scheduledStatus, finishedStatus);
@@ -84,7 +84,7 @@ public class GameResultProcessor {
     private Game saveGameResult(ApiGamesDTO apiData, GameStatus gameStatus) {
         // TODO: step1 구현 함수 호출
         Game game = null;
-        System.out.println(apiData);
+//        System.out.println(apiData);
         try{
             // 필수 값 체크
             game = gameService.findByApiId(apiData.getId());

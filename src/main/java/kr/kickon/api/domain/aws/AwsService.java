@@ -56,7 +56,7 @@ public class AwsService{
             awsFileReferenceService.save(
                     awsFileReference
             );
-            System.out.println(awsFileReference);
+//            System.out.println(awsFileReference);
 
             return presignedRequest.url().toString();
         }catch (Exception e) {
@@ -74,7 +74,7 @@ public class AwsService{
 
     public void cleanupUnusedFiles() {
         List<AwsFileReference> unusedFiles = awsFileReferenceService.findUnusedOlderThan3Days();
-        System.out.println(unusedFiles);
+//        System.out.println(unusedFiles);
         if (unusedFiles.isEmpty()) {
             return;
         }
@@ -88,7 +88,7 @@ public class AwsService{
                             .build());
                     awsFileReferenceService.delete(file);
                 } catch (Exception e) {
-                    System.out.println(e);
+//                    System.out.println(e);
                     throw new InternalServerException(ResponseCode.INTERNAL_SERVER_ERROR,e.getCause());
                 }
             }
