@@ -3,8 +3,7 @@ package kr.kickon.api.domain.user.request;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Null;
-import kr.kickon.api.global.config.LocalDateTimeDeserializer;
+import kr.kickon.api.global.util.LocalDateTimeDeserializer;
 import lombok.Getter;
 import lombok.Setter;
 

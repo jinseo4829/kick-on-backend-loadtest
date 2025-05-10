@@ -4,6 +4,7 @@ import kr.kickon.api.global.auth.jwt.CustomAccessDeniedHandler;
 import kr.kickon.api.global.auth.jwt.CustomAuthenticationEntryPoint;
 import kr.kickon.api.global.auth.jwt.JwtAuthenticationFilter;
 import kr.kickon.api.global.auth.oauth.CustomAuthorizationRequestResolver;
+import kr.kickon.api.global.auth.oauth.CustomOAuth2FailureHandler;
 import kr.kickon.api.global.auth.oauth.OAuth2SuccessHandler;
 import kr.kickon.api.global.auth.oauth.PrincipalOauth2UserService;
 import lombok.AllArgsConstructor;
@@ -29,10 +30,10 @@ public class SecurityConfig {
     private final CustomAuthorizationRequestResolver customAuthorizationRequestResolver;
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
     private final CustomAccessDeniedHandler accessDeniedHandler;
+    private final CustomOAuth2FailureHandler customOAuth2FailureHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
         http
                 .httpBasic(AbstractHttpConfigurer::disable) // ui 사용하는거 비활성화
                 .formLogin(AbstractHttpConfigurer::disable)
@@ -45,6 +46,7 @@ public class SecurityConfig {
                     authorizeRequests
                             .requestMatchers("/swagger-ui/*", "/oauth2/*", "/v3/**").permitAll() // ✅ OAuth2 로그인 경로, swagger 호출 허용
                             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                            .requestMatchers(HttpMethod.DELETE,"/api/user/me").hasAnyRole("OAUTH_FIRST_JOIN","USER")
                             .requestMatchers(HttpMethod.GET,
                                     "/api/user/me",
                                     "/api/user-point-event/ranking"
@@ -78,9 +80,15 @@ public class SecurityConfig {
 
                 })
                 .oauth2Login(oAuth2Login -> {
-                    oAuth2Login.userInfoEndpoint(userInfoEndpointConfig -> userInfoEndpointConfig.userService(principalOauth2UserService)).successHandler(oAuth2SuccessHandler).authorizationEndpoint(endpoint -> endpoint
-                            .authorizationRequestResolver(customAuthorizationRequestResolver));
-                        }
+                        oAuth2Login.userInfoEndpoint(
+                            userInfoEndpointConfig -> userInfoEndpointConfig.userService(principalOauth2UserService)
+                        )
+                        .successHandler(oAuth2SuccessHandler)
+                        .authorizationEndpoint(endpoint -> endpoint
+                            .authorizationRequestResolver(customAuthorizationRequestResolver)
+                        )
+                        .failureHandler(customOAuth2FailureHandler);
+                    }
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 // JWT 인증 실패 (401) → Custom EntryPoint

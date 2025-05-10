@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.board.dto.BoardDetailDTO;
 import kr.kickon.api.domain.board.dto.BoardListDTO;
 import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
@@ -16,6 +17,7 @@ import kr.kickon.api.domain.board.response.GetBoardDetailResponse;
 import kr.kickon.api.domain.board.response.GetBoardsResponse;
 import kr.kickon.api.domain.board.response.GetHomeBoardsResponse;
 import kr.kickon.api.domain.boardKick.BoardKickService;
+import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
 import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
@@ -43,7 +45,6 @@ public class BoardController {
     private final BoardService boardService;
     private final JwtTokenProvider jwtTokenProvider;
     private final TeamService teamService;
-    private final UserFavoriteTeamService userFavoriteTeamService;
     private final UUIDGenerator uuidGenerator;
 
     @Operation(summary = "홈화면 함께 볼만한 게시글 리스트 조회", description = "응원팀 여부에 상관없이 최신 게시글 기준으로 10개 리스트 반환")
@@ -80,7 +81,7 @@ public class BoardController {
             if(team==null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
             board.setTeam(team);
         }
-        Board boardCreated = boardService.save(board);
+        Board boardCreated = boardService.createBoardWithImages(board, request.getUsedImageKeys());
 
         BoardDetailDTO boardDetailDTO = boardService.findOneBoardListDTOByPk(boardCreated.getPk(),user);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, boardDetailDTO));
@@ -98,9 +99,14 @@ public class BoardController {
             Team team = teamService.findByPk(query.getTeam());
             if(team==null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
         }
-
-        PaginatedBoardListDTO boards = boardService.findBoardsWithPagination(query.getTeam() != null ? query.getTeam() : null, query.getPage(), query.getSize(), query.getOrder());
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, boards.getBoardList(), new PagedMetaDTO(boards.getCurrentPage(), boards.getPageSize(), boards.getTotalItems())));
+        // infinite == true → 무한스크롤: hasNext 반환
+        // 무한 스크롤 처리
+        PaginatedBoardListDTO board = boardService.findBoardsWithPagination(query.getTeam() != null ? query.getTeam() : null, query.getPage(), query.getSize(),query.getOrder(), query.getInfinite() != null ? query.getInfinite() : null, query.getLastBoard(), query.getLastViewCount());
+        if(board.getHasNext()!=null){
+            return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, board.getBoardList(), new PagedMetaDTO(board.getHasNext())));
+        }else{
+            return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, board.getBoardList(), new PagedMetaDTO(board.getCurrentPage(), board.getPageSize(), board.getTotalItems())));
+        }
     }
 
     @Operation(summary = "게시글 상세 조회", description = "게시글 PK 값으로 게시글 조회")

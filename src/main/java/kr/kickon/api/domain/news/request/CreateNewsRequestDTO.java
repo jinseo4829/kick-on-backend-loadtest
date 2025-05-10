@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import kr.kickon.api.global.common.ExampleConstants;
-import kr.kickon.api.global.common.annotations.ValidEnum;
+import kr.kickon.api.global.common.enums.ValidEnum;
 import kr.kickon.api.global.common.enums.NewsCategory;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -32,4 +32,7 @@ public class CreateNewsRequestDTO {
     @NotNull(message = "뉴스 카테고리는 필수값입니다.")
     @ValidEnum(enumClass = NewsCategory.class, message = "허용되지 않는 카테고리입니다.")
     private NewsCategory category = NewsCategory.ETC;
+
+    @Schema(description = "게시글 내 사용된 이미지 S3 키 배열", example = "[\"user1-2025-05-01-10-00-00.png\"]")
+    private String[] usedImageKeys;
 }

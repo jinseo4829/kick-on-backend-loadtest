@@ -2,7 +2,7 @@ package kr.kickon.api.global.util;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-import kr.kickon.api.global.common.annotations.ValidEnum;
+import kr.kickon.api.global.common.enums.ValidEnum;
 
 import java.util.Arrays;
 

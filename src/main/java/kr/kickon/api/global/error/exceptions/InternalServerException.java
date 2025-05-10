@@ -17,7 +17,12 @@ public class InternalServerException extends BaseException{
 
     public InternalServerException(ResponseCode responseCode, String message) {
         super(responseCode, message);
-        this.slackService =  SpringContext.getBean(SlackService.class);
+        this.slackService = SpringContext.getBean(SlackService.class);
         slackService.sendErrorMessage(responseCode.getMessage() + ": " + message, Arrays.toString(super.getStackTrace()));
+    }
+
+    public InternalServerException(ResponseCode responseCode, Throwable cause) {
+        super(responseCode, cause);
+        this.slackService = SpringContext.getBean(SlackService.class);
     }
 }

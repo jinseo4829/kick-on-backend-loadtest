@@ -70,8 +70,7 @@ public class BoardReplyController {
         }
 
         BoardReply boardReply = boardReplyBuilder.build();
-
-        boardReplyService.save(boardReply);
+        boardReply = boardReplyService.createBoardReplyWithImages(boardReply,request.getUsedImageKeys());
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
 
@@ -85,8 +84,13 @@ public class BoardReplyController {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         Board boardData = boardService.findByPk(query.getBoard());
         if(boardData == null) throw new NotFoundException(ResponseCode.NOT_FOUND_BOARD);
-        PaginatedReplyListDTO paginatedReplyListDTO = boardReplyService.getRepliesByBoard(query.getBoard(),user!=null ? user.getPk() : null, query.getPage(), query.getSize());
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS,paginatedReplyListDTO.getReplyList(),
-                new PagedMetaDTO(paginatedReplyListDTO.getCurrentPage(), paginatedReplyListDTO.getPageSize(), paginatedReplyListDTO.getTotalItems())));
+        PaginatedReplyListDTO paginatedReplyListDTO = boardReplyService.getRepliesByBoard(query.getBoard(),user!=null ? user.getPk() : null, query.getPage(), query.getSize(), query.getInfinite() != null ? query.getInfinite() : null, query.getLastReply());
+        if(paginatedReplyListDTO.getHasNext()!=null){
+            return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS,paginatedReplyListDTO.getReplyList(),
+                    new PagedMetaDTO(paginatedReplyListDTO.getHasNext())));
+        }else{
+            return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS,paginatedReplyListDTO.getReplyList(),
+                    new PagedMetaDTO(paginatedReplyListDTO.getCurrentPage(), paginatedReplyListDTO.getPageSize(), paginatedReplyListDTO.getTotalItems())));
+        }
     }
 }
