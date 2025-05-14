@@ -56,7 +56,7 @@ public class AwsService{
             awsFileReferenceService.save(
                     awsFileReference
             );
-            System.out.println(awsFileReference);
+//            System.out.println(awsFileReference);
 
             return presignedRequest.url().toString();
         }catch (Exception e) {
