@@ -2,8 +2,11 @@ package kr.kickon.api.domain.boardViewHistory;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.util.List;
 import kr.kickon.api.global.common.BaseService;
+import kr.kickon.api.global.common.entities.BoardReply;
 import kr.kickon.api.global.common.entities.BoardViewHistory;
+import kr.kickon.api.global.common.entities.QBoardReply;
 import kr.kickon.api.global.common.entities.QBoardViewHistory;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.util.UUIDGenerator;
@@ -34,7 +37,6 @@ public class BoardViewHistoryService implements BaseService<BoardViewHistory> {
         Optional<BoardViewHistory> boardViewHistory = boardViewHistoryRepository.findOne(predicate);
         return boardViewHistory.orElse(null);
     }
-
     public void save(BoardViewHistory boardViewHistory) {
         boardViewHistoryRepository.save(boardViewHistory);
     }

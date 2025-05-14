@@ -2,6 +2,7 @@ package kr.kickon.api.domain.boardKick;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.util.List;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
@@ -37,6 +38,11 @@ public class BoardKickService implements BaseService<BoardKick> {
         BooleanExpression predicate = QBoardKick.boardKick.board.pk.eq(boardPk).and(QBoardKick.boardKick.user.pk.eq(userPk).and(QBoardKick.boardKick.status.eq(DataStatus.ACTIVATED)));
         Optional<BoardKick> boardKick = boardKickRepository.findOne(predicate);
         return boardKick.orElse(null);
+    }
+
+    public List<BoardKick> findByBoardPk(Long boardPk) {
+        BooleanExpression predicate = QBoardKick.boardKick.board.pk.eq(boardPk).and(QBoardKick.boardKick.status.eq(DataStatus.ACTIVATED));
+        return (List<BoardKick>) boardKickRepository.findAll(predicate);
     }
 
     public void save(BoardKick boardKick) {

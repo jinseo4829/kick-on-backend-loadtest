@@ -3,6 +3,7 @@ package kr.kickon.api.domain.awsFileReference;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.transaction.Transactional;
+import java.util.stream.Collectors;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
@@ -74,4 +75,9 @@ public class AwsFileReferenceService implements BaseService<AwsFileReference> {
     public void save(AwsFileReference awsFileReference) {
         awsFileReferenceRepository.save(awsFileReference);
     }
+
+    public List<AwsFileReference> findbyBoardPk(Long boardPk) {
+        return awsFileReferenceRepository.findByUsedInEqualsAndReferencePkEquals(UsedInType.BOARD, boardPk);
+    }
+
 }

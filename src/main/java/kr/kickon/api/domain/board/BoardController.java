@@ -121,4 +121,18 @@ public class BoardController {
         if(boardDetailDTO==null) throw new NotFoundException(ResponseCode.NOT_FOUND_BOARD);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, boardDetailDTO));
     }
+
+    @Operation(summary = "게시글 삭제", description = "게시글 PK 값으로 게시글 삭제")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "성공"),
+    })
+    @DeleteMapping("/{boardPk}")
+    public ResponseEntity<ResponseDTO> deleteBoard(@PathVariable Long boardPk){
+        User user = jwtTokenProvider.getUserFromSecurityContext();
+        Board board = boardService.findByPk(boardPk);
+        if(board==null) throw new NotFoundException(ResponseCode.NOT_FOUND_BOARD);
+        if(board.getUser()!=user) throw new ForbiddenException(ResponseCode.FORBIDDEN);
+        boardService.deleteBoard(boardPk);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
+    }
 }

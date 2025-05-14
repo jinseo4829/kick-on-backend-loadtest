@@ -8,12 +8,16 @@ import com.querydsl.core.types.dsl.NumberTemplate;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.transaction.Transactional;
+import kr.kickon.api.domain.aws.AwsService;
 import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.board.dto.BoardDetailDTO;
 import kr.kickon.api.domain.board.dto.BoardListDTO;
 import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
 import kr.kickon.api.domain.board.dto.BoardListDTO;
 import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
+import kr.kickon.api.domain.boardReply.BoardReplyService;
+import kr.kickon.api.domain.boardReplyKick.BoardReplyKickService;
+import kr.kickon.api.domain.boardViewHistory.BoardViewHistoryService;
 import kr.kickon.api.domain.user.dto.BaseUserDTO;
 import kr.kickon.api.domain.boardKick.BoardKickService;
 import kr.kickon.api.domain.team.dto.TeamDTO;
@@ -32,6 +36,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import software.amazon.awssdk.services.s3.S3Client;
 
 @Service
 @Slf4j
@@ -42,6 +47,9 @@ public class BoardService implements BaseService<Board> {
     private final BoardKickService boardKickService;
     private final UUIDGenerator uuidGenerator;
     private final AwsFileReferenceService awsFileReferenceService;
+    private final AwsService awsService;
+    private final BoardReplyService boardReplyService;
+    private final BoardReplyKickService boardReplyKickService;
     @Value("${spring.config.activate.on-profile}")
     private String env;
 
@@ -268,5 +276,52 @@ public class BoardService implements BaseService<Board> {
 
     public Board save(Board board) {
         return boardRepository.save(board);
+    }
+
+    @Transactional
+    public void deleteBoard(Long boardPk) {
+        Board board = findByPk(boardPk);
+        board.setStatus(DataStatus.DEACTIVATED);
+        boardRepository.save(board);
+
+        //이미지 삭제
+        if (Boolean.TRUE.equals(board.getHasImage())) {
+            List<AwsFileReference> references = awsFileReferenceService.findbyBoardPk(boardPk);
+            try (S3Client s3 = S3Client.builder().build()) {
+                for (AwsFileReference file : references) {
+                    awsService.deleteFileFromS3AndDb(s3, file);
+                }
+            }
+        }
+
+        // kick 삭제
+        List<BoardKick> kicks = boardKickService.findByBoardPk(boardPk);
+        System.out.println(kicks);
+        if (!kicks.isEmpty()) {
+            for (BoardKick kick : kicks) {
+                kick.setStatus(DataStatus.DEACTIVATED);
+                boardKickService.save(kick);
+            }
+        }
+
+        //댓글 및 답글, kick 삭제
+        List<BoardReply> replies = boardReplyService.findByBoardPk(boardPk);
+        System.out.println(replies);
+        if (!replies.isEmpty()) {
+            for (BoardReply reply : replies) {
+                reply.setStatus(DataStatus.DEACTIVATED);
+                boardReplyService.save(reply);
+
+                List<BoardReplyKick> replyKicks = boardReplyKickService.findByBoardReply(
+                reply.getPk());
+                System.out.println(replyKicks);
+                if (!replyKicks.isEmpty()) {
+                    for (BoardReplyKick kick : replyKicks) {
+                        kick.setStatus(DataStatus.DEACTIVATED);
+                        boardReplyKickService.save(kick);
+                    }
+                }
+            }
+        }
     }
 }
