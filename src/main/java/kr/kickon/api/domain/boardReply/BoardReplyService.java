@@ -77,7 +77,7 @@ public class BoardReplyService implements BaseService<BoardReply> {
                         .and(reply.parentBoardReply.isNull())
                         .and(user.status.eq(DataStatus.ACTIVATED))
                         .and(reply.status.eq(DataStatus.ACTIVATED)))
-                .orderBy(reply.createdAt.asc());
+                .orderBy(reply.createdAt.desc());
 
         List<Tuple> results;
 
@@ -147,7 +147,7 @@ public class BoardReplyService implements BaseService<BoardReply> {
                 .join(user).on(reply.user.pk.eq(user.pk))
                 .where(reply.parentBoardReply.pk.eq(parentPk)
                         .and(reply.status.eq(DataStatus.ACTIVATED)))
-                .orderBy(reply.createdAt.asc())
+                .orderBy(reply.createdAt.desc())
                 .fetch();
 
         return results.stream()

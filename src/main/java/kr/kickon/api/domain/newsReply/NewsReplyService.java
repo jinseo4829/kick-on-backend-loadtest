@@ -92,7 +92,7 @@ public class NewsReplyService implements BaseService<NewsReply> {
                         .and(reply.parentNewsReply.isNull())
                         .and(user.status.eq(DataStatus.ACTIVATED))
                         .and(reply.status.eq(DataStatus.ACTIVATED)))
-                .orderBy(reply.createdAt.asc());
+                .orderBy(reply.createdAt.desc());
 
         List<Tuple> results;
 
@@ -162,7 +162,7 @@ public class NewsReplyService implements BaseService<NewsReply> {
                 .join(user).on(reply.user.pk.eq(user.pk))
                 .where(reply.parentNewsReply.pk.eq(parentPk)
                         .and(reply.status.eq(DataStatus.ACTIVATED)))
-                .orderBy(reply.createdAt.asc())
+                .orderBy(reply.createdAt.desc())
                 .fetch();
 
         return results.stream()
