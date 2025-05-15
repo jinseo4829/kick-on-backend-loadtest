@@ -279,49 +279,16 @@ public class BoardService implements BaseService<Board> {
     }
 
     @Transactional
-    public void deleteBoard(Long boardPk) {
-        Board board = findByPk(boardPk);
+    public void deleteBoard(Board board) {
         board.setStatus(DataStatus.DEACTIVATED);
         boardRepository.save(board);
 
         //이미지 삭제
-        if (Boolean.TRUE.equals(board.getHasImage())) {
-            List<AwsFileReference> references = awsFileReferenceService.findbyBoardPk(boardPk);
+            List<AwsFileReference> references = awsFileReferenceService.findbyBoardPk(board.getPk());
             try (S3Client s3 = S3Client.builder().build()) {
                 for (AwsFileReference file : references) {
                     awsService.deleteFileFromS3AndDb(s3, file);
                 }
             }
-        }
-
-        // kick 삭제
-        List<BoardKick> kicks = boardKickService.findByBoardPk(boardPk);
-        System.out.println(kicks);
-        if (!kicks.isEmpty()) {
-            for (BoardKick kick : kicks) {
-                kick.setStatus(DataStatus.DEACTIVATED);
-                boardKickService.save(kick);
-            }
-        }
-
-        //댓글 및 답글, kick 삭제
-        List<BoardReply> replies = boardReplyService.findByBoardPk(boardPk);
-        System.out.println(replies);
-        if (!replies.isEmpty()) {
-            for (BoardReply reply : replies) {
-                reply.setStatus(DataStatus.DEACTIVATED);
-                boardReplyService.save(reply);
-
-                List<BoardReplyKick> replyKicks = boardReplyKickService.findByBoardReply(
-                reply.getPk());
-                System.out.println(replyKicks);
-                if (!replyKicks.isEmpty()) {
-                    for (BoardReplyKick kick : replyKicks) {
-                        kick.setStatus(DataStatus.DEACTIVATED);
-                        boardReplyKickService.save(kick);
-                    }
-                }
-            }
-        }
     }
 }

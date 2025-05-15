@@ -19,6 +19,7 @@ import kr.kickon.api.domain.board.response.GetHomeBoardsResponse;
 import kr.kickon.api.domain.boardKick.BoardKickService;
 import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
 import kr.kickon.api.domain.team.TeamService;
+import kr.kickon.api.domain.user.UserService;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
 import kr.kickon.api.global.common.PagedMetaDTO;
@@ -46,6 +47,7 @@ public class BoardController {
     private final JwtTokenProvider jwtTokenProvider;
     private final TeamService teamService;
     private final UUIDGenerator uuidGenerator;
+    private final UserService userService;
 
     @Operation(summary = "홈화면 함께 볼만한 게시글 리스트 조회", description = "응원팀 여부에 상관없이 최신 게시글 기준으로 10개 리스트 반환")
     @ApiResponses({
@@ -128,11 +130,12 @@ public class BoardController {
     })
     @DeleteMapping("/{boardPk}")
     public ResponseEntity<ResponseDTO> deleteBoard(@PathVariable Long boardPk){
-        User user = jwtTokenProvider.getUserFromSecurityContext();
+        //User user = jwtTokenProvider.getUserFromSecurityContext();
+        User user = userService.findById("9ba08d10-8d66-4b66-937c-8233ef7e3036");
         Board board = boardService.findByPk(boardPk);
         if(board==null) throw new NotFoundException(ResponseCode.NOT_FOUND_BOARD);
         if(board.getUser()!=user) throw new ForbiddenException(ResponseCode.FORBIDDEN);
-        boardService.deleteBoard(boardPk);
+        boardService.deleteBoard(board);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
 }
