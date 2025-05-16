@@ -2,13 +2,10 @@ package kr.kickon.api.domain.boardReplyKick;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import java.util.List;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.BoardKick;
-import kr.kickon.api.global.common.entities.BoardReply;
 import kr.kickon.api.global.common.entities.BoardReplyKick;
 import kr.kickon.api.global.common.entities.QBoardKick;
-import kr.kickon.api.global.common.entities.QBoardReply;
 import kr.kickon.api.global.common.entities.QBoardReplyKick;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.util.UUIDGenerator;
@@ -44,12 +41,6 @@ public class BoardReplyKickService implements BaseService<BoardReplyKick> {
         BooleanExpression predicate = QBoardReplyKick.boardReplyKick.boardReply.pk.eq(boardReplyPk).and(QBoardReplyKick.boardReplyKick.user.pk.eq(userPk));
         Optional<BoardReplyKick> boardReplyKick = boardReplyKickRepository.findOne(predicate);
         return boardReplyKick.orElse(null);
-    }
-
-    public List<BoardReplyKick> findByBoardReply(Long boardReplyPk){
-        BooleanExpression predicate = QBoardReplyKick.boardReplyKick.boardReply.pk.eq(boardReplyPk).and(
-            QBoardReplyKick.boardReplyKick.status.eq(DataStatus.ACTIVATED));
-        return (List<BoardReplyKick>) boardReplyKickRepository.findAll(predicate);
     }
 
     public Long countKicks(Long boardReplyPk) {

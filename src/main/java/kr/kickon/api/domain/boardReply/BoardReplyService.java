@@ -51,11 +51,6 @@ public class BoardReplyService implements BaseService<BoardReply> {
         return boardReply.orElse(null);
     }
 
-    public List<BoardReply> findByBoardPk(Long boardPk) {
-        BooleanExpression predicate = QBoardReply.boardReply.board.pk.eq(boardPk).and(QBoardReply.boardReply.status.eq(DataStatus.ACTIVATED));
-        return (List<BoardReply>) boardReplyRepository.findAll(predicate);
-    }
-
     public PaginatedReplyListDTO getRepliesByBoard(Long boardPk, Long userPk, Integer page, Integer size, Boolean infiniteFlag, Long lastReplyPk) {
         QBoardReply reply = QBoardReply.boardReply;
         QUser user = QUser.user;
