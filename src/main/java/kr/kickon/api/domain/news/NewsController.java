@@ -155,5 +155,19 @@ public class NewsController {
         if(newsDetailDTO==null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, newsDetailDTO));
     }
+
+    @Operation(summary = "뉴스 삭제", description = "뉴스 PK 값으로 뉴스 삭제")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "성공"),
+    })
+    @DeleteMapping("/{newsPk}")
+    public ResponseEntity<ResponseDTO> deleteBoard(@PathVariable Long newsPk){
+        User user = jwtTokenProvider.getUserFromSecurityContext();
+        News news = newsService.findByPk(newsPk);
+        if(news==null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS);
+        if(news.getUser()!=user) throw new ForbiddenException(ResponseCode.FORBIDDEN);
+        newsService.deleteNews(news);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
+    }
 }
 
