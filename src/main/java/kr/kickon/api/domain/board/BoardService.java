@@ -15,9 +15,6 @@ import kr.kickon.api.domain.board.dto.BoardListDTO;
 import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
 import kr.kickon.api.domain.board.dto.BoardListDTO;
 import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
-import kr.kickon.api.domain.boardReply.BoardReplyService;
-import kr.kickon.api.domain.boardReplyKick.BoardReplyKickService;
-import kr.kickon.api.domain.boardViewHistory.BoardViewHistoryService;
 import kr.kickon.api.domain.user.dto.BaseUserDTO;
 import kr.kickon.api.domain.boardKick.BoardKickService;
 import kr.kickon.api.domain.team.dto.TeamDTO;
@@ -48,8 +45,6 @@ public class BoardService implements BaseService<Board> {
     private final UUIDGenerator uuidGenerator;
     private final AwsFileReferenceService awsFileReferenceService;
     private final AwsService awsService;
-    private final BoardReplyService boardReplyService;
-    private final BoardReplyKickService boardReplyKickService;
     @Value("${spring.config.activate.on-profile}")
     private String env;
 

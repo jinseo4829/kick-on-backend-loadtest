@@ -1,7 +1,6 @@
 package kr.kickon.api.global.common.entities;
 
 import jakarta.persistence.*;
-import kr.kickon.api.global.common.enums.DataStatus;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
