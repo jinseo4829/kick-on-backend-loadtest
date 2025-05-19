@@ -132,7 +132,9 @@ public class BoardController {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         Board board = boardService.findByPk(boardPk);
         if(board==null) throw new NotFoundException(ResponseCode.NOT_FOUND_BOARD);
-        if(board.getUser()!=user) throw new ForbiddenException(ResponseCode.FORBIDDEN);
+        if (!board.getUser().getId().equals(user.getId())) {
+            throw new ForbiddenException(ResponseCode.FORBIDDEN);
+        }
         boardService.deleteBoard(board);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
