@@ -21,6 +21,11 @@ public class PrincipalAdminDetail implements UserDetails, Serializable {
         this.authorities = createAuthorities(roles);
         this.attributes = Collections.emptyMap();  // JWT 인증에서는 사용 안 해도 될 듯
     }
+    public PrincipalAdminDetail(Admin admin, List<GrantedAuthority> authorities) {
+        this.admin = admin;
+        this.authorities = authorities;
+        this.attributes = Collections.emptyMap();
+    }
 
     // OAuth2 인증 시 사용
     public PrincipalAdminDetail(Admin admin, Map<String, Object> attributes, String roles) {
@@ -28,6 +33,17 @@ public class PrincipalAdminDetail implements UserDetails, Serializable {
         this.attributes = attributes;
         this.authorities = createAuthorities(roles);
     }
+
+    private Collection<GrantedAuthority> createAuthorities(String roles){
+        Collection<GrantedAuthority> authorities = new ArrayList<>();
+
+        for(String role : roles.split(",")){
+            if (!StringUtils.hasText(role)) continue;
+            authorities.add(new SimpleGrantedAuthority(role));
+        }
+        return authorities;
+    }
+
 
     public String getPk() {
         return admin.getPk().toString();

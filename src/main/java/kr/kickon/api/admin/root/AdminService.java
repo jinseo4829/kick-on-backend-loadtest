@@ -38,6 +38,10 @@ public class AdminService implements BaseService<Admin> {
         return admin.orElse(null);
     }
 
+    public Admin findByEmail(String email) {
+        return adminRepository.findByEmailAndStatus(email, DataStatus.ACTIVATED);
+    }
+
     public Admin createAdmin(String email, String plainPassword) {
         // 비밀번호 암호화
         String encryptedPassword = passwordEncoder.encode(plainPassword);

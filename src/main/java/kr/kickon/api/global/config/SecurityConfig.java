@@ -2,6 +2,7 @@ package kr.kickon.api.global.config;
 
 import kr.kickon.api.global.auth.jwt.CustomAccessDeniedHandler;
 import kr.kickon.api.global.auth.jwt.CustomAuthenticationEntryPoint;
+import kr.kickon.api.global.auth.jwt.admin.AdminJwtAuthenticationFilter;
 import kr.kickon.api.global.auth.jwt.user.JwtAuthenticationFilter;
 import kr.kickon.api.global.auth.oauth.CustomAuthorizationRequestResolver;
 import kr.kickon.api.global.auth.oauth.CustomOAuth2FailureHandler;
@@ -28,6 +29,7 @@ public class SecurityConfig {
     private final PrincipalOauth2UserService principalOauth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final AdminJwtAuthenticationFilter adminJwtAuthenticationFilter;
     private final CustomAuthorizationRequestResolver customAuthorizationRequestResolver;
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
     private final CustomAccessDeniedHandler accessDeniedHandler;
@@ -44,7 +46,7 @@ public class SecurityConfig {
                         .requestMatchers("/admin/auth/login").permitAll()
                         .anyRequest().hasRole("ADMIN")
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(adminJwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler)
