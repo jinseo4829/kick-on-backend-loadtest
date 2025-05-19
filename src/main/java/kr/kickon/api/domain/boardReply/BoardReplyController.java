@@ -94,7 +94,7 @@ public class BoardReplyController {
         }
     }
 
-    @Operation(summary = "게시글 삭제", description = "게시글 댓글 PK값으로 댓글 삭제")
+    @Operation(summary = "게시글 댓글 삭제", description = "게시글 댓글 PK값으로 댓글 삭제")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "성공"),
     })
