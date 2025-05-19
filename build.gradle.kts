@@ -105,8 +105,6 @@ dependencies {
 	// kafka
 	implementation("org.springframework.kafka:spring-kafka")
 
-	// redis
-	implementation("org.springframework.boot:spring-boot-starter-data-redis")
 	implementation(kotlin("script-runtime"))
 }
 

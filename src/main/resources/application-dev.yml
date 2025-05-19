@@ -36,7 +36,8 @@ spring:
     properties:
       hibernate:
         globally_quoted_identifiers: true
-        format_sql: true
+        format_sql: false
+    open-in-view: false
 
   # spring security (oauth)
   security:

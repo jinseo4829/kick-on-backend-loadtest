@@ -142,7 +142,7 @@ public class ApiLoggingAspect {
     // API 로그 메시지 빌드
     private String buildLogMessage(HttpServletRequest request, String uri, ProceedingJoinPoint joinPoint, long duration, String userId, Map<String, Object> pathVars, Map<String, String[]> queryParams, String body) {
         StringBuilder logMessage = new StringBuilder();
-        System.out.println(userId);
+//        System.out.println(userId);
         logMessage.append(String.format("[%s] %s - %s (%dms)",
                 request.getMethod(), uri, joinPoint.getSignature(), duration));
 

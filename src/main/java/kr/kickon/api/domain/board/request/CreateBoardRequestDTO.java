@@ -28,6 +28,6 @@ public class CreateBoardRequestDTO {
     @Schema(description = "게시글 이미지 포함 여부", example = "false")
     private Boolean hasImage;
 
-    @Schema(description = "게시글 내 사용된 이미지 S3 키 배열", example = "[\"board-images/user1-2025-05-01-10-00-00.png\"]")
+    @Schema(description = "게시글 내 사용된 이미지 S3 키 배열", example = "[\"user1-2025-05-01-10-00-00.png\"]")
     private String[] usedImageKeys;
 }
