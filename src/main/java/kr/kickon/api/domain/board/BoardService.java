@@ -8,6 +8,7 @@ import com.querydsl.core.types.dsl.NumberTemplate;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.transaction.Transactional;
+import kr.kickon.api.domain.aws.AwsService;
 import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.board.dto.BoardDetailDTO;
 import kr.kickon.api.domain.board.dto.BoardListDTO;
@@ -32,6 +33,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import software.amazon.awssdk.services.s3.S3Client;
 
 @Service
 @Slf4j
@@ -42,6 +44,7 @@ public class BoardService implements BaseService<Board> {
     private final BoardKickService boardKickService;
     private final UUIDGenerator uuidGenerator;
     private final AwsFileReferenceService awsFileReferenceService;
+    private final AwsService awsService;
     @Value("${spring.config.activate.on-profile}")
     private String env;
 
@@ -268,5 +271,19 @@ public class BoardService implements BaseService<Board> {
 
     public Board save(Board board) {
         return boardRepository.save(board);
+    }
+
+    @Transactional
+    public void deleteBoard(Board board) {
+        board.setStatus(DataStatus.DEACTIVATED);
+        boardRepository.save(board);
+
+        //이미지 삭제
+            List<AwsFileReference> references = awsFileReferenceService.findbyBoardPk(board.getPk());
+            try (S3Client s3 = S3Client.builder().build()) {
+                for (AwsFileReference file : references) {
+                    awsService.deleteFileFromS3AndDb(s3, file);
+                }
+            }
     }
 }

@@ -96,6 +96,6 @@ aws:
   paramstore:
     enabled: true
     prefix: /config
-    profile-sparator: _
+    profile-separator: _
     name: kickon
 
