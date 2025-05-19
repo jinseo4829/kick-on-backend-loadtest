@@ -103,8 +103,9 @@ public class BoardReplyController {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         BoardReply boardReplyData = boardReplyService.findByPk(boardReplyPk);
         if(boardReplyData == null) throw new NotFoundException(ResponseCode.NOT_FOUND_BOARD_REPLY);
-        if(boardReplyData.getUser()!=user) throw new ForbiddenException(ResponseCode.FORBIDDEN);
-        boardReplyService.deleteBoardReply(boardReplyData);
+        if (!boardReplyData.getUser().getId().equals(user.getId())) {
+            throw new ForbiddenException(ResponseCode.FORBIDDEN);
+        }        boardReplyService.deleteBoardReply(boardReplyData);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
 }
