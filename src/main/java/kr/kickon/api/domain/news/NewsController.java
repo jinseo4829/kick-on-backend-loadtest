@@ -165,7 +165,9 @@ public class NewsController {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         News news = newsService.findByPk(newsPk);
         if(news==null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS);
-        if(news.getUser()!=user) throw new ForbiddenException(ResponseCode.FORBIDDEN);
+        if (!news.getUser().getId().equals(user.getId())) {
+            throw new ForbiddenException(ResponseCode.FORBIDDEN);
+        }
         newsService.deleteNews(news);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
