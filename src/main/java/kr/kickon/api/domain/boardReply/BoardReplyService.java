@@ -5,6 +5,10 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.transaction.Transactional;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import kr.kickon.api.domain.aws.AwsService;
 import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.boardReply.dto.PaginatedReplyListDTO;
@@ -187,5 +191,46 @@ public class BoardReplyService implements BaseService<BoardReply> {
                 awsService.deleteFileFromS3AndDb(s3, file);
             }
         }
+    }
+
+    @Transactional
+    public BoardReply patchBoardReplyWithImages(BoardReply boardReply, String[] usedImageKeys) {
+        BoardReply saved = boardReplyRepository.save(boardReply);
+
+        // 1. 기존 이미지 키 전체 조회
+        List<AwsFileReference> references = awsFileReferenceService.findbyBoardReplyPk(saved.getPk());
+        Set<String> existingKeys = references.stream()
+            .map(AwsFileReference::getS3Key)
+            .collect(Collectors.toSet());
+
+        // 2. 요청으로 들어온 키를 Set으로 변환 (env prefix 포함 처리)
+        Set<String> requestedKeys = Optional.ofNullable(usedImageKeys)
+            .map(keys -> Arrays.stream(keys)
+                .map(key -> env + "/board-reply-files/" + key)
+                .collect(Collectors.toSet()))
+            .orElse(Collections.emptySet());
+
+        // 3. 삭제 대상 = 기존 - 요청
+        Set<String> keysToDelete = new HashSet<>(existingKeys);
+        keysToDelete.removeAll(requestedKeys);
+
+        try (S3Client s3 = S3Client.builder().build()) {
+            for (AwsFileReference ref : references) {
+                if (keysToDelete.contains(ref.getS3Key())) {
+                    awsService.deleteFileFromS3AndDb(s3, ref);
+                }
+            }
+        }
+
+        // 4. 사용된 이미지 키들 등록 또는 갱신
+        if (!requestedKeys.isEmpty()) {
+            awsFileReferenceService.updateFilesAsUsed(
+                new ArrayList<>(requestedKeys),
+                UsedInType.BOARD_REPLY,
+                saved.getPk()
+            );
+        }
+
+        return saved;
     }
 }
