@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.kickon.api.domain.board.BoardService;
 import kr.kickon.api.domain.boardViewHistory.request.CreateBoardViewHistoryDTO;
-import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
+import kr.kickon.api.global.auth.jwt.user.JwtTokenProvider;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.Board;
 import kr.kickon.api.global.common.entities.BoardViewHistory;

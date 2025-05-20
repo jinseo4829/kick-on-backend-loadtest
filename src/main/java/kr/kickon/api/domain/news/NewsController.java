@@ -7,9 +7,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import kr.kickon.api.domain.board.dto.BoardDetailDTO;
-import kr.kickon.api.domain.board.response.GetBoardDetailResponse;
-import kr.kickon.api.domain.board.response.GetHomeBoardsResponse;
 import kr.kickon.api.domain.league.LeagueService;
 import kr.kickon.api.domain.news.dto.*;
 import kr.kickon.api.domain.news.request.CreateNewsRequestDTO;
@@ -20,7 +17,7 @@ import kr.kickon.api.domain.news.response.GetNewsDetailResponse;
 import kr.kickon.api.domain.news.response.GetNewsResponse;
 import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
-import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
+import kr.kickon.api.global.auth.jwt.user.JwtTokenProvider;
 import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.*;
@@ -165,7 +162,9 @@ public class NewsController {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         News news = newsService.findByPk(newsPk);
         if(news==null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS);
-        if(news.getUser()!=user) throw new ForbiddenException(ResponseCode.FORBIDDEN);
+        if (!news.getUser().getId().equals(user.getId())) {
+            throw new ForbiddenException(ResponseCode.FORBIDDEN);
+        }
         newsService.deleteNews(news);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }

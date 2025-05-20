@@ -14,7 +14,7 @@ import kr.kickon.api.domain.newsReply.request.CreateNewsReplyRequestDTO;
 import kr.kickon.api.domain.newsReply.request.GetNewsRepliesRequestDTO;
 import kr.kickon.api.domain.newsReply.response.GetNewsRepliesResponseDTO;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
-import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
+import kr.kickon.api.global.auth.jwt.user.JwtTokenProvider;
 import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.*;

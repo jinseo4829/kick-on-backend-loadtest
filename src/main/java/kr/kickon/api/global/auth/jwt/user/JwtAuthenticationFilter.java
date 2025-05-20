@@ -1,24 +1,16 @@
-package kr.kickon.api.global.auth.jwt;
+package kr.kickon.api.global.auth.jwt.user;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import kr.kickon.api.domain.user.UserService;
-import kr.kickon.api.global.auth.oauth.dto.PrincipalUserDetail;
-import kr.kickon.api.global.common.ResponseDTO;
+import kr.kickon.api.global.auth.jwt.dto.PrincipalUserDetail;
 import kr.kickon.api.global.common.entities.User;
-import kr.kickon.api.global.common.enums.ResponseCode;
-import kr.kickon.api.global.error.exceptions.ForbiddenException;
-import kr.kickon.api.global.error.exceptions.JwtAuthenticationException;
-import kr.kickon.api.global.error.exceptions.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -37,8 +29,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserService userService;
     public int tokenPrefixLength = JwtTokenProvider.TOKEN_PREFIX.length();
-    private final List<String> protectedUris = Arrays.asList("/really","/need-jwt"); // JWT가 필요한 URI 목록
-
     private String resolveToken(HttpServletRequest request) {
         String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(JwtTokenProvider.TOKEN_PREFIX)) {
@@ -56,7 +46,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String requestUri = request.getRequestURI();
             String jwt;
             jwt = resolveToken(request);
-            if (isProtectedUri(requestUri) && (!StringUtils.hasText(jwt) || !jwtTokenProvider.validateToken(jwt))) throw new ForbiddenException(ResponseCode.FORBIDDEN);
 
             if (StringUtils.hasText(jwt) && jwtTokenProvider.validateToken(jwt)) {
                 // 토큰이 유효하면, 사용자 정보 가져오기
@@ -80,15 +69,5 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 //            throw new UnauthorizedException(ResponseCode.UNAUTHORIZED).toAuthenticationException();
         }
         filterChain.doFilter(request, response);
-    }
-
-    // 특정 URI가 JWT 인증을 요구하는지 확인
-    private boolean isProtectedUri(String uri) {
-        for (String protectedUri : protectedUris) {
-            if (uri.matches(protectedUri)) {
-                return true;
-            }
-        }
-        return false;
     }
 }
