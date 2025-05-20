@@ -19,7 +19,7 @@ import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.domain.userGameGamble.UserGameGambleService;
 import kr.kickon.api.domain.userGameGamble.dto.UserGameGambleDTO;
-import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
+import kr.kickon.api.global.auth.jwt.user.JwtTokenProvider;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.PredictedResult;

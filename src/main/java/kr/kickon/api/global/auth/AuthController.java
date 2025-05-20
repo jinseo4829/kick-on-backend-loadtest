@@ -3,7 +3,7 @@ package kr.kickon.api.global.auth;
 import io.jsonwebtoken.Claims;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.kickon.api.domain.user.UserService;
-import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
+import kr.kickon.api.global.auth.jwt.user.JwtTokenProvider;
 import kr.kickon.api.global.auth.jwt.dto.TokenDto;
 import kr.kickon.api.global.auth.jwt.dto.TokenRequestDTO;
 import kr.kickon.api.global.common.ResponseDTO;

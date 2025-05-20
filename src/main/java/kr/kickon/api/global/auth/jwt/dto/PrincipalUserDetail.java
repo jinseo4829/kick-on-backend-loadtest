@@ -1,4 +1,4 @@
-package kr.kickon.api.global.auth.oauth.dto;
+package kr.kickon.api.global.auth.jwt.dto;
 
 import kr.kickon.api.global.common.entities.User;
 import org.springframework.security.core.GrantedAuthority;

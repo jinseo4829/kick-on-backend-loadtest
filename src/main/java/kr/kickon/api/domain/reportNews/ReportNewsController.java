@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.kickon.api.domain.news.NewsService;
 import kr.kickon.api.domain.reportNews.request.CreateReportNewsRequestDTO;
-import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
+import kr.kickon.api.global.auth.jwt.user.JwtTokenProvider;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.News;
 import kr.kickon.api.global.common.entities.ReportNews;

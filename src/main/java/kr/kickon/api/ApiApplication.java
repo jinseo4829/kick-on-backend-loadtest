@@ -13,7 +13,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableJpaAuditing
 @EnableScheduling
-@EnableJpaRepositories(basePackages = "kr.kickon.api.domain")
+@EnableJpaRepositories(basePackages = "kr.kickon.api")
 public class ApiApplication {
     public static void main(String[] args) {
 		ApplicationContext ctx = SpringApplication.run(ApiApplication.class, args);

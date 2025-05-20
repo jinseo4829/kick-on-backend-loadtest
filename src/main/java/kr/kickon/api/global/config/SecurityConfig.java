@@ -2,7 +2,8 @@ package kr.kickon.api.global.config;
 
 import kr.kickon.api.global.auth.jwt.CustomAccessDeniedHandler;
 import kr.kickon.api.global.auth.jwt.CustomAuthenticationEntryPoint;
-import kr.kickon.api.global.auth.jwt.JwtAuthenticationFilter;
+import kr.kickon.api.global.auth.jwt.admin.AdminJwtAuthenticationFilter;
+import kr.kickon.api.global.auth.jwt.user.JwtAuthenticationFilter;
 import kr.kickon.api.global.auth.oauth.CustomAuthorizationRequestResolver;
 import kr.kickon.api.global.auth.oauth.CustomOAuth2FailureHandler;
 import kr.kickon.api.global.auth.oauth.OAuth2SuccessHandler;
@@ -11,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -27,18 +29,40 @@ public class SecurityConfig {
     private final PrincipalOauth2UserService principalOauth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final AdminJwtAuthenticationFilter adminJwtAuthenticationFilter;
     private final CustomAuthorizationRequestResolver customAuthorizationRequestResolver;
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
     private final CustomAccessDeniedHandler accessDeniedHandler;
     private final CustomOAuth2FailureHandler customOAuth2FailureHandler;
 
     @Bean
+    @Order(1)
+    public SecurityFilterChain adminSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/admin/**") // admin 경로에만 적용
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.POST, "/admin/auth/login").permitAll()
+                        .anyRequest().hasRole("ADMIN")
+                )
+                .addFilterBefore(adminJwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler)
+                );
+
+        return http.build();
+    }
+
+    @Bean
+    @Order(2)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .httpBasic(AbstractHttpConfigurer::disable) // ui 사용하는거 비활성화
                 .formLogin(AbstractHttpConfigurer::disable)
                 .csrf(AbstractHttpConfigurer::disable) // CSRF 보안 비활성화
-                .cors(AbstractHttpConfigurer::disable)
+//                .cors(AbstractHttpConfigurer::disable)
                 .sessionManagement((sessionConfig)->{
                     sessionConfig.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
                 }) // 세션 관리 정책
@@ -76,19 +100,19 @@ public class SecurityConfig {
                             .requestMatchers("/api/**").hasAnyRole("GUEST", "OAUTH_FIRST_JOIN", "USER") // "GUEST"는 내부적으로 "ROLE_GUEST"로 변환됨
                             .requestMatchers("/**").permitAll()
                             .anyRequest().authenticated()
-                            ; // ✅ 인증 필요
+                    ; // ✅ 인증 필요
 
                 })
                 .oauth2Login(oAuth2Login -> {
-                        oAuth2Login.userInfoEndpoint(
-                            userInfoEndpointConfig -> userInfoEndpointConfig.userService(principalOauth2UserService)
-                        )
-                        .successHandler(oAuth2SuccessHandler)
-                        .authorizationEndpoint(endpoint -> endpoint
-                            .authorizationRequestResolver(customAuthorizationRequestResolver)
-                        )
-                        .failureHandler(customOAuth2FailureHandler);
-                    }
+                            oAuth2Login.userInfoEndpoint(
+                                            userInfoEndpointConfig -> userInfoEndpointConfig.userService(principalOauth2UserService)
+                                    )
+                                    .successHandler(oAuth2SuccessHandler)
+                                    .authorizationEndpoint(endpoint -> endpoint
+                                            .authorizationRequestResolver(customAuthorizationRequestResolver)
+                                    )
+                                    .failureHandler(customOAuth2FailureHandler);
+                        }
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 // JWT 인증 실패 (401) → Custom EntryPoint

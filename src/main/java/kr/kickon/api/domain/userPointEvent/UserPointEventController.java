@@ -7,13 +7,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
-import kr.kickon.api.domain.board.dto.BoardListDTO;
-import kr.kickon.api.domain.board.response.GetHomeBoardsResponse;
 import kr.kickon.api.domain.gambleSeason.GambleSeasonService;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.domain.userPointEvent.dto.UserRankingDTO;
 import kr.kickon.api.domain.userPointEvent.response.GetUserPointRankingResponse;
-import kr.kickon.api.global.auth.jwt.JwtTokenProvider;
+import kr.kickon.api.global.auth.jwt.user.JwtTokenProvider;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.ActualSeasonTeam;
 import kr.kickon.api.global.common.entities.GambleSeason;
@@ -29,7 +27,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
