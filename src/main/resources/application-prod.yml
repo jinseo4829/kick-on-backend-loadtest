@@ -85,6 +85,7 @@ logging:
 
 jwt:
   secret_key: ${JWT_SECRET_KEY}
+  admin_secret_key: ${ADMIN_JWT_SECRET_KEY}
   access-token-validity-in-seconds: 3600
   refresh-token-validity-in-seconds: 31104000
 
