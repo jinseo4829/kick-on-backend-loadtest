@@ -8,6 +8,7 @@ import com.querydsl.core.types.dsl.NumberTemplate;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.transaction.Transactional;
+import kr.kickon.api.domain.aws.AwsService;
 import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.news.dto.*;
 import kr.kickon.api.domain.newsKick.NewsKickService;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import software.amazon.awssdk.services.s3.S3Client;
 
 @Service
 @Slf4j
@@ -39,6 +41,7 @@ public class NewsService implements BaseService<News> {
     private final UUIDGenerator uuidGenerator;
     private final NewsKickService newsKickService;
     private final AwsFileReferenceService awsFileReferenceService;
+    private final AwsService awsService;
 
     @Value("${spring.config.activate.on-profile}")
     private String env;
@@ -335,6 +338,20 @@ public class NewsService implements BaseService<News> {
 
             // ✅ 메타데이터 포함한 결과 반환
             return new PaginatedNewsListDTO(page, size, totalCount, newsList);
+        }
+    }
+
+    @Transactional
+    public void deleteNews(News news) {
+        news.setStatus(DataStatus.DEACTIVATED);
+        newsRepository.save(news);
+
+        //이미지 삭제
+        List<AwsFileReference> references = awsFileReferenceService.findbyNewsPk(news.getPk());
+        try (S3Client s3 = S3Client.builder().build()) {
+            for (AwsFileReference file : references) {
+                awsService.deleteFileFromS3AndDb(s3, file);
+            }
         }
     }
 }

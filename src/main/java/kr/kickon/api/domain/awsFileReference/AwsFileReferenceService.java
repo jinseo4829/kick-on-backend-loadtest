@@ -80,4 +80,8 @@ public class AwsFileReferenceService implements BaseService<AwsFileReference> {
         return awsFileReferenceRepository.findByUsedInEqualsAndReferencePkEquals(UsedInType.BOARD, boardPk);
     }
 
+    public List<AwsFileReference> findbyNewsPk(Long newsPk) {
+        return awsFileReferenceRepository.findByUsedInEqualsAndReferencePkEquals(UsedInType.NEWS, newsPk);
+    }
+
 }
