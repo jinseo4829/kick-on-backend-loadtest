@@ -63,7 +63,7 @@ public class NewsService implements BaseService<News> {
     @Transactional
     public News createNewsWithImages(News news, String[] usedImageKeys) {
         News saved = newsRepository.save(news);
-        System.out.println(env);
+//        System.out.println(env);
         if (usedImageKeys != null) {
             List<String> fullKeys = Arrays.stream(usedImageKeys)
                     .map(key -> env + "/news-files/" + key)

@@ -17,9 +17,15 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.RequestMatcher;
+
+import java.util.List;
+
+import static org.springframework.security.web.util.matcher.AntPathRequestMatcher.antMatcher;
 
 @Configuration
 @EnableWebSecurity
@@ -35,18 +41,77 @@ public class SecurityConfig {
     private final CustomAccessDeniedHandler accessDeniedHandler;
     private final CustomOAuth2FailureHandler customOAuth2FailureHandler;
 
+    private void configureCommonSecuritySettings(HttpSecurity http) throws Exception {
+        http
+                .csrf(AbstractHttpConfigurer::disable)
+                .anonymous(AbstractHttpConfigurer::disable)
+                .formLogin(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .rememberMe(AbstractHttpConfigurer::disable)
+                .headers(options -> options.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
+                .logout(AbstractHttpConfigurer::disable)
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+    }
+
     @Bean
     @Order(1)
-    public SecurityFilterChain adminSecurityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChainPermitAll(HttpSecurity http) throws Exception {
+        configureCommonSecuritySettings(http);
+        http.securityMatchers(matchers -> matchers.requestMatchers(requestPermitAll()))
+                .authorizeHttpRequests(auth -> auth.requestMatchers(requestPermitAll()).permitAll());
+        return http.build();
+    }
+
+    private RequestMatcher[] requestPermitAll() {
+        List<RequestMatcher> requestMatchers = List.of(
+                antMatcher("/swagger-ui/**"),
+                antMatcher("/swagger-ui.html"), // 경우에 따라 필요
+                antMatcher("/v3/api-docs/**"),
+                antMatcher("/swagger-resources/**"),
+                antMatcher("/webjars/**"),
+                antMatcher(HttpMethod.POST, "/admin/auth/login"),
+                antMatcher(HttpMethod.OPTIONS, "/**")
+                );
+        return requestMatchers.toArray(RequestMatcher[]::new);
+    }
+
+    @Bean
+    @Order(2)
+    public SecurityFilterChain securityFilterChainOAuth(HttpSecurity http) throws Exception {
+        configureCommonSecuritySettings(http);
         http
-                .securityMatcher("/admin/**") // admin 경로에만 적용
-                .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .securityMatchers(matchers -> matchers
+                        .requestMatchers(
+                                antMatcher("/login/oauth2/code/kakao"),
+                                antMatcher("/oauth2/authorization/kakao"),
+                                antMatcher("/login/oauth2/code/naver"),
+                                antMatcher("/oauth2/authorization/naver")
+                        ))
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+                .oauth2Login(oAuth2Login -> {
+                    oAuth2Login.userInfoEndpoint(
+                            userInfoEndpointConfig -> userInfoEndpointConfig.userService(principalOauth2UserService)
+                        )
+                        .successHandler(oAuth2SuccessHandler)
+                        .authorizationEndpoint(endpoint -> endpoint
+                            .authorizationRequestResolver(customAuthorizationRequestResolver)
+                        )
+                        .failureHandler(customOAuth2FailureHandler);
+                    }
+                );
+        return http.build();
+    }
+
+    @Bean
+    @Order(3)
+    public SecurityFilterChain adminSecurityFilterChain(HttpSecurity http) throws Exception {
+        configureCommonSecuritySettings(http);
+        http.securityMatchers(matchers -> matchers.requestMatchers(requestHasRoleAdmin()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/admin/auth/login").permitAll()
-                        .anyRequest().hasRole("ADMIN")
+                        .requestMatchers(requestHasRoleAdmin()).hasAnyRole("ADMIN")
+                        .anyRequest().authenticated()
                 )
-                .addFilterBefore(adminJwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(adminJwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler)
@@ -55,74 +120,111 @@ public class SecurityConfig {
         return http.build();
     }
 
-    @Bean
-    @Order(2)
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .httpBasic(AbstractHttpConfigurer::disable) // ui 사용하는거 비활성화
-                .formLogin(AbstractHttpConfigurer::disable)
-                .csrf(AbstractHttpConfigurer::disable) // CSRF 보안 비활성화
-//                .cors(AbstractHttpConfigurer::disable)
-                .sessionManagement((sessionConfig)->{
-                    sessionConfig.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-                }) // 세션 관리 정책
-                .authorizeHttpRequests((authorizeRequests) -> {
-                    authorizeRequests
-                            .requestMatchers("/swagger-ui/*", "/oauth2/*", "/v3/**").permitAll() // ✅ OAuth2 로그인 경로, swagger 호출 허용
-                            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                            .requestMatchers(HttpMethod.DELETE,"/api/user/me").hasAnyRole("OAUTH_FIRST_JOIN","USER")
-                            .requestMatchers(HttpMethod.GET,
-                                    "/api/user/me",
-                                    "/api/user-point-event/ranking"
-                            ).hasRole("USER")
-                            .requestMatchers(HttpMethod.POST,
-                                    "/api/user-game-gamble",
-                                    "/api/board",
-                                    "/api/news",
-                                    "/api/board-reply",
-                                    "/api/news-reply",
-                                    "/api/report-news",
-                                    "/api/report-board",
-                                    "/api/board-reply-kick",
-                                    "/api/news-reply-kick",
-                                    "/api/news-kick",
-                                    "/api/board-kick"
-                            ).hasRole("USER")
-                            .requestMatchers(HttpMethod.PATCH,
-                                    "/api/user-game-gamble"
-                            )
-                            .hasRole("USER")
-                            .requestMatchers(HttpMethod.DELETE,
-                                    "/api/user-game-gamble"
-                            ).hasRole("USER")
-                            .requestMatchers(HttpMethod.PATCH,"/api/user").hasAnyRole("OAUTH_FIRST_JOIN", "USER")
-                            .requestMatchers(HttpMethod.PATCH,"/api/user/privacy").hasAnyRole("OAUTH_FIRST_JOIN", "USER")
-                            .requestMatchers("/api/**").hasAnyRole("GUEST", "OAUTH_FIRST_JOIN", "USER") // "GUEST"는 내부적으로 "ROLE_GUEST"로 변환됨
-                            .requestMatchers("/**").permitAll()
-                            .anyRequest().authenticated()
-                    ; // ✅ 인증 필요
+    // ADMIN 권한이 필요한 엔드포인트
+    private RequestMatcher[] requestHasRoleAdmin() {
+        List<RequestMatcher> requestMatchers = List.of(
+                antMatcher( "/admin/**")
+		);
+        return requestMatchers.toArray(RequestMatcher[]::new);
+    }
 
-                })
-                .oauth2Login(oAuth2Login -> {
-                            oAuth2Login.userInfoEndpoint(
-                                            userInfoEndpointConfig -> userInfoEndpointConfig.userService(principalOauth2UserService)
-                                    )
-                                    .successHandler(oAuth2SuccessHandler)
-                                    .authorizationEndpoint(endpoint -> endpoint
-                                            .authorizationRequestResolver(customAuthorizationRequestResolver)
-                                    )
-                                    .failureHandler(customOAuth2FailureHandler);
-                        }
+    @Bean
+    @Order(4)
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        configureCommonSecuritySettings(http);
+        http
+                .securityMatchers(matchers->matchers
+                        .requestMatchers(requestUserMatchers())
+                        .requestMatchers(requestOauthFirstJoinMatchers()))
+                .authorizeHttpRequests(
+                        auth -> auth
+                                .requestMatchers(requestUserMatchers()).hasAnyRole("USER")
+                                .requestMatchers(requestOauthFirstJoinMatchers()).hasAnyRole("OAUTH_FIRST_JOIN")
+                                .requestMatchers("/api/**").hasAnyRole("GUEST", "OAUTH_FIRST_JOIN", "USER") // "GUEST"는 내부적으로 "ROLE_GUEST"로 변환됨
+                                .anyRequest().authenticated()
+
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+//                .authorizeHttpRequests((authorizeRequests) -> {
+//                    authorizeRequests
+//
+//                            .requestMatchers(HttpMethod.GET,
+//                                    "/api/user/me",
+//                                    "/api/user-point-event/ranking"
+//                            ).hasRole("USER")
+//                            .requestMatchers(HttpMethod.POST,
+//                                    "/api/user-game-gamble",
+//                                    "/api/board",
+//                                    "/api/news",
+//                                    "/api/board-reply",
+//                                    "/api/news-reply",
+//                                    "/api/report-news",
+//                                    "/api/report-board",
+//                                    "/api/board-reply-kick",
+//                                    "/api/news-reply-kick",
+//                                    "/api/news-kick",
+//                                    "/api/board-kick"
+//                            ).hasRole("USER")
+//                            .requestMatchers(HttpMethod.PATCH,
+//                                    "/api/user-game-gamble"
+//                            )
+//                            .hasRole("USER")
+//                            .requestMatchers(HttpMethod.DELETE,
+//                                    "/api/user-game-gamble"
+//                            ).hasRole("USER")
+//                            .requestMatchers(HttpMethod.PATCH,"/api/user").hasAnyRole("OAUTH_FIRST_JOIN", "USER")
+//                            .requestMatchers(HttpMethod.PATCH,"/api/user/privacy").hasAnyRole("OAUTH_FIRST_JOIN", "USER")
+//                            .requestMatchers("/api/**").hasAnyRole("GUEST", "OAUTH_FIRST_JOIN", "USER") // "GUEST"는 내부적으로 "ROLE_GUEST"로 변환됨
+//                            .anyRequest().authenticated()
+//                    ; // ✅ 인증 필요
+//
+//                })
+                .addFilterAfter(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 // JWT 인증 실패 (401) → Custom EntryPoint
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler)
                 );
 
-
         return http.build();
+    }
+
+    // User 권한이 필요한 엔드포인트
+    private RequestMatcher[] requestUserMatchers() {
+        List<RequestMatcher> requestMatchers = List.of(
+                antMatcher(HttpMethod.GET, "/api/user/me"),
+                antMatcher(HttpMethod.GET, "/api/user-point-event/ranking"),
+
+                antMatcher(HttpMethod.POST, "/api/user-game-gamble"),
+                antMatcher(HttpMethod.POST, "/api/board"),
+                antMatcher(HttpMethod.POST, "/api/news"),
+                antMatcher(HttpMethod.POST, "/api/board-reply"),
+                antMatcher(HttpMethod.POST, "/api/news-reply"),
+                antMatcher(HttpMethod.POST, "/api/report-news"),
+                antMatcher(HttpMethod.POST, "/api/report-board"),
+                antMatcher(HttpMethod.POST, "/api/board-reply-kick"),
+                antMatcher(HttpMethod.POST, "/api/news-reply-kick"),
+                antMatcher(HttpMethod.POST, "/api/news-kick"),
+                antMatcher(HttpMethod.POST, "/api/board-kick"),
+
+                antMatcher(HttpMethod.PATCH, "/api/user-game-gamble"),
+                antMatcher(HttpMethod.PATCH, "/api/user"),
+                antMatcher(HttpMethod.PATCH, "/api/user/privacy"),
+
+                antMatcher(HttpMethod.DELETE, "/api/user-game-gamble"),
+                antMatcher(HttpMethod.DELETE, "/api/user/me")
+        );
+        return requestMatchers.toArray(RequestMatcher[]::new);
+    }
+
+    // OAUTH_FIRST_JOIN 권한이 필요한 엔드포인트
+    private RequestMatcher[] requestOauthFirstJoinMatchers() {
+        List<RequestMatcher> requestMatchers = List.of(
+                antMatcher(HttpMethod.DELETE,"/api/user/me"),
+                antMatcher(HttpMethod.GET,"/api/user/me"),
+                antMatcher(HttpMethod.DELETE,"/api/user/me"),
+                antMatcher(HttpMethod.DELETE,"/api/user-point-event/ranking")
+        );
+        return requestMatchers.toArray(RequestMatcher[]::new);
     }
 
 }

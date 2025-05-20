@@ -13,6 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import org.springframework.web.filter.GenericFilterBean;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -27,6 +28,8 @@ public class AdminJwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         String token = resolveToken(request);
+//        System.out.println(request.getMethod() + " / " + request.getRequestURI());
+
         if (!StringUtils.hasText(token) || !jwtTokenProvider.validateToken(token)) {
             throw new ForbiddenException(ResponseCode.FORBIDDEN);
         }
@@ -43,6 +46,10 @@ public class AdminJwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
+//         🔥 /admin/ 경로가 아니면 이 필터는 아예 작동하지 않음
+        if (!path.startsWith("/admin/")) {
+            return true;
+        }
         return path.equals("/admin/auth/login");
     }
 
