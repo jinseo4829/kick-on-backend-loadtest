@@ -8,6 +8,7 @@ import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springdoc.core.customizers.OperationCustomizer;
+import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import io.swagger.v3.oas.models.Components;
@@ -48,6 +49,22 @@ public class SwaggerConfig {
                 .addServersItem(new Server().url("/"))  // 기본 서버 설정
                 .info(info)  // API 문서 정보 추가
                 .addSecurityItem(securityRequirement).components(components);
+    }
+
+    @Bean
+    public GroupedOpenApi adminApi() {
+        return GroupedOpenApi.builder()
+                .group("Admin API") // Swagger 페이지에서 이 이름으로 분리됨
+                .pathsToMatch("/admin/**") // 이 경로만 해당 그룹에 포함
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi userApi() {
+        return GroupedOpenApi.builder()
+                .group("User API")
+                .pathsToMatch("/api/**", "/auth/**") // 일반 사용자용 경로
+                .build();
     }
 
 //    @Bean
