@@ -203,7 +203,7 @@ public class BoardReplyService implements BaseService<BoardReply> {
             .map(AwsFileReference::getS3Key)
             .collect(Collectors.toSet());
 
-        // 2. 요청으로 들어온 키를 Set으로 변환 (env prefix 포함 처리)
+        // 2. 요청으로 들어온 키를 Set으로 변환
         Set<String> requestedKeys = Optional.ofNullable(usedImageKeys)
             .map(keys -> Arrays.stream(keys)
                 .map(key -> env + "/board-reply-files/" + key)

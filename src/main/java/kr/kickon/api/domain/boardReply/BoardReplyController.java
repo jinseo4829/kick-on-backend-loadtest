@@ -14,6 +14,7 @@ import kr.kickon.api.domain.board.BoardService;
 import kr.kickon.api.domain.boardReply.request.GetBoardRepliesRequestDTO;
 import kr.kickon.api.domain.boardReply.request.PatchBoardReplyRequestDTO;
 import kr.kickon.api.domain.boardReply.response.GetBoardRepliesResponseDTO;
+import kr.kickon.api.domain.user.UserService;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.auth.jwt.user.JwtTokenProvider;
 import kr.kickon.api.global.common.PagedMetaDTO;
@@ -115,12 +116,12 @@ public class BoardReplyController {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         BoardReply boardReplyData = boardReplyService.findByPk(boardReplyPk);
         if(boardReplyData == null) throw new NotFoundException(ResponseCode.NOT_FOUND_BOARD_REPLY);
+        if (!boardReplyData.getUser().getId().equals(user.getId())) {
+            throw new ForbiddenException(ResponseCode.FORBIDDEN);
+        }
+        boardReplyData.setContents(request.getContents());
 
-        BoardReply.BoardReplyBuilder boardReplyBuilder = BoardReply.builder()
-            .contents(request.getContents());
-
-        BoardReply boardReply = boardReplyBuilder.build();
-        boardReply = boardReplyService.patchBoardReplyWithImages(boardReply,request.getUsedImageKeys());
+        boardReplyService.patchBoardReplyWithImages(boardReplyData,request.getUsedImageKeys());
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
 }
