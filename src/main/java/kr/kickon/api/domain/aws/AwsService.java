@@ -81,18 +81,20 @@ public class AwsService{
 
         try (S3Client s3 = S3Client.builder().build()) {
             for (AwsFileReference file : unusedFiles) {
-                try {
-                    s3.deleteObject(DeleteObjectRequest.builder()
-                            .bucket(bucket)
-                            .key(file.getS3Key())
-                            .build());
-                    awsFileReferenceService.delete(file);
-                } catch (Exception e) {
-//                    System.out.println(e);
-                    throw new InternalServerException(ResponseCode.INTERNAL_SERVER_ERROR,e.getCause());
-                }
+                deleteFileFromS3AndDb(s3, file);
             }
         }
     }
-
+    public void deleteFileFromS3AndDb(S3Client s3, AwsFileReference file) {
+        try {
+            s3.deleteObject(DeleteObjectRequest.builder()
+                .bucket(bucket)
+                .key(file.getS3Key())
+                .build());
+            awsFileReferenceService.delete(file);
+        } catch (Exception e) {
+//            System.out.println(e);
+            throw new InternalServerException(ResponseCode.INTERNAL_SERVER_ERROR, e.getCause());
+        }
+    }
 }

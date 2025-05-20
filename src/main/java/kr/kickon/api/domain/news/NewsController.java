@@ -22,6 +22,7 @@ import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.error.exceptions.ForbiddenException;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
@@ -150,6 +151,22 @@ public class NewsController {
         NewsDetailDTO newsDetailDTO = newsService.findNewsDeatailDTOByPk(newsPk,user);
         if(newsDetailDTO==null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, newsDetailDTO));
+    }
+
+    @Operation(summary = "뉴스 삭제", description = "뉴스 PK 값으로 뉴스 삭제")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "성공"),
+    })
+    @DeleteMapping("/{newsPk}")
+    public ResponseEntity<ResponseDTO> deleteBoard(@PathVariable Long newsPk){
+        User user = jwtTokenProvider.getUserFromSecurityContext();
+        News news = newsService.findByPk(newsPk);
+        if(news==null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS);
+        if (!news.getUser().getId().equals(user.getId())) {
+            throw new ForbiddenException(ResponseCode.FORBIDDEN);
+        }
+        newsService.deleteNews(news);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
 }
 
