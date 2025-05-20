@@ -44,9 +44,9 @@ public class AdminJwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+    protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-//         🔥 /admin/ 경로가 아니면 이 필터는 아예 작동하지 않음
+        // 🔥 /admin/ 경로가 아니면 이 필터는 아예 작동하지 않음
         if (!path.startsWith("/admin/")) {
             return true;
         }
