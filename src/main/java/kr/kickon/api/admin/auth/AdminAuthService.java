@@ -30,11 +30,16 @@ public class AdminAuthService {
         // 1. 이메일로 관리자 조회
         Admin admin = adminService.findByEmail(email);
         if (admin == null) {
+//            System.out.println("email 체크");
             throw new UnauthorizedException(ResponseCode.NOT_FOUND_ADMIN);
         }
-
+        // 비밀번호 넣기 위한 임시 코드
+//        String rawPassword = "kickon2025!";
+//        String encodedPassword = passwordEncoder.encode(rawPassword);
+//        System.out.println(encodedPassword);
         // 2. 비밀번호 확인
         if (!passwordEncoder.matches(password, admin.getPassword())) {
+//            System.out.println("password 체크");
             throw new UnauthorizedException(ResponseCode.NOT_FOUND_ADMIN);
         }
 

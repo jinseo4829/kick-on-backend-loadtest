@@ -80,9 +80,9 @@ public class AdminJwtTokenProvider {
         String authorities = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
-        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+        PrincipalAdminDetail oAuth2User = (PrincipalAdminDetail) authentication.getPrincipal();
 
-        Admin admin = adminService.findByPk(Long.parseLong(oAuth2User.getName()));
+        Admin admin = adminService.findByPk(Long.parseLong(oAuth2User.getPk()));
         if (admin == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ADMIN);
 
         Map<String, Object> claims = new HashMap<>();
