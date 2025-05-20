@@ -76,6 +76,10 @@ public class UserService implements BaseService<User> {
             userFavoriteTeamService.save(uft);
         }
 
+        if(request.getProfileImageUrl()!=null){
+            user.setProfileImageUrl(request.getProfileImageUrl());
+        }
+
         saveUser(user); // nickname이 변경됐을 수도 있으니까
     }
 
