@@ -28,7 +28,7 @@ public class AdminJwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         String token = resolveToken(request);
-        System.out.println(request.getMethod() + " / " + request.getRequestURI());
+//        System.out.println(request.getMethod() + " / " + request.getRequestURI());
 
         if (!StringUtils.hasText(token) || !jwtTokenProvider.validateToken(token)) {
             throw new ForbiddenException(ResponseCode.FORBIDDEN);

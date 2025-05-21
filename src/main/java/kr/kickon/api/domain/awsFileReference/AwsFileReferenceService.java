@@ -81,10 +81,6 @@ public class AwsFileReferenceService implements BaseService<AwsFileReference> {
         return awsFileReferenceRepository.findByS3Key(key);
     }
 
-    public void update(AwsFileReference file) {
-        awsFileReferenceRepository.save(file);
-    }
-
     public void save(AwsFileReference awsFileReference) {
         awsFileReferenceRepository.save(awsFileReference);
     }

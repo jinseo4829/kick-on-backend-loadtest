@@ -97,7 +97,7 @@ public class AwsService{
                 .build());
             awsFileReferenceService.delete(file);
         } catch (Exception e) {
-            System.out.println(e);
+//            System.out.println(e);
             throw new InternalServerException(ResponseCode.INTERNAL_SERVER_ERROR, e.getCause());
         }
     }
