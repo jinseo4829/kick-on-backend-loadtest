@@ -91,4 +91,19 @@ public class NewsReplyController {
                     new PagedMetaDTO(paginatedReplyListDTO.getCurrentPage(), paginatedReplyListDTO.getPageSize(), paginatedReplyListDTO.getTotalItems())));
         }
     }
+
+    @Operation(summary = "뉴스 댓글 삭제", description = "뉴스 댓글 PK값으로 댓글 삭제")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "성공"),
+    })
+    @DeleteMapping("/{newsReplyPk}")
+    public ResponseEntity<ResponseDTO> deleteNewsReplies(@PathVariable Long newsReplyPk){
+        User user = jwtTokenProvider.getUserFromSecurityContext();
+        NewsReply newsReplyData = newsReplyService.findByPk(newsReplyPk);
+        if(newsReplyData == null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS_REPLY);
+        if (!newsReplyData.getUser().getId().equals(user.getId())) {
+            throw new ForbiddenException(ResponseCode.FORBIDDEN);
+        }        newsReplyService.deleteNewsReply(newsReplyData);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
+    }
 }

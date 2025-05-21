@@ -5,6 +5,7 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.transaction.Transactional;
+import kr.kickon.api.domain.aws.AwsService;
 import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.newsReply.dto.PaginatedNewsReplyListDTO;
 import kr.kickon.api.domain.newsReply.dto.ReplyDTO;
@@ -24,6 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import software.amazon.awssdk.services.s3.S3Client;
 
 @Service
 @Slf4j
@@ -34,6 +36,7 @@ public class NewsReplyService implements BaseService<NewsReply> {
     private final NewsReplyKickService newsReplyKickService;
     private final UUIDGenerator uuidGenerator;
     private final AwsFileReferenceService awsFileReferenceService;
+    private final AwsService awsService;
 
     @Value("${spring.config.activate.on-profile}")
     private String env;
@@ -173,4 +176,19 @@ public class NewsReplyService implements BaseService<NewsReply> {
     public void save(NewsReply newsReply) {
         newsReplyRepository.save(newsReply);
     }
+
+    @Transactional
+    public void deleteNewsReply(NewsReply newsReply) {
+        newsReply.setStatus(DataStatus.DEACTIVATED);
+        newsReplyRepository.save(newsReply);
+
+        //이미지 삭제
+        List<AwsFileReference> references = awsFileReferenceService.findbyNewsReplyPk(newsReply.getPk());
+        try (S3Client s3 = S3Client.builder().build()) {
+            for (AwsFileReference file : references) {
+                awsService.deleteFileFromS3AndDb(s3, file);
+            }
+        }
+    }
 }
+
