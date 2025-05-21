@@ -1,5 +1,6 @@
 package kr.kickon.api.domain.aws;
 
+import jakarta.transaction.Transactional;
 import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.global.common.entities.AwsFileReference;
 import kr.kickon.api.global.common.enums.ResponseCode;
@@ -72,6 +73,7 @@ public class AwsService{
         return url.toString();
     }
 
+    @Transactional
     public void cleanupUnusedFiles() {
         List<AwsFileReference> unusedFiles = awsFileReferenceService.findUnusedOlderThan3Days();
 //        System.out.println(unusedFiles);
@@ -85,6 +87,8 @@ public class AwsService{
             }
         }
     }
+
+    @Transactional
     public void deleteFileFromS3AndDb(S3Client s3, AwsFileReference file) {
         try {
             s3.deleteObject(DeleteObjectRequest.builder()

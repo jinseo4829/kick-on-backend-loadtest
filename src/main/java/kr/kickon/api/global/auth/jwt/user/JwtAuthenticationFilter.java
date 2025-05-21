@@ -52,6 +52,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // 토큰이 유효하면, 사용자 정보 가져오기
                 authentication = jwtTokenProvider.getAuthentication(jwt);
 //                log.error(authentication.getAuthorities().toString());
+//                System.out.println(authentication.getName());
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }else{
                 String authority = "ROLE_GUEST";

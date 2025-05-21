@@ -85,11 +85,6 @@ public class UserController {
     @PatchMapping()
     public ResponseEntity<ResponseDTO<Void>> patchUser(@Valid @RequestBody PatchUserRequest request) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        // 닉네임 중복 검사
-        boolean isDuplicated = userService.existsByNickname(request.getNickname());
-        if (isDuplicated) {
-            throw new BadRequestException(ResponseCode.DUPLICATED_NICKNAME); // ResponseCode에 정의 필요
-        }
         userService.updateUser(user, request);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
     }
