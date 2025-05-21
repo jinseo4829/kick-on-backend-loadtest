@@ -6,5 +6,6 @@ public enum UsedInType {
     BOARD,
     BOARD_REPLY,
     USER_PROFILE,
+    EVENT_BOARD,
     TEMP
 }

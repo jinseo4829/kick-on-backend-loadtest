@@ -89,6 +89,10 @@ public class AwsFileReferenceService implements BaseService<AwsFileReference> {
         return awsFileReferenceRepository.findByUsedInEqualsAndReferencePkEquals(UsedInType.BOARD, boardPk);
     }
 
+    public List<AwsFileReference> findByEventBoardPk(Long eventBoardPk) {
+        return awsFileReferenceRepository.findByUsedInEqualsAndReferencePkEquals(UsedInType.EVENT_BOARD, eventBoardPk);
+    }
+
     public List<AwsFileReference> findByUserPk(Long userPk) {
         return awsFileReferenceRepository.findByUsedInEqualsAndReferencePkEquals(UsedInType.USER_PROFILE, userPk);
     }
