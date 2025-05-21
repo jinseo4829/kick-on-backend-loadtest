@@ -121,7 +121,7 @@ public class BoardReplyController {
         }
         boardReplyData.setContents(request.getContents());
 
-        boardReplyService.patchBoardReplyWithImages(boardReplyData,request.getUsedImageKeys());
+        boardReplyService.patchBoardReply(boardReplyData);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
 }

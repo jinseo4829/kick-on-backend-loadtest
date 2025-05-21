@@ -194,42 +194,8 @@ public class BoardReplyService implements BaseService<BoardReply> {
     }
 
     @Transactional
-    public BoardReply patchBoardReplyWithImages(BoardReply boardReply, String[] usedImageKeys) {
+    public BoardReply patchBoardReply(BoardReply boardReply) {
         BoardReply saved = boardReplyRepository.save(boardReply);
-
-        // 1. 기존 이미지 키 전체 조회
-        List<AwsFileReference> references = awsFileReferenceService.findbyBoardReplyPk(saved.getPk());
-        Set<String> existingKeys = references.stream()
-            .map(AwsFileReference::getS3Key)
-            .collect(Collectors.toSet());
-
-        // 2. 요청으로 들어온 키를 Set으로 변환
-        Set<String> requestedKeys = Optional.ofNullable(usedImageKeys)
-            .map(keys -> Arrays.stream(keys)
-                .map(key -> env + "/board-reply-files/" + key)
-                .collect(Collectors.toSet()))
-            .orElse(Collections.emptySet());
-
-        // 3. 삭제 대상 = 기존 - 요청
-        Set<String> keysToDelete = new HashSet<>(existingKeys);
-        keysToDelete.removeAll(requestedKeys);
-
-        try (S3Client s3 = S3Client.builder().build()) {
-            for (AwsFileReference ref : references) {
-                if (keysToDelete.contains(ref.getS3Key())) {
-                    awsService.deleteFileFromS3AndDb(s3, ref);
-                }
-            }
-        }
-
-        // 4. 사용된 이미지 키들 등록 또는 갱신
-        if (!requestedKeys.isEmpty()) {
-            awsFileReferenceService.updateFilesAsUsed(
-                new ArrayList<>(requestedKeys),
-                UsedInType.BOARD_REPLY,
-                saved.getPk()
-            );
-        }
 
         return saved;
     }
