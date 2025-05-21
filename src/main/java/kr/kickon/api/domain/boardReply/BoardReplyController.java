@@ -91,4 +91,19 @@ public class BoardReplyController {
                     new PagedMetaDTO(paginatedReplyListDTO.getCurrentPage(), paginatedReplyListDTO.getPageSize(), paginatedReplyListDTO.getTotalItems())));
         }
     }
+
+    @Operation(summary = "게시글 댓글 삭제", description = "게시글 댓글 PK값으로 댓글 삭제")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "성공"),
+    })
+    @DeleteMapping("/{boardReplyPk}")
+    public ResponseEntity<ResponseDTO> deleteBoardReplies(@PathVariable Long boardReplyPk){
+        User user = jwtTokenProvider.getUserFromSecurityContext();
+        BoardReply boardReplyData = boardReplyService.findByPk(boardReplyPk);
+        if(boardReplyData == null) throw new NotFoundException(ResponseCode.NOT_FOUND_BOARD_REPLY);
+        if (!boardReplyData.getUser().getId().equals(user.getId())) {
+            throw new ForbiddenException(ResponseCode.FORBIDDEN);
+        }        boardReplyService.deleteBoardReply(boardReplyData);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
+    }
 }
