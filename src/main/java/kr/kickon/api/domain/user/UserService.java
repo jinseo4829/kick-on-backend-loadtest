@@ -3,30 +3,30 @@ package kr.kickon.api.domain.user;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.transaction.Transactional;
+import kr.kickon.api.domain.aws.AwsService;
+import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.domain.user.request.PatchUserRequest;
 import kr.kickon.api.domain.user.request.PrivacyUpdateRequest;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.auth.oauth.dto.OAuth2UserInfo;
 import kr.kickon.api.global.common.BaseService;
-import kr.kickon.api.global.common.entities.QUser;
-import kr.kickon.api.global.common.entities.Team;
-import kr.kickon.api.global.common.entities.User;
-import kr.kickon.api.global.common.entities.UserFavoriteTeam;
-import kr.kickon.api.global.common.enums.DataStatus;
-import kr.kickon.api.global.common.enums.ProviderType;
-import kr.kickon.api.global.common.enums.ResponseCode;
-import kr.kickon.api.global.common.enums.UserAccountStatus;
+import kr.kickon.api.global.common.entities.*;
+import kr.kickon.api.global.common.enums.*;
 import kr.kickon.api.global.error.exceptions.BadRequestException;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.s3.S3Client;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -37,6 +37,8 @@ public class UserService implements BaseService<User> {
     private final UUIDGenerator uuidGenerator;
     private final TeamService teamService;
     private final UserFavoriteTeamService userFavoriteTeamService;
+    private final AwsFileReferenceService awsFileReferenceService;
+    private final AwsService awsService;
 
     public List<User> findUsersByStatus(DataStatus status){
         // QueryDSL Predicate 생성
@@ -58,7 +60,12 @@ public class UserService implements BaseService<User> {
 
     @Transactional
     public void updateUser(User user, PatchUserRequest request) {
-        if (!user.getNickname().equals(request.getNickname())) {
+        if ( request.getNickname()!=null && !user.getNickname().equals(request.getNickname())) {
+            // 닉네임 중복 검사
+            boolean isDuplicated = existsByNickname(request.getNickname());
+            if (isDuplicated) {
+                throw new BadRequestException(ResponseCode.DUPLICATED_NICKNAME); // ResponseCode에 정의 필요
+            }
             user.setNickname(request.getNickname());
         }
 
@@ -78,6 +85,30 @@ public class UserService implements BaseService<User> {
 
         if(request.getProfileImageUrl()!=null){
             user.setProfileImageUrl(request.getProfileImageUrl());
+            // 1. "amazonaws.com/" 기준으로 key 추출
+            String[] parts = request.getProfileImageUrl().split("amazonaws.com/");
+            if (parts.length < 2) {
+                throw new BadRequestException(ResponseCode.INVALID_REQUEST);
+            }
+
+            String encodedKey = parts[1];
+            String decodedKey = URLDecoder.decode(encodedKey, StandardCharsets.UTF_8);
+
+            // 2. 기존 이미지 삭제 처리
+            List<AwsFileReference> awsFileReferences = awsFileReferenceService.findByUserPk(user.getPk());
+
+            // 기존 프로필 사진이 있는 경우 삭제
+            for(AwsFileReference awsFileReference : awsFileReferences){
+                try (S3Client s3 = S3Client.builder().build()) {
+                    awsService.deleteFileFromS3AndDb(s3, awsFileReference); // key가 저장된 컬럼명에 따라 다름
+                }
+            }
+
+            // 3. 새로운 프로필 이미지 등록
+            AwsFileReference newProfileImage = awsFileReferenceService.findByKey(decodedKey);
+            newProfileImage.setUsedIn(UsedInType.USER_PROFILE);
+            newProfileImage.setReferencePk(user.getPk());
+            awsFileReferenceService.save(newProfileImage);
         }
 
         saveUser(user); // nickname이 변경됐을 수도 있으니까

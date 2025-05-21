@@ -4,6 +4,8 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.transaction.Transactional;
 import java.util.stream.Collectors;
+
+import kr.kickon.api.domain.aws.AwsService;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
@@ -15,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.s3.S3Client;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,6 +30,7 @@ public class AwsFileReferenceService implements BaseService<AwsFileReference> {
     private final AwsFileReferenceRepository awsFileReferenceRepository;
     private final JPAQueryFactory queryFactory;
     private final UUIDGenerator uuidGenerator;
+
     //    public List<User> findUserByEmail(String email){
 //        // JPAQueryFactory
 //        return queryFactory.selectFrom(QUser.user)
@@ -70,6 +74,15 @@ public class AwsFileReferenceService implements BaseService<AwsFileReference> {
 
     public void delete(AwsFileReference file) {
         awsFileReferenceRepository.delete(file);
+
+    }
+
+    public AwsFileReference findByKey(String key){
+        return awsFileReferenceRepository.findByS3Key(key);
+    }
+
+    public void update(AwsFileReference file) {
+        awsFileReferenceRepository.save(file);
     }
 
     public void save(AwsFileReference awsFileReference) {
@@ -78,6 +91,10 @@ public class AwsFileReferenceService implements BaseService<AwsFileReference> {
 
     public List<AwsFileReference> findbyBoardPk(Long boardPk) {
         return awsFileReferenceRepository.findByUsedInEqualsAndReferencePkEquals(UsedInType.BOARD, boardPk);
+    }
+
+    public List<AwsFileReference> findByUserPk(Long userPk) {
+        return awsFileReferenceRepository.findByUsedInEqualsAndReferencePkEquals(UsedInType.USER_PROFILE, userPk);
     }
 
     public List<AwsFileReference> findbyNewsPk(Long newsPk) {
