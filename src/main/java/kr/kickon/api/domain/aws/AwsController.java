@@ -26,7 +26,7 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/aws")
+@RequestMapping("/aws")
 @Tag(name = "AWS 관련")
 @Slf4j
 public class AwsController {

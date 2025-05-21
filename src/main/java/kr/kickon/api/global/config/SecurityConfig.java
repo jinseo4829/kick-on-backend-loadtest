@@ -70,6 +70,7 @@ public class SecurityConfig {
                 antMatcher("/swagger-resources/**"),
                 antMatcher("/webjars/**"),
                 antMatcher(HttpMethod.POST, "/admin/auth/login"),
+                antMatcher(HttpMethod.POST, "/aws/presigned-url"),
                 antMatcher(HttpMethod.OPTIONS, "/**")
                 );
         return requestMatchers.toArray(RequestMatcher[]::new);
@@ -112,7 +113,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .addFilterAfter(adminJwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .exceptionHandling(ex -> ex
+                .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler)
                 );
@@ -144,42 +145,7 @@ public class SecurityConfig {
                                 .anyRequest().authenticated()
 
                 )
-//                .authorizeHttpRequests((authorizeRequests) -> {
-//                    authorizeRequests
-//
-//                            .requestMatchers(HttpMethod.GET,
-//                                    "/api/user/me",
-//                                    "/api/user-point-event/ranking"
-//                            ).hasRole("USER")
-//                            .requestMatchers(HttpMethod.POST,
-//                                    "/api/user-game-gamble",
-//                                    "/api/board",
-//                                    "/api/news",
-//                                    "/api/board-reply",
-//                                    "/api/news-reply",
-//                                    "/api/report-news",
-//                                    "/api/report-board",
-//                                    "/api/board-reply-kick",
-//                                    "/api/news-reply-kick",
-//                                    "/api/news-kick",
-//                                    "/api/board-kick"
-//                            ).hasRole("USER")
-//                            .requestMatchers(HttpMethod.PATCH,
-//                                    "/api/user-game-gamble"
-//                            )
-//                            .hasRole("USER")
-//                            .requestMatchers(HttpMethod.DELETE,
-//                                    "/api/user-game-gamble"
-//                            ).hasRole("USER")
-//                            .requestMatchers(HttpMethod.PATCH,"/api/user").hasAnyRole("OAUTH_FIRST_JOIN", "USER")
-//                            .requestMatchers(HttpMethod.PATCH,"/api/user/privacy").hasAnyRole("OAUTH_FIRST_JOIN", "USER")
-//                            .requestMatchers("/api/**").hasAnyRole("GUEST", "OAUTH_FIRST_JOIN", "USER") // "GUEST"는 내부적으로 "ROLE_GUEST"로 변환됨
-//                            .anyRequest().authenticated()
-//                    ; // ✅ 인증 필요
-//
-//                })
                 .addFilterAfter(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                // JWT 인증 실패 (401) → Custom EntryPoint
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler)
