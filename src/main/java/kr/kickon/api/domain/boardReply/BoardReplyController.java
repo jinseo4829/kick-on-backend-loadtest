@@ -12,7 +12,9 @@ import kr.kickon.api.domain.boardReply.dto.ReplyDTO;
 import kr.kickon.api.domain.boardReply.request.CreateBoardReplyRequestDTO;
 import kr.kickon.api.domain.board.BoardService;
 import kr.kickon.api.domain.boardReply.request.GetBoardRepliesRequestDTO;
+import kr.kickon.api.domain.boardReply.request.PatchBoardReplyRequestDTO;
 import kr.kickon.api.domain.boardReply.response.GetBoardRepliesResponseDTO;
+import kr.kickon.api.domain.user.UserService;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.auth.jwt.user.JwtTokenProvider;
 import kr.kickon.api.global.common.PagedMetaDTO;
@@ -104,6 +106,22 @@ public class BoardReplyController {
         if (!boardReplyData.getUser().getId().equals(user.getId())) {
             throw new ForbiddenException(ResponseCode.FORBIDDEN);
         }        boardReplyService.deleteBoardReply(boardReplyData);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
+    }
+
+    @Operation(summary = "게시글 댓글 수정", description = "게시글 댓글 PK값으로 댓글 수정")
+    @PatchMapping("/{boardReplyPk}")
+    public ResponseEntity<ResponseDTO<Void>> patchBoardReply(@PathVariable Long boardReplyPk,
+        @Valid @RequestBody PatchBoardReplyRequestDTO request){
+        User user = jwtTokenProvider.getUserFromSecurityContext();
+        BoardReply boardReplyData = boardReplyService.findByPk(boardReplyPk);
+        if(boardReplyData == null) throw new NotFoundException(ResponseCode.NOT_FOUND_BOARD_REPLY);
+        if (!boardReplyData.getUser().getId().equals(user.getId())) {
+            throw new ForbiddenException(ResponseCode.FORBIDDEN);
+        }
+        boardReplyData.setContents(request.getContents());
+
+        boardReplyService.patchBoardReply(boardReplyData);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
 }

@@ -5,6 +5,10 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.transaction.Transactional;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import kr.kickon.api.domain.aws.AwsService;
 import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.boardReply.dto.PaginatedReplyListDTO;
@@ -187,5 +191,12 @@ public class BoardReplyService implements BaseService<BoardReply> {
                 awsService.deleteFileFromS3AndDb(s3, file);
             }
         }
+    }
+
+    @Transactional
+    public BoardReply patchBoardReply(BoardReply boardReply) {
+        BoardReply saved = boardReplyRepository.save(boardReply);
+
+        return saved;
     }
 }
