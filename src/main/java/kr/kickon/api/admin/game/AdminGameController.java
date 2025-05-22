@@ -14,11 +14,14 @@ import kr.kickon.api.admin.game.request.GameUpdateRequest;
 import kr.kickon.api.admin.game.response.GetGameDetailResponse;
 import kr.kickon.api.admin.game.response.GetGamesResponse;
 import kr.kickon.api.domain.game.GameService;
+import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.Game;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,7 +42,21 @@ public class AdminGameController {
                     content = @Content(schema = @Schema(implementation = GetGamesResponse.class))),
     })
     public ResponseEntity<ResponseDTO<List<GameListDTO>>> getFilteredGames(@Valid @ModelAttribute GameFilterRequest request) {
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, gameService.toGameListResponses(gameService.findGamesByFilter(request))));
+        Pageable pageable = request.toPageable(); // ✨ 헬퍼 메서드로 생성
+        Page<Game> gamePage = gameService.findGamesByFilter(request, pageable);
+        List<GameListDTO> dtos = gameService.toGameListResponses(gamePage.getContent());
+
+        return ResponseEntity.ok(
+                ResponseDTO.success(
+                        ResponseCode.SUCCESS,
+                        dtos,
+                        new PagedMetaDTO(
+                                gamePage.getNumber() + 1, // 0-based → 1-based
+                                gamePage.getSize(),
+                                gamePage.getTotalElements()
+                        )
+                )
+        );
     }
 
     @GetMapping("/{gamePk}")

@@ -5,10 +5,13 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import kr.kickon.api.domain.user.UserService;
+import kr.kickon.api.global.auth.jwt.CustomAuthenticationEntryPoint;
 import kr.kickon.api.global.auth.jwt.dto.PrincipalUserDetail;
 import kr.kickon.api.global.common.entities.User;
+import kr.kickon.api.global.error.exceptions.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -29,6 +32,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     public final String AUTHORIZATION_HEADER = "Authorization";
     private final JwtTokenProvider jwtTokenProvider;
     private final UserService userService;
+    private final CustomAuthenticationEntryPoint authenticationEntryPoint;
+
     public int tokenPrefixLength = JwtTokenProvider.TOKEN_PREFIX.length();
     private String resolveToken(HttpServletRequest request) {
         String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
@@ -43,10 +48,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try {
+//            log.info("🟢 JwtAuthenticationFilter activated for URI: {}", request.getRequestURI());
             Authentication authentication;
             String requestUri = request.getRequestURI();
             String jwt;
             jwt = resolveToken(request);
+
+            // /api/ 경로만 처리
+            if (!requestUri.startsWith("/api")) {
+                filterChain.doFilter(request, response); // 넘어가
+                return;
+            }
 
             if (StringUtils.hasText(jwt) && jwtTokenProvider.validateToken(jwt)) {
                 // 토큰이 유효하면, 사용자 정보 가져오기
@@ -67,8 +79,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(principal,null, authorities));
             }
 
-        }catch (Exception e) {
-//            throw new UnauthorizedException(ResponseCode.UNAUTHORIZED).toAuthenticationException();
+        }catch (Exception ex){
+            authenticationEntryPoint.commence(request, response,
+                    new InsufficientAuthenticationException(ex.getMessage(), ex));
+            return;
         }
         filterChain.doFilter(request, response);
     }

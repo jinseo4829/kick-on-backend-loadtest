@@ -23,13 +23,13 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException)
             throws IOException, ServletException {
-//        log.error("CustomAuthenticationEntryPoint 호출됨: {}", authException.getMessage());
+        log.error("CustomAuthenticationEntryPoint 호출됨: {}  / trace : {}", authException.getMessage(), authException.getStackTrace());
         response.setStatus(HttpStatus.UNAUTHORIZED.value()); // 401 상태 코드
         response.setContentType("application/json; charset=UTF-8");
 
         ResponseDTO<String> errorResponse = ResponseDTO.error(ResponseCode.UNAUTHORIZED, authException.getMessage());
         response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
-//        response.getWriter().flush();
+        response.getWriter().flush();
     }
 }
 

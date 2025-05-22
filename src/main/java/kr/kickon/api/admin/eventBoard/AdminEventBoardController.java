@@ -13,11 +13,15 @@ import kr.kickon.api.admin.eventBoard.request.UpdateEventBoardRequest;
 import kr.kickon.api.admin.eventBoard.response.GetEventBoardsResponse;
 import kr.kickon.api.domain.actualSeasonRanking.response.GetActualSeasonRankingResponse;
 import kr.kickon.api.domain.eventBoard.EventBoardService;
+import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.EventBoard;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -69,9 +73,17 @@ public class AdminEventBoardController {
                     content = @Content(schema = @Schema(implementation = GetEventBoardsResponse.class))),
     })
     @GetMapping
-    public ResponseEntity<ResponseDTO<List<EventBoard>>> list(@RequestParam(required = false) Boolean isDisplayed) {
-        List<EventBoard> result = eventBoardService.list(isDisplayed);
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, result));
+    public ResponseEntity<ResponseDTO<List<EventBoard>>> list(@RequestParam(required = false) Boolean isDisplayed,
+                                                              @RequestParam(defaultValue = "1") int page,
+                                                              @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page-1, size);
+
+        Page<EventBoard> result = eventBoardService.list(isDisplayed, pageable);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, result.getContent(),new PagedMetaDTO(
+                result.getNumber() + 1, // 0-based → 1-based
+                result.getSize(),
+                result.getTotalElements()
+        )));
     }
 
     @Operation(summary = "이벤트 배너 생성")
