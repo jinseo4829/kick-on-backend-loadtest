@@ -188,6 +188,7 @@ public class SecurityConfig {
                 antMatcher(HttpMethod.DELETE,"/api/user/me"),
                 antMatcher(HttpMethod.GET,"/api/user/me"),
                 antMatcher(HttpMethod.DELETE,"/api/user/me"),
+                antMatcher(HttpMethod.PATCH, "/api/user"),
                 antMatcher(HttpMethod.DELETE,"/api/user-point-event/ranking")
         );
         return requestMatchers.toArray(RequestMatcher[]::new);
