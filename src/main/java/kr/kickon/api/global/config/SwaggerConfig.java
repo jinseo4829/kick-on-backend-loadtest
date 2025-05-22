@@ -55,7 +55,7 @@ public class SwaggerConfig {
     public GroupedOpenApi adminApi() {
         return GroupedOpenApi.builder()
                 .group("Admin API") // Swagger 페이지에서 이 이름으로 분리됨
-                .pathsToMatch("/admin/**") // 이 경로만 해당 그룹에 포함
+                .pathsToMatch("/admin/**", "/aws/**") // 이 경로만 해당 그룹에 포함
                 .build();
     }
 
