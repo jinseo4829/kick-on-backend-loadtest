@@ -77,12 +77,13 @@ public class EventBoardService implements BaseService<EventBoard> {
                 .fetch();
     }
 
+    @Transactional
     public void updateOrder(List<UpdateBannerOrderRequest.BannerOrder> orders) {
         for (UpdateBannerOrderRequest.BannerOrder order : orders) {
             EventBoard banner = findByPk(order.getPk());
             banner.setOrderNum(order.getOrderNum());
+            eventBoardRepository.save(banner);
         }
-        eventBoardRepository.flush(); // 변경사항 반영
     }
 
     public void softDelete(Long pk) {
