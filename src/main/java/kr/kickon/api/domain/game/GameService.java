@@ -20,6 +20,9 @@ import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -249,7 +252,7 @@ public class GameService implements BaseService<Game> {
         return gameStatus;
     }
 
-    public List<Game> findGamesByFilter(GameFilterRequest filter) {
+    public Page<Game> findGamesByFilter(GameFilterRequest filter, Pageable pageable)  {
         QGame game = QGame.game;
         QActualSeason actualSeason = QActualSeason.actualSeason;
 
@@ -289,13 +292,25 @@ public class GameService implements BaseService<Game> {
             builder.and(seasonCondition);
         }
 
-        return queryFactory
+        builder.and(game.status.eq(DataStatus.ACTIVATED));
+
+        List<Game> content = queryFactory
                 .selectFrom(game)
                 .leftJoin(game.homeTeam).fetchJoin()
                 .leftJoin(game.awayTeam).fetchJoin()
                 .leftJoin(game.actualSeason).fetchJoin()
                 .where(builder)
-                .orderBy(game.startedAt.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .orderBy(game.startedAt.asc())
                 .fetch();
+
+        long total = queryFactory
+                .select(game.countDistinct())
+                .from(game)
+                .where(builder)
+                .fetchOne();
+
+        return new PageImpl<>(content, pageable, total);
     }
 }

@@ -23,6 +23,8 @@ import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.s3.S3Client;
 
@@ -129,15 +131,15 @@ public class EventBoardService implements BaseService<EventBoard> {
         eventBoardRepository.save(banner);
     }
 
-    public List<EventBoard> list(Boolean isDisplayed) {
+    public Page<EventBoard> list(Boolean isDisplayed, Pageable pageable) {
         if (isDisplayed == null) {
-            return eventBoardRepository.findAllByStatus(DataStatus.ACTIVATED);
+            return eventBoardRepository.findAllByStatus(DataStatus.ACTIVATED, pageable);
         }
 
         if (isDisplayed) {
-            return eventBoardRepository.findByIsDisplayedAndStatusOrderByOrderNumAsc(true, DataStatus.ACTIVATED);
+            return eventBoardRepository.findByIsDisplayedAndStatusOrderByOrderNumAsc(true, DataStatus.ACTIVATED, pageable);
         } else {
-            return eventBoardRepository.findByIsDisplayedAndStatusOrderByCreatedAtDesc(false, DataStatus.ACTIVATED);
+            return eventBoardRepository.findByIsDisplayedAndStatusOrderByCreatedAtDesc(false, DataStatus.ACTIVATED, pageable);
         }
     }
 

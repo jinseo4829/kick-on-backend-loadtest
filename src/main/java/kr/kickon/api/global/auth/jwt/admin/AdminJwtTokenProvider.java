@@ -102,6 +102,7 @@ public class AdminJwtTokenProvider {
                     .parseSignedClaims(token);
             return true;
         } catch (Exception e) {
+//            System.out.println(e.getMessage());
             throw new UnauthorizedException(ResponseCode.INVALID_TOKEN, e.getMessage());
         }
     }

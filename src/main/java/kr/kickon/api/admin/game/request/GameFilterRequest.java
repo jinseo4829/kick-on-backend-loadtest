@@ -8,6 +8,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import jakarta.validation.constraints.Min;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Data
@@ -35,4 +38,20 @@ public class GameFilterRequest {
     @Schema(description = "경기 시작일 범위 종료", example = "2024-12-31T23:59:59")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime startedTo;
+
+    @Schema(description = "페이지 번호 (1부터 시작)", example = "1")
+    @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다.")
+    private Integer page = 1;
+
+    @Schema(description = "페이지 크기", example = "20")
+    @Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다.")
+    private Integer size = 20;
+
+    public Pageable toPageable(Sort sort) {
+        return PageRequest.of(this.page - 1, this.size, sort);
+    }
+
+    public Pageable toPageable() {
+        return toPageable(Sort.by(Sort.Direction.ASC, "startedAt"));
+    }
 }

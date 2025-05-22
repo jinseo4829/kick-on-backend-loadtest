@@ -5,6 +5,7 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import kr.kickon.api.domain.migration.dto.ApiGamesDTO;
 import kr.kickon.api.domain.userGameGamble.dto.GambleCountDTO;
+import kr.kickon.api.domain.userGameGamble.dto.UserGameGambleDTO;
 import kr.kickon.api.domain.userPointDetail.UserPointDetailService;
 import kr.kickon.api.domain.userPointEvent.UserPointEventService;
 import kr.kickon.api.global.common.BaseService;
@@ -14,6 +15,10 @@ import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -48,6 +53,11 @@ public class UserGameGambleService implements BaseService<UserGameGamble> {
         Optional<UserGameGamble> userGameGamble = userGameGambleRepository.findOne(predicate);
         if(userGameGamble.isPresent()) return userGameGamble.get();
         throw new NotFoundException(ResponseCode.NOT_FOUND_USER_GAME_GAMBLE);
+    }
+
+    public Page<UserGameGamble> getUserGamblesByGame(Long gamePk, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return userGameGambleRepository.findAllByGamePkAndStatusOrderByCreatedAtDesc(gamePk, DataStatus.ACTIVATED, pageable);
     }
 
     /**

@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import kr.kickon.api.global.auth.jwt.CustomAuthenticationEntryPoint;
 import kr.kickon.api.global.auth.jwt.user.JwtTokenProvider;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.ForbiddenException;
@@ -21,6 +22,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.GenericFilterBean;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import java.awt.*;
 import java.io.IOException;
 
 @Component
@@ -28,10 +30,12 @@ import java.io.IOException;
 @Slf4j
 public class AdminJwtAuthenticationFilter extends OncePerRequestFilter {
     private final AdminJwtTokenProvider jwtTokenProvider;
-    private final AuthenticationEntryPoint authenticationEntryPoint;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
+        log.info("🔥 AdminJwtAuthenticationFilter activated for URI: {}", request.getRequestURI());
         try {
             String token = resolveToken(request);
             if (!StringUtils.hasText(token) || !jwtTokenProvider.validateToken(token)) {
@@ -44,11 +48,16 @@ public class AdminJwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            filterChain.doFilter(request, response);
-        }catch (AuthenticationException ex){
-            authenticationEntryPoint.commence(request, response, ex);
-        }
 
+        }catch (AuthenticationException ex){
+            customAuthenticationEntryPoint.commence(request, response, ex);
+            return;
+        }catch (UnauthorizedException ex){
+            customAuthenticationEntryPoint.commence(request, response,
+                    new BadCredentialsException(ex.getMessage(), ex));
+            return;
+        }
+        filterChain.doFilter(request, response);
     }
 
     @Override
@@ -64,6 +73,7 @@ public class AdminJwtAuthenticationFilter extends OncePerRequestFilter {
     private String resolveToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(JwtTokenProvider.TOKEN_PREFIX)) {
+
             return bearerToken.substring(JwtTokenProvider.TOKEN_PREFIX.length());
         }
         return null;

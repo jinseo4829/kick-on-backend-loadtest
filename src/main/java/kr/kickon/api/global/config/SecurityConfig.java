@@ -106,13 +106,14 @@ public class SecurityConfig {
     @Bean
     @Order(3)
     public SecurityFilterChain adminSecurityFilterChain(HttpSecurity http) throws Exception {
+        log.info("✅ Entered adminSecurityFilterChain config");
         configureCommonSecuritySettings(http);
         http.securityMatchers(matchers -> matchers.requestMatchers(requestHasRoleAdmin()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(requestHasRoleAdmin()).hasAnyRole("ADMIN")
-                        .anyRequest().authenticated()
+                        .anyRequest().denyAll()
                 )
-                .addFilterAfter(adminJwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(adminJwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler)
@@ -132,20 +133,21 @@ public class SecurityConfig {
     @Bean
     @Order(4)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        log.info("🛡️ Entered userSecurityFilterChain config");
         configureCommonSecuritySettings(http);
         http
                 .securityMatchers(matchers->matchers
-                        .requestMatchers(requestUserMatchers())
-                        .requestMatchers(requestOauthFirstJoinMatchers()))
+                        .requestMatchers(antMatcher("/api/**"))  // 꼭 api만!
+                )
                 .authorizeHttpRequests(
                         auth -> auth
                                 .requestMatchers(requestUserMatchers()).hasAnyRole("USER")
                                 .requestMatchers(requestOauthFirstJoinMatchers()).hasAnyRole("OAUTH_FIRST_JOIN")
                                 .requestMatchers("/api/**").hasAnyRole("GUEST", "OAUTH_FIRST_JOIN", "USER") // "GUEST"는 내부적으로 "ROLE_GUEST"로 변환됨
-                                .anyRequest().authenticated()
+                                .anyRequest().denyAll()
 
                 )
-                .addFilterAfter(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler)
