@@ -55,7 +55,7 @@ public class SwaggerConfig {
     public GroupedOpenApi adminApi() {
         return GroupedOpenApi.builder()
                 .group("Admin API") // Swagger 페이지에서 이 이름으로 분리됨
-                .pathsToMatch("/admin/**") // 이 경로만 해당 그룹에 포함
+                .pathsToMatch("/admin/**", "/aws/**") // 이 경로만 해당 그룹에 포함
                 .build();
     }
 
@@ -63,32 +63,7 @@ public class SwaggerConfig {
     public GroupedOpenApi userApi() {
         return GroupedOpenApi.builder()
                 .group("User API")
-                .pathsToMatch("/api/**", "/auth/**") // 일반 사용자용 경로
+                .pathsToMatch("/api/**", "/auth/**", "/aws/**") // 일반 사용자용 경로
                 .build();
     }
-
-//    @Bean
-//    public OperationCustomizer operationCustomizer() {
-//        return (Operation operation, HandlerMethod handlerMethod) -> {
-//            // 메서드의 반환 타입 가져오기
-//            Class<?> returnType = handlerMethod.getMethod().getReturnType();
-//
-//            // 반환 타입이 Void가 아니면 API 응답 추가
-//            if (!Void.TYPE.equals(returnType)) {
-//                ApiResponses responses = operation.getResponses();
-//                ApiResponse response = new ApiResponse().description("Successfully processed the request");
-//
-//                // 응답 스키마 설정
-//                Schema<?> schema = new Schema<>();
-//                schema.set$ref("#/components/schemas/" + returnType.getSimpleName());
-//                Map map = new HashMap();
-//                response.setContent((Content) map.put("application/json",
-//                        new Content().addMediaType("application/json",
-//                                new MediaType().schema(schema))));
-//
-//                responses.addApiResponse("200", response);
-//            }
-//            return operation;
-//        };
-//    }
 }

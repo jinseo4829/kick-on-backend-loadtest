@@ -1,8 +1,14 @@
 package kr.kickon.api.domain.game;
 
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import jakarta.transaction.Transactional;
+import kr.kickon.api.admin.game.dto.GameDetailDTO;
+import kr.kickon.api.admin.game.dto.GameListDTO;
+import kr.kickon.api.admin.game.request.GameFilterRequest;
+import kr.kickon.api.admin.game.request.GameUpdateRequest;
 import kr.kickon.api.domain.migration.dto.ApiGamesDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
@@ -43,6 +49,107 @@ public class GameService implements BaseService<Game> {
         BooleanExpression predicate = QGame.game.pk.eq(pk).and(QGame.game.status.eq(DataStatus.ACTIVATED));
         Optional<Game> game = gameRepository.findOne(predicate);
         return game.orElse(null);
+    }
+
+    @Transactional
+    public void updateGame(Long pk, GameUpdateRequest request) {
+        Game game = findByPk(pk);
+        if(game == null) throw new NotFoundException(ResponseCode.NOT_FOUND_GAME);
+
+        if (request.getStartedAt() != null) {
+            game.setStartedAt(request.getStartedAt());
+        }
+        if (request.getGameStatus() != null) {
+            game.setGameStatus(request.getGameStatus());
+        }
+        if (request.getRound() != null) {
+            game.setRound(request.getRound());
+        }
+        if (request.getApiId() != null) {
+            game.setApiId(request.getApiId());
+        }
+        if (request.getHomeScore() != null) {
+            game.setHomeScore(request.getHomeScore());
+        }
+        if (request.getAwayScore() != null) {
+            game.setAwayScore(request.getAwayScore());
+        }
+        if (request.getHomePenaltyScore() != null) {
+            game.setHomePenaltyScore(request.getHomePenaltyScore());
+        }
+        if (request.getAwayPenaltyScore() != null) {
+            game.setAwayPenaltyScore(request.getAwayPenaltyScore());
+        }
+
+        gameRepository.save(game);
+    }
+
+    public GameDetailDTO getGameDetail(Long pk) {
+        Game game = findByPk(pk);
+        if(game == null) throw new NotFoundException(ResponseCode.NOT_FOUND_GAME);
+
+        return toGameDetailDTO(game);
+    }
+
+    private GameDetailDTO toGameDetailDTO(Game game) {
+        return GameDetailDTO.builder()
+                .pk(game.getPk())
+                .id(game.getId())
+                .apiId(game.getApiId())
+                .gameStatus(game.getGameStatus())
+                .startedAt(game.getStartedAt())
+                .homeScore(game.getHomeScore())
+                .awayScore(game.getAwayScore())
+                .homePenaltyScore(game.getHomePenaltyScore())
+                .awayPenaltyScore(game.getAwayPenaltyScore())
+                .round(game.getRound())
+                .etc(game.getEtc())
+                .homeTeam(GameListDTO.TeamSummary.builder()
+                        .pk(game.getHomeTeam().getPk())
+                        .nameKr(game.getHomeTeam().getNameKr())
+                        .nameEn(game.getHomeTeam().getNameEn())
+                        .logoUrl(game.getHomeTeam().getLogoUrl())
+                        .build())
+                .awayTeam(GameListDTO.TeamSummary.builder()
+                        .pk(game.getAwayTeam().getPk())
+                        .nameKr(game.getAwayTeam().getNameKr())
+                        .nameEn(game.getAwayTeam().getNameEn())
+                        .logoUrl(game.getAwayTeam().getLogoUrl())
+                        .build())
+                .actualSeason(GameListDTO.ActualSeasonSummary.builder()
+                        .pk(game.getActualSeason().getPk())
+                        .title(game.getActualSeason().getTitle())
+                        .year(game.getActualSeason().getYear())
+                        .operatingStatus(game.getActualSeason().getOperatingStatus()) // enum → string
+                        .build())
+                .build();
+    }
+
+    public List<GameListDTO> toGameListResponses(List<Game> games) {
+        return games.stream().map(game -> GameListDTO.builder()
+                .pk(game.getPk())
+                .gameStatus(game.getGameStatus())
+                .etc(game.getEtc())
+                .homeTeam(GameListDTO.TeamSummary.builder()
+                        .pk(game.getHomeTeam().getPk())
+                        .nameKr(game.getHomeTeam().getNameKr())
+                        .nameEn(game.getHomeTeam().getNameEn())
+                        .logoUrl(game.getHomeTeam().getLogoUrl())
+                        .build())
+                .awayTeam(GameListDTO.TeamSummary.builder()
+                        .pk(game.getAwayTeam().getPk())
+                        .nameKr(game.getAwayTeam().getNameKr())
+                        .nameEn(game.getAwayTeam().getNameEn())
+                        .logoUrl(game.getAwayTeam().getLogoUrl())
+                        .build())
+                .actualSeason(GameListDTO.ActualSeasonSummary.builder()
+                        .pk(game.getActualSeason().getPk())
+                        .title(game.getActualSeason().getTitle())
+                        .year(game.getActualSeason().getYear())
+                        .operatingStatus(game.getActualSeason().getOperatingStatus())
+                        .build())
+                .build()
+        ).toList();
     }
 
     public Game findByApiId(Long apiId){
@@ -140,5 +247,55 @@ public class GameService implements BaseService<Game> {
             gameStatus = GameStatus.PROCEEDING;
         }
         return gameStatus;
+    }
+
+    public List<Game> findGamesByFilter(GameFilterRequest filter) {
+        QGame game = QGame.game;
+        QActualSeason actualSeason = QActualSeason.actualSeason;
+
+        BooleanBuilder builder = new BooleanBuilder();
+
+        // 팀 PK (home 또는 away)
+        if (filter.getTeamPk() != null) {
+            builder.and(game.homeTeam.pk.eq(filter.getTeamPk())
+                    .or(game.awayTeam.pk.eq(filter.getTeamPk())));
+        }
+
+        // GameStatus 목록
+        if (filter.getGameStatuses() != null && !filter.getGameStatuses().isEmpty()) {
+            builder.and(game.gameStatus.in(filter.getGameStatuses()));
+        }
+
+        // 경기 시작/종료 시점
+        if (filter.getStartedFrom() != null) {
+            builder.and(game.startedAt.goe(filter.getStartedFrom()));
+        }
+        if (filter.getStartedTo() != null) {
+            builder.and(game.startedAt.loe(filter.getStartedTo()));
+        }
+
+        // ActualSeason 연동 조건
+        if (filter.getYear() != null || filter.getLeaguePk() != null) {
+            BooleanBuilder seasonCondition = new BooleanBuilder();
+
+            if (filter.getYear() != null) {
+                seasonCondition.and(game.actualSeason.year.eq(filter.getYear()));
+            }
+
+            if (filter.getLeaguePk() != null) {
+                seasonCondition.and(game.actualSeason.league.pk.eq(filter.getLeaguePk()));
+            }
+
+            builder.and(seasonCondition);
+        }
+
+        return queryFactory
+                .selectFrom(game)
+                .leftJoin(game.homeTeam).fetchJoin()
+                .leftJoin(game.awayTeam).fetchJoin()
+                .leftJoin(game.actualSeason).fetchJoin()
+                .where(builder)
+                .orderBy(game.startedAt.desc())
+                .fetch();
     }
 }

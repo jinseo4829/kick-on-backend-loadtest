@@ -6,6 +6,6 @@ import kr.kickon.api.global.common.entities.EventBoard;
 
 import java.util.List;
 
-@Schema(description = "이벤트 배너 리스트 응답")
+@Schema(name = "AdminGetEventBoardsResponse", description = "이벤트 배너 리스트 응답")
 public class GetEventBoardsResponse extends ResponseDTO<List<EventBoard>> {
 }
