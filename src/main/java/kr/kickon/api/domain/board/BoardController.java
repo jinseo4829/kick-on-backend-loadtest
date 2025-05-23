@@ -13,11 +13,13 @@ import kr.kickon.api.domain.board.dto.BoardListDTO;
 import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
 import kr.kickon.api.domain.board.request.CreateBoardRequestDTO;
 import kr.kickon.api.domain.board.request.GetBoardsRequestDTO;
+import kr.kickon.api.domain.board.request.PatchBoardRequestDTO;
 import kr.kickon.api.domain.board.response.GetBoardDetailResponse;
 import kr.kickon.api.domain.board.response.GetBoardsResponse;
 import kr.kickon.api.domain.board.response.GetHomeBoardsResponse;
 import kr.kickon.api.domain.boardKick.BoardKickService;
 import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
+import kr.kickon.api.domain.boardReply.request.PatchBoardReplyRequestDTO;
 import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.global.auth.jwt.user.JwtTokenProvider;
 import kr.kickon.api.global.common.PagedMetaDTO;
@@ -134,6 +136,29 @@ public class BoardController {
             throw new ForbiddenException(ResponseCode.FORBIDDEN);
         }
         boardService.deleteBoard(board);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
+    }
+
+    @Operation(summary = "게시글 수정", description = "게시글 PK값으로 게시글 수정")
+    @PatchMapping("/{boardPk}")
+    public ResponseEntity<ResponseDTO<Void>> patchBoard(@PathVariable Long boardPk,
+        @Valid @RequestBody PatchBoardRequestDTO request){
+        User user = jwtTokenProvider.getUserFromSecurityContext();
+        Board boardData = boardService.findByPk(boardPk);
+        if(boardData == null) throw new NotFoundException(ResponseCode.NOT_FOUND_BOARD);
+        if (!boardData.getUser().getId().equals(user.getId())) {
+            throw new ForbiddenException(ResponseCode.FORBIDDEN);
+        }
+        boardData.setContents(request.getContents());
+        boardData.setTitle(request.getTitle());
+        boardData.setHasImage(request.getHasImage());
+
+        if(request.getTeam()!=null){
+            Team team  = teamService.findByPk(request.getTeam());
+            if(team==null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
+            boardData.setTeam(team);
+        }
+        boardService.patchBoard(boardData, request.getUsedImageKeys());
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
 }
