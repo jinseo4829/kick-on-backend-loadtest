@@ -60,13 +60,15 @@ public class UserService implements BaseService<User> {
 
     @Transactional
     public void updateUser(User user, PatchUserRequest request) {
-        if ( request.getNickname()!=null && !user.getNickname().equals(request.getNickname())) {
-            // 닉네임 중복 검사
-            boolean isDuplicated = existsByNickname(request.getNickname());
-            if (isDuplicated) {
-                throw new BadRequestException(ResponseCode.DUPLICATED_NICKNAME); // ResponseCode에 정의 필요
+        if ( request.getNickname()!=null) {
+            if(user.getNickname() == null || !user.getNickname().equals(request.getNickname())){
+                // 닉네임 중복 검사
+                boolean isDuplicated = existsByNickname(request.getNickname());
+                if (isDuplicated) {
+                    throw new BadRequestException(ResponseCode.DUPLICATED_NICKNAME); // ResponseCode에 정의 필요
+                }
+                user.setNickname(request.getNickname());
             }
-            user.setNickname(request.getNickname());
         }
 
         if (request.getTeam() != null) {

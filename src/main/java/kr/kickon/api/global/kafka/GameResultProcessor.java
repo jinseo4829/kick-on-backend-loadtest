@@ -61,7 +61,7 @@ public class GameResultProcessor {
                                  Acknowledgment ack) {
         try {
 //            System.out.println(gameId + "----------------------------------");
-            log.info("[GameId: {}] Processing game result", gameId);
+//            log.info("[GameId: {}] Processing game result", gameId);
 
             GameStatus gameStatus = getGameStatus(gameData, scheduledStatus, finishedStatus);
             Game game = saveGameResult(gameData,gameStatus);

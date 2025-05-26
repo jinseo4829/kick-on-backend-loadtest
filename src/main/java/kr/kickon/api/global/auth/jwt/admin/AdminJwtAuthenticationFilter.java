@@ -35,7 +35,7 @@ public class AdminJwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        log.info("🔥 AdminJwtAuthenticationFilter activated for URI: {}", request.getRequestURI());
+//        log.info("🔥 AdminJwtAuthenticationFilter activated for URI: {}", request.getRequestURI());
         try {
             String token = resolveToken(request);
             if (!StringUtils.hasText(token) || !jwtTokenProvider.validateToken(token)) {
