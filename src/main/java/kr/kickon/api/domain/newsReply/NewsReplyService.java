@@ -190,5 +190,12 @@ public class NewsReplyService implements BaseService<NewsReply> {
             }
         }
     }
+
+    @Transactional
+    public NewsReply patchNewsReply(NewsReply newsReply) {
+        NewsReply saved = newsReplyRepository.save(newsReply);
+
+        return saved;
+    }
 }
 
