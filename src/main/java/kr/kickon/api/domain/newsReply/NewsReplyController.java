@@ -12,6 +12,7 @@ import kr.kickon.api.domain.newsReply.dto.PaginatedNewsReplyListDTO;
 import kr.kickon.api.domain.newsReply.dto.ReplyDTO;
 import kr.kickon.api.domain.newsReply.request.CreateNewsReplyRequestDTO;
 import kr.kickon.api.domain.newsReply.request.GetNewsRepliesRequestDTO;
+import kr.kickon.api.domain.newsReply.request.PatchNewsReplyRequestDTO;
 import kr.kickon.api.domain.newsReply.response.GetNewsRepliesResponseDTO;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.auth.jwt.user.JwtTokenProvider;
@@ -104,6 +105,22 @@ public class NewsReplyController {
         if (!newsReplyData.getUser().getId().equals(user.getId())) {
             throw new ForbiddenException(ResponseCode.FORBIDDEN);
         }        newsReplyService.deleteNewsReply(newsReplyData);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
+    }
+
+    @Operation(summary = "뉴스 댓글 수정", description = "뉴스 댓글 PK값으로 댓글 수정")
+    @PatchMapping("/{newsReplyPk}")
+    public ResponseEntity<ResponseDTO<Void>> patchNewsReply(@PathVariable Long newsReplyPk,
+        @Valid @RequestBody PatchNewsReplyRequestDTO request){
+        User user = jwtTokenProvider.getUserFromSecurityContext();
+        NewsReply newsReplyData = newsReplyService.findByPk(newsReplyPk);
+        if(newsReplyData == null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS_REPLY);
+        if (!newsReplyData.getUser().getId().equals(user.getId())) {
+            throw new ForbiddenException(ResponseCode.FORBIDDEN);
+        }
+        newsReplyData.setContents(request.getContents());
+
+        newsReplyService.patchNewsReply(newsReplyData);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
 }
