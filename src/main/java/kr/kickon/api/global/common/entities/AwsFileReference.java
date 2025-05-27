@@ -2,10 +2,7 @@ package kr.kickon.api.global.common.entities;
 import jakarta.persistence.*;
 import kr.kickon.api.global.common.enums.GambleStatus;
 import kr.kickon.api.global.common.enums.UsedInType;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.ColumnDefault;
 
@@ -16,8 +13,7 @@ import org.hibernate.annotations.ColumnDefault;
 @SuperBuilder
 @NoArgsConstructor
 public class AwsFileReference extends BaseEntity {
-
-    @Column(length = 512, nullable = false, unique = true)
+    @Column(length = 512, nullable = false, unique = true, name = "s3_key")
     private String s3Key;
 
     @Enumerated(EnumType.STRING)

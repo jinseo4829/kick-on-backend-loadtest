@@ -13,5 +13,4 @@ public interface AwsFileReferenceRepository extends JpaRepository<AwsFileReferen
     List<AwsFileReference> findAllByS3KeyIn(List<String> s3Keys);
     List<AwsFileReference> findByUsedInEqualsAndReferencePkEquals(UsedInType usedIn, Long referencePk);
     AwsFileReference findByS3Key(String s3Key);
-
 }

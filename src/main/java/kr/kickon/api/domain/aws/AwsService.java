@@ -54,6 +54,8 @@ public class AwsService{
                     .s3Key(keyName)
                     .usedIn(UsedInType.TEMP)
                     .build();
+//            System.out.println(awsFileReference.getS3Key());
+
             awsFileReferenceService.save(
                     awsFileReference
             );
