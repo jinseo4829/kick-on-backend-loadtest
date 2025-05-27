@@ -49,19 +49,21 @@ public class AwsService{
             PresignedPutObjectRequest presignedRequest = presigner.presignPutObject(presignRequest);
 
             // 2. AwsFileReference DB 등록
-            AwsFileReference awsFileReference = AwsFileReference.builder()
-                    .id(UUID.randomUUID().toString())
-                    .s3Key(keyName)
-                    .usedIn(UsedInType.TEMP)
-                    .build();
-//            System.out.println(awsFileReference.getS3Key());
+            AwsFileReference duplicatedFile = awsFileReferenceService.findByKey(keyName);
+            if (duplicatedFile == null) {
+                AwsFileReference awsFileReference = AwsFileReference.builder()
+                        .id(UUID.randomUUID().toString())
+                        .s3Key(keyName)
+                        .usedIn(UsedInType.TEMP)
+                        .build();
 
-            awsFileReferenceService.save(
-                    awsFileReference
-            );
-//            System.out.println(awsFileReference);
+                awsFileReferenceService.save(
+                        awsFileReference
+                );
 
+            }else throw new BadRequestException(ResponseCode.DUPLICATED_FILE);
             return presignedRequest.url().toString();
+
         }catch (Exception e) {
             throw new InternalServerException(ResponseCode.AWS_PRESIGNED_ERROR, e.getMessage());
         }
