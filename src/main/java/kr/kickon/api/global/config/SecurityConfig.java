@@ -141,8 +141,9 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(
                         auth -> auth
-                                .requestMatchers(requestUserMatchers()).hasAnyRole("USER")
-                                .requestMatchers(requestOauthFirstJoinMatchers()).hasAnyRole("OAUTH_FIRST_JOIN")
+                                .requestMatchers(requestUserOauthFirstJoinMatchers()).hasAnyRole("USER", "OAUTH_FIRST_JOIN")
+                                .requestMatchers(requestUserMatchers()).hasRole("USER")
+                                .requestMatchers(requestOauthFirstJoinMatchers()).hasRole("OAUTH_FIRST_JOIN")
                                 .requestMatchers("/api/**").hasAnyRole("GUEST", "OAUTH_FIRST_JOIN", "USER") // "GUEST"는 내부적으로 "ROLE_GUEST"로 변환됨
                                 .anyRequest().authenticated()
 
@@ -156,11 +157,21 @@ public class SecurityConfig {
         return http.build();
     }
 
+    private RequestMatcher[] requestUserOauthFirstJoinMatchers() {
+        List<RequestMatcher> requestMatchers = List.of(
+                antMatcher(HttpMethod.PATCH, "/api/user"),
+                antMatcher(HttpMethod.DELETE,"/api/user/me"),
+                antMatcher(HttpMethod.GET,"/api/user/me"),
+                antMatcher(HttpMethod.PATCH, "/api/user"),
+                antMatcher(HttpMethod.DELETE,"/api/user-point-event/ranking")
+        );
+        return requestMatchers.toArray(RequestMatcher[]::new);
+    }
+
     // User 권한이 필요한 엔드포인트
     private RequestMatcher[] requestUserMatchers() {
         List<RequestMatcher> requestMatchers = List.of(
                 antMatcher(HttpMethod.GET, "/api/user-point-event/ranking"),
-
                 antMatcher(HttpMethod.POST, "/api/user-game-gamble"),
                 antMatcher(HttpMethod.POST, "/api/board"),
                 antMatcher(HttpMethod.POST, "/api/news"),
@@ -172,7 +183,6 @@ public class SecurityConfig {
                 antMatcher(HttpMethod.POST, "/api/news-reply-kick"),
                 antMatcher(HttpMethod.POST, "/api/news-kick"),
                 antMatcher(HttpMethod.POST, "/api/board-kick"),
-
                 antMatcher(HttpMethod.PATCH, "/api/user-game-gamble"),
                 antMatcher(HttpMethod.PATCH, "/api/user/privacy"),
 
@@ -184,11 +194,7 @@ public class SecurityConfig {
     // OAUTH_FIRST_JOIN 권한이 필요한 엔드포인트
     private RequestMatcher[] requestOauthFirstJoinMatchers() {
         List<RequestMatcher> requestMatchers = List.of(
-                antMatcher(HttpMethod.DELETE,"/api/user/me"),
-                antMatcher(HttpMethod.GET,"/api/user/me"),
-                antMatcher(HttpMethod.DELETE,"/api/user/me"),
-                antMatcher(HttpMethod.PATCH, "/api/user"),
-                antMatcher(HttpMethod.DELETE,"/api/user-point-event/ranking")
+
         );
         return requestMatchers.toArray(RequestMatcher[]::new);
     }
