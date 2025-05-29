@@ -47,9 +47,9 @@ public class ApiLoggingAspect {
 
     @Around("@annotation(org.springframework.scheduling.annotation.Scheduled)")
     public Object logScheduler(ProceedingJoinPoint joinPoint) throws Throwable {
-        log.info("Scheduled task started: {}", joinPoint.getSignature());
+//        log.info("Scheduled task started: {}", joinPoint.getSignature());
         Object result = joinPoint.proceed();
-        log.info("Scheduled task ended: {}", joinPoint.getSignature());
+//        log.info("Scheduled task ended: {}", joinPoint.getSignature());
         return result;
     }
 

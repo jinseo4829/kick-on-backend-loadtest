@@ -165,6 +165,7 @@ public class EventBoardService implements BaseService<EventBoard> {
         String decodedKey = URLDecoder.decode(encodedKey, StandardCharsets.UTF_8);
         // AwsFileReference 생성
         AwsFileReference ref = AwsFileReference.builder()
+                .usedIn(UsedInType.EVENT_BOARD)
                 .s3Key(decodedKey)
                 .usedIn(UsedInType.EVENT_BOARD)
                 .referencePk(saved.getPk())

@@ -20,6 +20,7 @@ public enum ResponseCode {
     DUPLICATED_USER_GAME_GAMBLE(HttpStatus.BAD_REQUEST, "DUPLICATED_USER_GAME_GAMBLE", "이미 게임에 대한 승부예측이 진행중입니다."),
     ALREADY_FINISHED_GAMBLE(HttpStatus.BAD_REQUEST, "ALREADY_FINISHED_GAMBLE", "이미 해당 승부예측이 종료 되었습니다."),
     DUPLICATED_NICKNAME(HttpStatus.BAD_REQUEST, "DUPLICATED_NICKNAME", "이미 사용중인 닉네임 입니다."),
+    DUPLICATED_FILE(HttpStatus.BAD_REQUEST, "DUPLICATED_FILE", "이미 생성한 파일입니다."),
 
     // ✅ 401 Unauthorized
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "인증이 필요합니다. 로그인 후 이용해주세요."),

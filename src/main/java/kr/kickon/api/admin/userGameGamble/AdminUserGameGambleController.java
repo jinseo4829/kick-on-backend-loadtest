@@ -1,8 +1,14 @@
 package kr.kickon.api.admin.userGameGamble;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.kickon.api.admin.userGameGamble.dto.UserGameGambleDTO;
+import kr.kickon.api.admin.userGameGamble.response.GetUserGameGamblesResponse;
+import kr.kickon.api.domain.team.response.GetTeamsResponseDTO;
 import kr.kickon.api.domain.userGameGamble.UserGameGambleService;
 import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
@@ -25,6 +31,10 @@ public class AdminUserGameGambleController {
     private final UserGameGambleService userGameGambleService;
 
     @GetMapping("/{gamePk}/gambles")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공",
+                    content = @Content(schema = @Schema(implementation = GetUserGameGamblesResponse.class)))
+    })
     @Operation(summary = "게임 예측 목록 조회", description = "특정 게임에 대한 유저들의 예측 목록을 조회합니다.")
     public ResponseEntity<ResponseDTO<List<UserGameGambleDTO>>> getUserGamblesByGame(
             @PathVariable Long gamePk,
