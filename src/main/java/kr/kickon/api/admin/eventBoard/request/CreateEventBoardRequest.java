@@ -25,8 +25,4 @@ public class CreateEventBoardRequest {
     @NotBlank
     @Schema(description = "임베드 URL", example = "https://naver.com")
     private String embeddedUrl;
-
-    @Positive
-    @Schema(description = "노출 순서", example = "1")
-    private Integer orderNum;
 }

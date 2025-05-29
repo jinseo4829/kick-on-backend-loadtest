@@ -112,7 +112,7 @@ public class EventBoardService implements BaseService<EventBoard> {
             // 2. 기존 이미지 삭제 처리
             List<AwsFileReference> awsFileReferences = awsFileReferenceService.findByEventBoardPk(pk);
 
-            // 기존 프로필 사진이 있는 경우 삭제
+            // 기존 이벤트 배너가 있는 경우 삭제
             for(AwsFileReference awsFileReference : awsFileReferences){
                 try (S3Client s3 = S3Client.builder().build()) {
                     awsService.deleteFileFromS3AndDb(s3, awsFileReference); // key가 저장된 컬럼명에 따라 다름
@@ -120,10 +120,14 @@ public class EventBoardService implements BaseService<EventBoard> {
             }
 
             // 3. 새로운 프로필 이미지 등록
-            AwsFileReference newProfileImage = awsFileReferenceService.findByKey(decodedKey);
-            newProfileImage.setUsedIn(UsedInType.EVENT_BOARD);
-            newProfileImage.setReferencePk(pk);
-            awsFileReferenceService.save(newProfileImage);
+            AwsFileReference eventBoardFile = AwsFileReference.builder()
+                            .id(UUID.randomUUID().toString())
+                            .referencePk(pk)
+                            .s3Key(decodedKey)
+                            .usedIn(UsedInType.EVENT_BOARD)
+                    .build();
+
+            awsFileReferenceService.save(eventBoardFile);
         }
         if (request.getEmbeddedUrl() != null) banner.setEmbeddedUrl(request.getEmbeddedUrl());
         if (request.getOrderNum() != null) banner.setOrderNum(request.getOrderNum());
@@ -151,7 +155,6 @@ public class EventBoardService implements BaseService<EventBoard> {
         banner.setTitle(request.getTitle());
         banner.setThumbnailUrl(request.getThumbnailUrl());
         banner.setEmbeddedUrl(request.getEmbeddedUrl());
-        banner.setOrderNum(request.getOrderNum());
         banner.setIsDisplayed(false);
 
         EventBoard saved = eventBoardRepository.save(banner);
