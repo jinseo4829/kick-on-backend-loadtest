@@ -163,7 +163,8 @@ public class SecurityConfig {
                 antMatcher(HttpMethod.DELETE,"/api/user/me"),
                 antMatcher(HttpMethod.GET,"/api/user/me"),
                 antMatcher(HttpMethod.PATCH, "/api/user"),
-                antMatcher(HttpMethod.DELETE,"/api/user-point-event/ranking")
+                antMatcher(HttpMethod.DELETE,"/api/user-point-event/ranking"),
+                antMatcher(HttpMethod.PATCH, "/api/user/privacy")
         );
         return requestMatchers.toArray(RequestMatcher[]::new);
     }
@@ -184,8 +185,6 @@ public class SecurityConfig {
                 antMatcher(HttpMethod.POST, "/api/news-kick"),
                 antMatcher(HttpMethod.POST, "/api/board-kick"),
                 antMatcher(HttpMethod.PATCH, "/api/user-game-gamble"),
-                antMatcher(HttpMethod.PATCH, "/api/user/privacy"),
-
                 antMatcher(HttpMethod.DELETE, "/api/user-game-gamble")
         );
         return requestMatchers.toArray(RequestMatcher[]::new);
