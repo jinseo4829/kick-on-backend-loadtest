@@ -187,6 +187,7 @@ public class NewsController {
         }
         newsData.setContents(request.getContents());
         newsData.setTitle(request.getTitle());
+        newsData.setCategory(request.getCategory());
         if(request.getThumbnailUrl()!=null) newsData.setThumbnailUrl(request.getThumbnailUrl());
 
         if(request.getTeam()!=null){
