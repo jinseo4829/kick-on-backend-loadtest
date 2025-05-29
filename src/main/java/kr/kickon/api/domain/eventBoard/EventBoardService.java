@@ -119,15 +119,13 @@ public class EventBoardService implements BaseService<EventBoard> {
                 }
             }
 
-            // 3. 새로운 프로필 이미지 등록
-            AwsFileReference eventBoardFile = AwsFileReference.builder()
-                            .id(UUID.randomUUID().toString())
-                            .referencePk(pk)
-                            .s3Key(decodedKey)
-                            .usedIn(UsedInType.EVENT_BOARD)
-                    .build();
+            AwsFileReference awsFileReference = awsFileReferenceService.findByKey(decodedKey);
+            if(awsFileReference==null) throw new NotFoundException(ResponseCode.NOT_FOUND_AWS_FILE);
+            // AwsFileReference 생성
+            awsFileReference.setReferencePk(pk);
+            awsFileReference.setUsedIn(UsedInType.EVENT_BOARD);
 
-            awsFileReferenceService.save(eventBoardFile);
+            awsFileReferenceService.save(awsFileReference);
         }
         if (request.getEmbeddedUrl() != null) banner.setEmbeddedUrl(request.getEmbeddedUrl());
         if (request.getOrderNum() != null) banner.setOrderNum(request.getOrderNum());
