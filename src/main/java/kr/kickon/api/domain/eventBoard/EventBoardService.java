@@ -163,14 +163,12 @@ public class EventBoardService implements BaseService<EventBoard> {
 
         String encodedKey = parts[1];
         String decodedKey = URLDecoder.decode(encodedKey, StandardCharsets.UTF_8);
+        AwsFileReference awsFileReference = awsFileReferenceService.findByKey(decodedKey);
+        if(awsFileReference==null) throw new NotFoundException(ResponseCode.NOT_FOUND_AWS_FILE);
         // AwsFileReference 생성
-        AwsFileReference ref = AwsFileReference.builder()
-                .usedIn(UsedInType.EVENT_BOARD)
-                .s3Key(decodedKey)
-                .usedIn(UsedInType.EVENT_BOARD)
-                .referencePk(saved.getPk())
-                .id(UUID.randomUUID().toString())
-                .build();
-        awsFileReferenceService.save(ref);
+        awsFileReference.setReferencePk(saved.getPk());
+        awsFileReference.setUsedIn(UsedInType.EVENT_BOARD);
+
+        awsFileReferenceService.save(awsFileReference);
     }
 }
