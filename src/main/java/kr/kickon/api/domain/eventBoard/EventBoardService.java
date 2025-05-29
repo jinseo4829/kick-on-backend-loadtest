@@ -131,7 +131,12 @@ public class EventBoardService implements BaseService<EventBoard> {
         }
         if (request.getEmbeddedUrl() != null) banner.setEmbeddedUrl(request.getEmbeddedUrl());
         if (request.getOrderNum() != null) banner.setOrderNum(request.getOrderNum());
-        if (request.getIsDisplayed() != null) banner.setIsDisplayed(request.getIsDisplayed());
+        if (request.getIsDisplayed() != null) {
+            banner.setIsDisplayed(request.getIsDisplayed());
+            if(!banner.getIsDisplayed()) {
+                banner.setOrderNum(null);
+            }
+        }
 
         eventBoardRepository.save(banner);
     }

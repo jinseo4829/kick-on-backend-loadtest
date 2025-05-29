@@ -17,6 +17,7 @@ import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.EventBoard;
 import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.error.exceptions.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -63,6 +64,7 @@ public class AdminEventBoardController {
     })
     @PatchMapping("/{pk}")
     public ResponseEntity<ResponseDTO<Void>> update(@PathVariable Long pk, @RequestBody @Valid UpdateEventBoardRequest request) {
+        if(request.getIsDisplayed() && request.getOrderNum()==null) throw new BadRequestException(ResponseCode.INVALID_ADMIN_EVENT_BOARD_UPDATE_REQUEST);
         eventBoardService.update(pk, request);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
