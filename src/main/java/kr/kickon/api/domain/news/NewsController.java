@@ -7,8 +7,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import kr.kickon.api.domain.board.dto.BoardDetailDTO;
-import kr.kickon.api.domain.board.request.CreateBoardRequestDTO;
 import kr.kickon.api.domain.league.LeagueService;
 import kr.kickon.api.domain.news.dto.*;
 import kr.kickon.api.domain.news.request.CreateNewsRequestDTO;
