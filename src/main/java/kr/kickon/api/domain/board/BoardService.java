@@ -303,7 +303,7 @@ public class BoardService implements BaseService<Board> {
         // 2. 요청으로 들어온 키를 Set으로 변환
         Set<String> requestedKeys = Optional.ofNullable(usedImageKeys)
             .map(keys -> Arrays.stream(keys)
-                .map(key -> env + "/board-reply-files/" + key)
+                .map(key -> env + "/board-files/" + key)
                 .collect(Collectors.toSet()))
             .orElse(Collections.emptySet());
 
@@ -319,11 +319,11 @@ public class BoardService implements BaseService<Board> {
             }
         }
 
-        // 4. 사용된 이미지 키들 등록 또는 갱신
+        // 4. 이미지 키들 등록 또는 갱신
         if (!requestedKeys.isEmpty()) {
             awsFileReferenceService.updateFilesAsUsed(
                 new ArrayList<>(requestedKeys),
-                UsedInType.BOARD_REPLY,
+                UsedInType.BOARD,
                 saved.getPk()
             );
         }
