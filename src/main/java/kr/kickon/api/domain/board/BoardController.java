@@ -136,4 +136,28 @@ public class BoardController {
         boardService.deleteBoard(board);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
+
+    @Operation(summary = "게시글 수정", description = "게시글 PK값으로 게시글 수정")
+    @PatchMapping("/{boardPk}")
+    public ResponseEntity<ResponseDTO<BoardDetailDTO>> patchBoard(@PathVariable Long boardPk,
+        @Valid @RequestBody CreateBoardRequestDTO request){
+        User user = jwtTokenProvider.getUserFromSecurityContext();
+        Board boardData = boardService.findByPk(boardPk);
+        if(boardData == null) throw new NotFoundException(ResponseCode.NOT_FOUND_BOARD);
+        if (!boardData.getUser().getId().equals(user.getId())) {
+            throw new ForbiddenException(ResponseCode.FORBIDDEN);
+        }
+        boardData.setContents(request.getContents());
+        boardData.setTitle(request.getTitle());
+        boardData.setHasImage(request.getHasImage());
+
+        if(request.getTeam()!=null){
+            Team team  = teamService.findByPk(request.getTeam());
+            if(team==null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
+            boardData.setTeam(team);
+        }
+        boardService.patchBoard(boardData, request.getUsedImageKeys());
+        BoardDetailDTO boardDetailDTO = boardService.findOneBoardListDTOByPk(boardPk,user);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, boardDetailDTO));
+    }
 }
