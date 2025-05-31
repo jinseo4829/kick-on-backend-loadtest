@@ -138,6 +138,10 @@ public class BoardController {
     }
 
     @Operation(summary = "게시글 수정", description = "게시글 PK값으로 게시글 수정")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "성공",
+            content = @Content(schema = @Schema(implementation = GetBoardDetailResponse.class))),
+    })
     @PatchMapping("/{boardPk}")
     public ResponseEntity<ResponseDTO<BoardDetailDTO>> patchBoard(@PathVariable Long boardPk,
         @Valid @RequestBody CreateBoardRequestDTO request){

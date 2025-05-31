@@ -15,6 +15,9 @@ public class BoardDetailDTO extends BoardListDTO{
     @Schema(example = ExampleConstants.content, description = "게시글 내용")
     private String content;
 
+    @Schema(example = "[\"user1-2025-05-01-10-00-00.png\"]", description = "게시글 내 사용된 이미지 S3 키 배열")
+    private String[] usedImageKeys;
+
     @Schema(example = "true", description = "킥 눌렀는지 여부")
     private Boolean isKicked = false;
 }
