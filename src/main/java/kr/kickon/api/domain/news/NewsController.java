@@ -108,7 +108,7 @@ public class NewsController {
 
         News newsCreated = newsService.createNewsWithImages(news, request.getUsedImageKeys());
 
-        NewsDetailDTO newsDetailDTO = newsService.findNewsDeatailDTOByPk(newsCreated.getPk(),user);
+        NewsDetailDTO newsDetailDTO = newsService.findNewsDetailDTOByPk(newsCreated.getPk(),user);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS,newsDetailDTO));
     }
 
@@ -148,7 +148,7 @@ public class NewsController {
     @GetMapping("/{newsPk}")
     public ResponseEntity<ResponseDTO<NewsDetailDTO>> getBoardDetail(@PathVariable Long newsPk){
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        NewsDetailDTO newsDetailDTO = newsService.findNewsDeatailDTOByPk(newsPk,user);
+        NewsDetailDTO newsDetailDTO = newsService.findNewsDetailDTOByPk(newsPk,user);
         if(newsDetailDTO==null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, newsDetailDTO));
     }
@@ -167,6 +167,35 @@ public class NewsController {
         }
         newsService.deleteNews(news);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
+    }
+
+    @Operation(summary = "뉴스 수정", description = "뉴스 PK값으로 뉴스 수정")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "성공",
+            content = @Content(schema = @Schema(implementation = GetNewsDetailResponse.class))),
+    })
+    @PatchMapping("/{newsPk}")
+    public ResponseEntity<ResponseDTO<NewsDetailDTO>> patchNews(@PathVariable Long newsPk,
+        @Valid @RequestBody CreateNewsRequestDTO request){
+        User user = jwtTokenProvider.getUserFromSecurityContext();
+        News newsData = newsService.findByPk(newsPk);
+        if(newsData == null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS);
+        if (!newsData.getUser().getId().equals(user.getId())) {
+            throw new ForbiddenException(ResponseCode.FORBIDDEN);
+        }
+        newsData.setContents(request.getContents());
+        newsData.setTitle(request.getTitle());
+        newsData.setCategory(request.getCategory());
+        if(request.getThumbnailUrl()!=null) newsData.setThumbnailUrl(request.getThumbnailUrl());
+
+        if(request.getTeam()!=null){
+            Team team  = teamService.findByPk(request.getTeam());
+            if(team==null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
+            newsData.setTeam(team);
+        }
+        newsService.patchNews(newsData, request.getUsedImageKeys());
+        NewsDetailDTO newsDetailDTO = newsService.findNewsDetailDTOByPk(newsPk,user);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, newsDetailDTO));
     }
 }
 
