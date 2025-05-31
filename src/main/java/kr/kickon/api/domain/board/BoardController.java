@@ -155,6 +155,8 @@ public class BoardController {
             Team team  = teamService.findByPk(request.getTeam());
             if(team==null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
             boardData.setTeam(team);
+        }else{
+            boardData.setTeam(null);
         }
         boardService.patchBoard(boardData, request.getUsedImageKeys());
         BoardDetailDTO boardDetailDTO = boardService.findOneBoardListDTOByPk(boardPk,user);
