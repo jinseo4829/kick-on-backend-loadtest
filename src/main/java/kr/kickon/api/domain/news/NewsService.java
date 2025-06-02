@@ -167,6 +167,17 @@ public class NewsService implements BaseService<News> {
             newsDetailDTO.setTeam(new TeamDTO(teamEntity));
         }
 
+        String prefix = env + "/news-files/";
+
+        List<AwsFileReference> usedImageReferences = awsFileReferenceService.findbyNewsPk(
+            newsEntity.getPk()
+        );
+        String[] usedImageKeys = usedImageReferences.stream()
+            .map(AwsFileReference::getS3Key) // 각 객체에서 S3 키만 추출
+            .map(key -> key.substring(prefix.length())) // prefix 제거
+            .toArray(String[]::new);
+
+        newsDetailDTO.setUsedImageKeys(usedImageKeys);
         return newsDetailDTO;
     }
 
@@ -363,7 +374,7 @@ public class NewsService implements BaseService<News> {
     public News patchNews(News news, String[] usedImageKeys) {
         News saved = newsRepository.save(news);
         // 1. 기존 이미지 키 전체 조회
-        List<AwsFileReference> references = awsFileReferenceService.findbyBoardPk(saved.getPk());
+        List<AwsFileReference> references = awsFileReferenceService.findbyNewsPk(saved.getPk());
         Set<String> existingKeys = references.stream()
             .map(AwsFileReference::getS3Key)
             .collect(Collectors.toSet());

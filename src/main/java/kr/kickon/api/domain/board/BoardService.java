@@ -191,6 +191,18 @@ public class BoardService implements BaseService<Board> {
                     .nameEn(teamEntity.getNameEn())
                     .build());
         }
+
+        String prefix = env + "/board-files/";
+
+        List<AwsFileReference> usedImageReferences = awsFileReferenceService.findbyBoardPk(
+            boardEntity.getPk()
+        );
+        String[] usedImageKeys = usedImageReferences.stream()
+            .map(AwsFileReference::getS3Key) // 각 객체에서 S3 키만 추출
+            .map(key -> key.substring(prefix.length())) // prefix 제거
+            .toArray(String[]::new);
+
+        boardDetailDTO.setUsedImageKeys(usedImageKeys);
         return boardDetailDTO;
     }
 
