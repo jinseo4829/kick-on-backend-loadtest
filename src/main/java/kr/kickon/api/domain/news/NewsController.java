@@ -192,6 +192,8 @@ public class NewsController {
             Team team  = teamService.findByPk(request.getTeam());
             if(team==null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
             newsData.setTeam(team);
+        }else{
+            newsData.setTeam(null);
         }
         newsService.patchNews(newsData, request.getUsedImageKeys());
         NewsDetailDTO newsDetailDTO = newsService.findNewsDetailDTOByPk(newsPk,user);
