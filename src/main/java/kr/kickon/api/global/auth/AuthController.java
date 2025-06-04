@@ -60,11 +60,11 @@ public class AuthController {
     @PostMapping("/admin/refresh")
     public ResponseEntity<ResponseDTO<TokenDto>> refreshAdminToken(@RequestBody TokenRequestDTO request) {
         String refreshToken = request.getRefreshToken();
-        if (!jwtTokenProvider.validateToken(refreshToken)) {
+        if (!adminJwtTokenProvider.validateToken(refreshToken)) {
             throw new UnauthorizedException(ResponseCode.INVALID_REFRESH_TOKEN);
         }
 
-        Claims claims = jwtTokenProvider.getClaimsFromToken(refreshToken);
+        Claims claims = adminJwtTokenProvider.getClaimsFromToken(refreshToken);
         Admin admin = adminService.findByPk(Long.parseLong(claims.get(jwtTokenProvider.AUTH_PK).toString()));
         if (admin == null) throw new UnauthorizedException(ResponseCode.INVALID_REFRESH_TOKEN);
 

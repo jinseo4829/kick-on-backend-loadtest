@@ -71,6 +71,8 @@ public class SecurityConfig {
                 antMatcher("/webjars/**"),
                 antMatcher(HttpMethod.POST, "/admin/auth/login"),
                 antMatcher(HttpMethod.POST, "/aws/presigned-url"),
+                antMatcher("/auth/admin/refresh"),
+                antMatcher("/admin/refresh"),
                 antMatcher(HttpMethod.OPTIONS, "/**")
                 );
         return requestMatchers.toArray(RequestMatcher[]::new);
