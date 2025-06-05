@@ -40,18 +40,18 @@ public class AuthController {
         if (!jwtTokenProvider.validateToken(refreshToken)) {
             throw new UnauthorizedException(ResponseCode.INVALID_REFRESH_TOKEN);
         }
-        String authorities = "GUEST, ROLE_OAUTH_FIRST_JOIN";
+        String authorities = "ROLE_GUEST, ROLE_OAUTH_FIRST_JOIN";
         Claims claims = jwtTokenProvider.getClaimsFromToken(refreshToken);
         User user = userService.findByPk(Long.parseLong(claims.get(jwtTokenProvider.AUTH_PK).toString()));
         if(user==null) throw new UnauthorizedException(ResponseCode.INVALID_REFRESH_TOKEN);
         long now = (new Date()).getTime();
 
         Map<String, Object> newClaims = new HashMap<>();
-        if(user.getPrivacyAgreedAt()!=null) authorities += ", USER";
+        if(user.getPrivacyAgreedAt()!=null) authorities += ", ROLE_USER";
 
         newClaims.put(jwtTokenProvider.AUTH_PK, user.getPk());
         newClaims.put(jwtTokenProvider.AUTHORITIES_KEY, authorities);
-        String accessToken = jwtTokenProvider.createAccessToken(claims, user.getPk(), authorities);
+        String accessToken = jwtTokenProvider.createAccessToken(newClaims, user.getPk(), authorities);
 
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS,
                 new TokenDto(accessToken, refreshToken)));
@@ -68,7 +68,7 @@ public class AuthController {
         Admin admin = adminService.findByPk(Long.parseLong(claims.get(jwtTokenProvider.AUTH_PK).toString()));
         if (admin == null) throw new UnauthorizedException(ResponseCode.INVALID_REFRESH_TOKEN);
 
-        String authorities = "ADMIN";  // 관리자 권한만 부여
+        String authorities = "ROLE_ADMIN";  // 관리자 권한만 부여
 
         Map<String, Object> newClaims = new HashMap<>();
         newClaims.put(adminJwtTokenProvider.AUTH_PK, admin.getPk());
