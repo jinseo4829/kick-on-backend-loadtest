@@ -26,6 +26,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -46,24 +48,27 @@ public class UserGameGambleController {
         Game game = gameService.findByPk(request.getGame());
         if(game == null) throw new NotFoundException(ResponseCode.NOT_FOUND_GAME);
 
-        UserGameGamble userGameGamble = userGameGambleService.findByUserAndGame(user.getPk(), game.getPk());
-        if(userGameGamble != null) throw new BadRequestException(ResponseCode.DUPLICATED_USER_GAME_GAMBLE);
+        // 이미 예측했는지 확인
+        UserGameGamble existing = userGameGambleService.findByUserAndGame(user.getPk(), game.getPk());
+        if (existing != null) throw new BadRequestException(ResponseCode.DUPLICATED_USER_GAME_GAMBLE);
 
         // 게임 시작 2시간 전까지만 허용
-        // 현재 시간과 게임 시작 시간 비교
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime gameStartTime = game.getStartedAt();
-
-        if (gameStartTime.isBefore(now.plusHours(2))) {
+        if (game.getStartedAt().isBefore(LocalDateTime.now().plusHours(2))) {
             throw new BadRequestException(ResponseCode.GAMBLE_CLOSED);
         }
 
-        String id = uuidGenerator.generateUniqueUUID(userGameGambleService::findById);
-        // 승부예측 생성 로직
+        // 예측 결과 계산
         PredictedResult result;
-        if(request.getPredictedAwayScore().equals(request.getPredictedHomeScore())) result = PredictedResult.DRAW;
-        else if(request.getPredictedHomeScore()>request.getPredictedAwayScore()) result = PredictedResult.HOME;
-        else result = PredictedResult.AWAY;
+        if (request.getPredictedHomeScore().equals(request.getPredictedAwayScore())) {
+            result = PredictedResult.DRAW;
+        } else if (request.getPredictedHomeScore() > request.getPredictedAwayScore()) {
+            result = PredictedResult.HOME;
+        } else {
+            result = PredictedResult.AWAY;
+        }
+
+        String id = uuidGenerator.generateUniqueUUID(userGameGambleService::findById);
+
         UserGameGamble gamble = UserGameGamble.builder()
                 .user(user)
                 .game(game)
@@ -73,8 +78,18 @@ public class UserGameGambleController {
                 .predictedResult(result)
                 .build();
 
-        UserFavoriteTeam userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
-        if(userFavoriteTeam!=null) gamble.setSupportingTeam(userFavoriteTeam.getTeam());
+        // ✅ 유저가 좋아하는 팀 중 경기 참여 팀을 찾고, priorityNum 기준으로 우선순위 높은 팀 설정
+        List<UserFavoriteTeam> favoriteTeams = userFavoriteTeamService.findAllByUserPk(user.getPk());
+        favoriteTeams.sort(Comparator.comparingInt(UserFavoriteTeam::getPriorityNum));
+
+        for (UserFavoriteTeam favoriteTeam : favoriteTeams) {
+            Long teamPk = favoriteTeam.getTeam().getPk();
+            if (teamPk.equals(game.getHomeTeam().getPk()) || teamPk.equals(game.getAwayTeam().getPk())) {
+                gamble.setSupportingTeam(favoriteTeam.getTeam());
+                break;
+            }
+        }
+
         userGameGambleService.save(gamble);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
     }
