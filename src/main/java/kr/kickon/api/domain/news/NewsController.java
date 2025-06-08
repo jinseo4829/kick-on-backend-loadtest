@@ -30,7 +30,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 
 @RestController
@@ -58,11 +62,17 @@ public class NewsController {
         if(user==null){
             news = newsService.findRecent3News();
         }else{
-            UserFavoriteTeam userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
-            if(userFavoriteTeam==null || (type!=null && type.equals("all"))){
+            List<UserFavoriteTeam> favoriteTeams = userFavoriteTeamService.findTop3ByUserPkOrderByPriorityNumAsc(user.getPk());
+
+            if (favoriteTeams == null || favoriteTeams.isEmpty()) {
                 news = newsService.findRecent3News();
-            }else{
-                news = newsService.findRecent3NewsWithUserTeam(userFavoriteTeam.getTeam().getPk());
+            } else {
+                Set<Long> teamPks = favoriteTeams.stream()
+                        .map(fav -> fav.getTeam().getPk())
+                        .collect(Collectors.toSet());
+
+                // 중복 제거 포함된 뉴스 3개까지 조회 (최대 3개 팀 기준)
+                news = newsService.findRecent3NewsWithUserTeam(teamPks, 3);
             }
         }
 
