@@ -99,30 +99,42 @@ public class UserGameGambleController {
     public ResponseEntity<ResponseDTO<Void>> updateUserGameGamble(@Valid @RequestBody UserGameGamblePatchRequest request) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         UserGameGamble userGameGamble = userGameGambleService.findById(request.getGamble());
+
         if(userGameGamble == null) throw new NotFoundException(ResponseCode.NOT_FOUND_USER_GAME_GAMBLE);
         if(!userGameGamble.getUser().getPk().equals(user.getPk())) throw new ForbiddenException(ResponseCode.FORBIDDEN);
 
-        // 게임 시작 2시간 전까지만 허용
-        // 현재 시간과 게임 시작 시간 비교
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime gameStartTime = userGameGamble.getGame().getStartedAt();
-
-        if (gameStartTime.isBefore(now.plusMinutes(30))) {
+        // 게임 시작 30분 전까지만 수정 가능
+        if (userGameGamble.getGame().getStartedAt().isBefore(LocalDateTime.now().plusMinutes(30))) {
             throw new BadRequestException(ResponseCode.GAMBLE_CLOSED);
         }
 
-        String id = uuidGenerator.generateUniqueUUID(userGameGambleService::findById);
-        // 승부예측 생성 로직
+        // 예측 결과 재계산
         PredictedResult result;
-        if(request.getPredictedAwayScore().equals(request.getPredictedHomeScore())) result = PredictedResult.DRAW;
-        else if(request.getPredictedHomeScore()>request.getPredictedAwayScore()) result = PredictedResult.HOME;
-        else result = PredictedResult.AWAY;
+        if (request.getPredictedHomeScore().equals(request.getPredictedAwayScore())) {
+            result = PredictedResult.DRAW;
+        } else if (request.getPredictedHomeScore() > request.getPredictedAwayScore()) {
+            result = PredictedResult.HOME;
+        } else {
+            result = PredictedResult.AWAY;
+        }
+
         userGameGamble.setPredictedAwayScore(request.getPredictedAwayScore());
         userGameGamble.setPredictedHomeScore(request.getPredictedHomeScore());
         userGameGamble.setPredictedResult(result);
 
-        UserFavoriteTeam userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
-        if(userFavoriteTeam!=null) userGameGamble.setSupportingTeam(userFavoriteTeam.getTeam());
+        // ✅ 좋아하는 팀 중 경기 참여 팀이 있다면, priorityNum 기준으로 가장 우선순위 높은 팀을 supportingTeam으로 설정
+        List<UserFavoriteTeam> favoriteTeams = userFavoriteTeamService.findAllByUserPk(user.getPk());
+        favoriteTeams.sort(Comparator.comparingInt(UserFavoriteTeam::getPriorityNum));
+
+        for (UserFavoriteTeam favoriteTeam : favoriteTeams) {
+            Long teamPk = favoriteTeam.getTeam().getPk();
+            if (teamPk.equals(userGameGamble.getGame().getHomeTeam().getPk()) ||
+                    teamPk.equals(userGameGamble.getGame().getAwayTeam().getPk())) {
+                userGameGamble.setSupportingTeam(favoriteTeam.getTeam());
+                break;
+            }
+        }
+
         userGameGambleService.save(userGameGamble);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
