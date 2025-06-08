@@ -36,9 +36,6 @@ import java.time.LocalDateTime;
 public class UserPointEventController {
     private final UserPointEventService userPointEventService;
     private final JwtTokenProvider  jwtTokenProvider;
-    private final UserFavoriteTeamService userFavoriteTeamService;
-    private final GambleSeasonService gambleSeasonService;
-    private final ActualSeasonTeamService actualSeasonTeamService;
 
     @Operation(summary = "유저 랭킹 조회", description = "응원팀 여부에 따라 있으면 응원팀 내 랭킹 반환, 없다면 전체 기준 랭킹 반환")
     @ApiResponses({
@@ -48,20 +45,16 @@ public class UserPointEventController {
     @GetMapping("ranking")
     public ResponseEntity<ResponseDTO<UserRankingDTO>> getUserPointRanking() {
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        UserFavoriteTeam userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
-        UserRankingDTO rankingDTO = null;
-        if(userFavoriteTeam == null){
-            LocalDateTime seasonEnd = LocalDateTime.now();  // 현재 시간
-            LocalDateTime seasonStart = seasonEnd.minusMonths(3);  // 3달 전
-            rankingDTO = userPointEventService.findUserRankingFromAll(seasonStart,seasonEnd,user.getPk());
-        }else{
-            ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findLatestByTeam(userFavoriteTeam.getTeam().getPk());
-            GambleSeason gambleSeason = gambleSeasonService.findRecentOperatingSeasonByLeaguePk(actualSeasonTeam.getActualSeason().getLeague().getPk());
 
-            rankingDTO = userPointEventService.findUserRankingByTeam(userFavoriteTeam.getTeam().getPk(),gambleSeason.getStartedAt(),gambleSeason.getFinishedAt(),user.getPk());
+        // 기준 기간: 최근 3개월
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime threeMonthsAgo = now.minusMonths(3);
+
+        UserRankingDTO rankingDTO = userPointEventService.findUserRankingFromAll(threeMonthsAgo, now, user.getPk());
+
+        if (rankingDTO == null) {
+            throw new NotFoundException(ResponseCode.NOT_FOUND_USER_POINT_RANKING);
         }
-
-        if(rankingDTO == null) throw new NotFoundException(ResponseCode.NOT_FOUND_USER_POINT_RANKING);
 
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, rankingDTO));
     }
