@@ -58,4 +58,5 @@ public class UserFavoriteTeamService implements BaseService<UserFavoriteTeam> {
     public void save(UserFavoriteTeam userFavoriteTeam) {
         userFavoriteTeamRepository.save(userFavoriteTeam);
     }
+
 }

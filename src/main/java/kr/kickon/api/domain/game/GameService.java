@@ -180,27 +180,44 @@ public class GameService implements BaseService<Game> {
                     .orderBy(QGame.game.startedAt.asc());
         }
 
-        return query.orderBy(QGame.game.startedAt.asc()).limit(2).fetch();
+        return query.orderBy(QGame.game.startedAt.asc()).limit(6).fetch();
     }
 
     public List<Game> findByActualSeasonByFavoriteTeam(Long actualSeasonPk, String gameStatus, Long favoriteTeamPk) {
         LocalDateTime now = LocalDateTime.now();
-        JPAQuery<Game> query = queryFactory.selectFrom(QGame.game)
-                .where(QGame.game.status.eq(DataStatus.ACTIVATED)
-                        .and(QGame.game.actualSeason.pk.eq(actualSeasonPk))
-                        .and(QGame.game.homeTeam.pk.eq(favoriteTeamPk)
-                                .or(QGame.game.awayTeam.pk.eq(favoriteTeamPk))));
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(QGame.game.status.eq(DataStatus.ACTIVATED));
+        builder.and(QGame.game.actualSeason.pk.eq(actualSeasonPk));
+        builder.and(QGame.game.homeTeam.pk.eq(favoriteTeamPk)
+                .or(QGame.game.awayTeam.pk.eq(favoriteTeamPk)));
 
         if (gameStatus.equals("finished")) {
-            query.where(QGame.game.gameStatus.in(GameStatus.PROCEEDING, GameStatus.CANCELED, GameStatus.HOME,
-                            GameStatus.AWAY, GameStatus.DRAW, GameStatus.PENDING).and(QGame.game.startedAt.lt(now.minusHours(2))))
-                    .orderBy(QGame.game.startedAt.desc());
+            builder.and(QGame.game.gameStatus.in(
+                    GameStatus.PROCEEDING,
+                    GameStatus.CANCELED,
+                    GameStatus.HOME,
+                    GameStatus.AWAY,
+                    GameStatus.DRAW,
+                    GameStatus.PENDING
+            ));
+            builder.and(QGame.game.startedAt.lt(now.minusHours(2)));
+            return queryFactory.selectFrom(QGame.game)
+                    .where(builder)
+                    .orderBy(QGame.game.startedAt.desc())
+                    .limit(2)
+                    .fetch();
         } else {
-            query.where(QGame.game.gameStatus.in(GameStatus.POSTPONED, GameStatus.PENDING).and(QGame.game.startedAt.goe(now.plusHours(2))))
-                    .orderBy(QGame.game.startedAt.asc());
+            builder.and(QGame.game.gameStatus.in(
+                    GameStatus.POSTPONED,
+                    GameStatus.PENDING
+            ));
+            builder.and(QGame.game.startedAt.goe(now.plusHours(2)));
+            return queryFactory.selectFrom(QGame.game)
+                    .where(builder)
+                    .orderBy(QGame.game.startedAt.asc())
+                    .limit(2)
+                    .fetch();
         }
-
-        return query.limit(2).fetch();
     }
 
     public List<Game> findByToday() {
