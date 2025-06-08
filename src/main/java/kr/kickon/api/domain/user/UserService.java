@@ -24,9 +24,9 @@ import software.amazon.awssdk.services.s3.S3Client;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -71,18 +71,50 @@ public class UserService implements BaseService<User> {
             }
         }
 
-        if (request.getTeam() != null) {
-            Team team = teamService.findByPk(request.getTeam());
-            if (team == null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
+        // 팀 우선순위 수정
+        if (request.getTeams() != null) {
+            List<Long> requestedTeamPks = request.getTeams();
+            List<UserFavoriteTeam> existingList = userFavoriteTeamService.findAllByUserPk(user.getPk());
 
-            UserFavoriteTeam uft = userFavoriteTeamService.findByUserPk(user.getPk());
-            if (uft == null) {
-                String id = uuidGenerator.generateUniqueUUID(userFavoriteTeamService::findById);
-                uft = UserFavoriteTeam.builder().id(id).user(user).team(team).priorityNum(1).build();
-            } else {
-                uft.setTeam(team);
+            // 기존 팀 매핑
+            Map<Long, UserFavoriteTeam> teamMap = existingList.stream()
+                    .collect(Collectors.toMap(uf -> uf.getTeam().getPk(), Function.identity()));
+
+            Set<Long> requestedTeamPkSet = new HashSet<>(requestedTeamPks);
+
+            // 요청되지 않은 팀은 비활성화 처리
+            for (UserFavoriteTeam oldUft : existingList) {
+                if (!requestedTeamPkSet.contains(oldUft.getTeam().getPk())) {
+                    oldUft.setStatus(DataStatus.DEACTIVATED);
+                    userFavoriteTeamService.save(oldUft);
+                }
             }
-            userFavoriteTeamService.save(uft);
+
+            // 요청된 팀들 우선순위에 따라 등록/업데이트
+            for (int i = 0; i < requestedTeamPks.size(); i++) {
+                Long teamPk = requestedTeamPks.get(i);
+                Team team = teamService.findByPk(teamPk);
+                if (team == null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
+
+                UserFavoriteTeam uft = teamMap.get(teamPk);
+                if (uft == null) {
+                    // 새 팀 추가
+                    String id = uuidGenerator.generateUniqueUUID(userFavoriteTeamService::findById);
+                    uft = UserFavoriteTeam.builder()
+                            .id(id)
+                            .user(user)
+                            .team(team)
+                            .priorityNum(i + 1)
+                            .status(DataStatus.ACTIVATED)
+                            .build();
+                } else {
+                    // 기존 팀 재활성화 및 우선순위 갱신
+                    uft.setPriorityNum(i + 1);
+                    uft.setStatus(DataStatus.ACTIVATED);
+                }
+
+                userFavoriteTeamService.save(uft);
+            }
         }
 
         if(request.getProfileImageUrl()!=null){

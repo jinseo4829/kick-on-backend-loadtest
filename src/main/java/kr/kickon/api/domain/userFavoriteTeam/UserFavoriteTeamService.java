@@ -47,8 +47,12 @@ public class UserFavoriteTeamService implements BaseService<UserFavoriteTeam> {
         return userFavoriteTeam.orElse(null);
     }
 
-    public List<UserFavoriteTeam> findTop3ByUserPkOrderByPriorityNumAsc(long userPk){
+    public List<UserFavoriteTeam> findTop3ByUserPkOrderByPriorityNumAsc(Long userPk){
         return userFavoriteTeamRepository.findTop3ByUser_PkAndStatusAndTeam_StatusOrderByPriorityNumAsc(userPk, DataStatus.ACTIVATED, DataStatus.ACTIVATED);
+    }
+
+    public List<UserFavoriteTeam> findAllByUserPk(Long userPk){
+        return userFavoriteTeamRepository.findAllByUserPkAndStatus(userPk, DataStatus.ACTIVATED);
     }
 
     public void save(UserFavoriteTeam userFavoriteTeam) {
