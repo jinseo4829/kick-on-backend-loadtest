@@ -1,6 +1,6 @@
 package kr.kickon.api.global.config;
 
-import kr.kickon.api.domain.migration.dto.ApiGamesDTO;
+import kr.kickon.api.admin.migration.dto.ApiGamesDTO;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.ProducerConfig;

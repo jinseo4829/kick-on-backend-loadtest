@@ -44,7 +44,7 @@ public class AdminJwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             Authentication authentication = jwtTokenProvider.getAuthentication(token);
-            System.out.println(Arrays.toString(authentication.getAuthorities().toArray()));
+//            System.out.println(Arrays.toString(authentication.getAuthorities().toArray()));
             if (authentication.getAuthorities().stream().noneMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
                 throw new BadCredentialsException("유효하지 않은 토큰입니다.");
             }

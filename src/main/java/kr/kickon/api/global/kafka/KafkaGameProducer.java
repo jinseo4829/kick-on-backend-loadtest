@@ -1,6 +1,6 @@
 package kr.kickon.api.global.kafka;
 
-import kr.kickon.api.domain.migration.dto.ApiGamesDTO;
+import kr.kickon.api.admin.migration.dto.ApiGamesDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;

@@ -136,6 +136,7 @@ public class JwtTokenProvider{
                     user,
                     authority);
             List<SimpleGrantedAuthority> authorities = Arrays.stream(authority.split(","))
+                    .map(String::trim)
                     .map(SimpleGrantedAuthority::new)
                     .collect(Collectors.toList());
             return new UsernamePasswordAuthenticationToken(principal, null, authorities);

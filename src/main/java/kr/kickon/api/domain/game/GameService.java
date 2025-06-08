@@ -9,7 +9,7 @@ import kr.kickon.api.admin.game.dto.GameDetailDTO;
 import kr.kickon.api.admin.game.dto.GameListDTO;
 import kr.kickon.api.admin.game.request.GameFilterRequest;
 import kr.kickon.api.admin.game.request.GameUpdateRequest;
-import kr.kickon.api.domain.migration.dto.ApiGamesDTO;
+import kr.kickon.api.admin.migration.dto.ApiGamesDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;

@@ -1,4 +1,4 @@
-package kr.kickon.api.domain.migration.dto;
+package kr.kickon.api.admin.migration.dto;
 
 import kr.kickon.api.global.common.entities.ActualSeason;
 import kr.kickon.api.global.common.entities.Team;

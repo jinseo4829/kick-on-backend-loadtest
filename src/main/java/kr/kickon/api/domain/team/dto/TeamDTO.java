@@ -3,11 +3,13 @@ package kr.kickon.api.domain.team.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import kr.kickon.api.global.common.ExampleConstants;
 import kr.kickon.api.global.common.entities.Team;
+import kr.kickon.api.global.common.entities.UserFavoriteTeam;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Getter
 @Setter
-@Builder
+@SuperBuilder
 @AllArgsConstructor
 public class TeamDTO {
     @Schema(description = "사용자 고유 pk", example = "1")
@@ -21,6 +23,7 @@ public class TeamDTO {
 
     @Schema(description = "팀 url", example = ExampleConstants.teamLogoUrl)
     private String logoUrl;
+
 
     public TeamDTO(Team team) {
         this.pk = team.getPk();

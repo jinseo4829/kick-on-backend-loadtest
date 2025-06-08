@@ -1,14 +1,14 @@
-package kr.kickon.api.domain.migration;
+package kr.kickon.api.admin.migration;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.kickon.api.domain.country.CountryService;
 import kr.kickon.api.domain.game.GameService;
 import kr.kickon.api.domain.league.LeagueService;
-import kr.kickon.api.domain.migration.dto.ApiGamesDTO;
-import kr.kickon.api.domain.migration.dto.ApiLeagueAndSeasonDTO;
-import kr.kickon.api.domain.migration.dto.ApiRankingDTO;
-import kr.kickon.api.domain.migration.dto.ApiTeamDTO;
+import kr.kickon.api.admin.migration.dto.ApiGamesDTO;
+import kr.kickon.api.admin.migration.dto.ApiLeagueAndSeasonDTO;
+import kr.kickon.api.admin.migration.dto.ApiRankingDTO;
+import kr.kickon.api.admin.migration.dto.ApiTeamDTO;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.Country;
 import kr.kickon.api.global.common.entities.Game;
@@ -24,12 +24,13 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @AllArgsConstructor
 @RestController
-@RequestMapping("/migration")
+@RequestMapping("/admin/migration")
 @Tag(name = "마이그레이션 관련")
 @Slf4j
 public class MigrationController {
@@ -53,6 +54,7 @@ public class MigrationController {
     public ResponseEntity<ResponseDTO<Void>> fetchLeaguesAndSeasons(@RequestParam String season) {
         List<Country> countries = countryService.findAll();
         List<ApiLeagueAndSeasonDTO> leaguesAndSeasons = migrationService.fetchLeaguesAndSeasons(countries,Integer.parseInt(season));
+        System.out.println(Arrays.toString(leaguesAndSeasons.toArray()));
         migrationService.saveLeagueAndSeason(leaguesAndSeasons);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.CREATED));
     }

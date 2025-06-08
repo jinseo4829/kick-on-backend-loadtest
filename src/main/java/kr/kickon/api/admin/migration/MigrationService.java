@@ -1,28 +1,25 @@
-package kr.kickon.api.domain.migration;
+package kr.kickon.api.admin.migration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
+import kr.kickon.api.admin.migration.dto.*;
 import kr.kickon.api.domain.actualSeason.ActualSeasonService;
 import kr.kickon.api.domain.actualSeasonRanking.ActualSeasonRankingService;
 import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
 import kr.kickon.api.domain.gambleSeason.GambleSeasonService;
 import kr.kickon.api.domain.gambleSeasonPoint.GambleSeasonPointService;
 import kr.kickon.api.domain.gambleSeasonRanking.GambleSeasonRankingService;
-import kr.kickon.api.domain.gambleSeasonRanking.dto.GetGambleSeasonRankingDTO;
 import kr.kickon.api.domain.gambleSeasonTeam.GambleSeasonTeamService;
 import kr.kickon.api.domain.game.GameService;
 import kr.kickon.api.domain.league.LeagueService;
-import kr.kickon.api.domain.migration.dto.*;
 import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.domain.userGameGamble.UserGameGambleService;
 import kr.kickon.api.global.common.entities.*;
-import kr.kickon.api.global.common.enums.GambleStatus;
 import kr.kickon.api.global.common.enums.GameStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
@@ -463,7 +460,7 @@ public class MigrationService {
         List<League> leagues = leagueService.findAll();
         List<Long> leagueIds = leagues.stream()
                 .map(League::getApiId) // League 객체에서 api_id 추출
-                .collect(Collectors.toList());
+                .toList();
         List<ApiLeagueAndSeasonDTO> list = new ArrayList<>();
         for(Country country : countries){
             Map<String, Object> response = webClient.get().uri(uriBuilder ->
@@ -488,6 +485,7 @@ public class MigrationService {
                             apiLeagueDTO = objectMapper.convertValue(leagueData, ApiLeagueDTO.class);
                         }
                         if(apiLeagueDTO != null){
+                            System.out.println(apiLeagueDTO);
                             // Map을 ApiSeasonDTO로 변환
                             if (seasonData.get(0) instanceof Map) {
                                 ObjectMapper objectMapper = new ObjectMapper();
@@ -499,7 +497,7 @@ public class MigrationService {
                         return new ApiLeagueAndSeasonDTO(apiLeagueDTO, apiSeasonDTO);
                     })
                     .filter(responseData -> leagueIds.contains(responseData.getLeague().getId()))
-                    .collect(Collectors.toList()));
+                    .toList());
         }
         return list;
     }

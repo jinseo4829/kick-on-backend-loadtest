@@ -20,4 +20,7 @@ public class UserFavoriteTeam extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "team_pk", foreignKey = @ForeignKey(name = "fk_user_favorite_team_team"))
     private Team team;
+
+    @Column(nullable = false)
+    private Integer priorityNum;
 }

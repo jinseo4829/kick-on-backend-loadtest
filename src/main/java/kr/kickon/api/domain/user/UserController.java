@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
 import kr.kickon.api.domain.league.dto.LeagueDTO;
 import kr.kickon.api.domain.team.TeamService;
+import kr.kickon.api.domain.team.dto.FavoriteTeamDTO;
 import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.domain.user.dto.UserMeDto;
 import kr.kickon.api.domain.user.request.DeleteUserRequest;
@@ -30,6 +31,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -60,22 +63,41 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<ResponseDTO<UserMeDto>> getUserMe() {
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        UserFavoriteTeam userFavoriteTeam = null;
+        List<UserFavoriteTeam> userFavoriteTeams;
         UserMeDto userDto = new UserMeDto(user);
-        userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
-        League league = null;
-        if(userFavoriteTeam != null && userFavoriteTeam.getTeam().getStatus() == DataStatus.ACTIVATED) {
-            userDto.setFavoriteTeam(
-                    new TeamDTO(userFavoriteTeam.getTeam())
-            );
+        userFavoriteTeams = userFavoriteTeamService.findTop3ByUserPkOrderByPriorityNumAsc(user.getPk());
 
-            ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findLatestByTeam(userFavoriteTeam.getTeam().getPk());
-            if(actualSeasonTeam != null) league = actualSeasonTeam.getActualSeason().getLeague();
-            if(league!=null) {
-                userDto.setLeague(
-                        new LeagueDTO(league)
-                );
+        List<FavoriteTeamDTO> teamDTOList = new ArrayList<>();
+        League league = null;
+
+        for (UserFavoriteTeam fav : userFavoriteTeams) {
+            // 혹시나 다른거 예외처리
+            if (fav.getStatus() != DataStatus.ACTIVATED ||
+                    fav.getTeam() == null ||
+                    fav.getTeam().getStatus() != DataStatus.ACTIVATED) {
+                continue;
             }
+
+            teamDTOList.add(FavoriteTeamDTO.builder()
+                    .pk(fav.getTeam().getPk())
+                    .nameKr(fav.getTeam().getNameKr())
+                    .nameEn(fav.getTeam().getNameEn())
+                    .logoUrl(fav.getTeam().getLogoUrl())
+                    .priorityNum(fav.getPriorityNum())
+                .build());
+
+            // priorityNum이 가장 낮은 첫 번째 팀 기준으로 league 설정
+            if (league == null) {
+                ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findLatestByTeam(fav.getTeam().getPk());
+                if (actualSeasonTeam != null && actualSeasonTeam.getActualSeason() != null) {
+                    league = actualSeasonTeam.getActualSeason().getLeague();
+                }
+            }
+        }
+
+        userDto.setFavoriteTeams(teamDTOList);
+        if (league != null) {
+            userDto.setLeague(new LeagueDTO(league));
         }
 
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS,userDto));

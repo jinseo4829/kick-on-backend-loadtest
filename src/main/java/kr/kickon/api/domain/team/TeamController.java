@@ -50,7 +50,7 @@ public class TeamController {
             ActualSeason actualSeason = actualSeasonService.findRecentByLeaguePk(league);
             if(actualSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
             List<ActualSeasonTeam> actualSeasonTeamList = actualSeasonTeamService.findByActualSeason(actualSeason.getPk(), keyword);
-            List<TeamDTO> teamDTOList = actualSeasonTeamList.stream().map(actualSeasonTeam -> TeamDTO.builder()
+            List<TeamDTO> teamDTOList = actualSeasonTeamList.stream().map(actualSeasonTeam -> (TeamDTO) TeamDTO.builder()
                     .pk(actualSeasonTeam.getTeam().getPk())
                     .nameKr(actualSeasonTeam.getTeam().getNameKr())
                     .nameEn(actualSeasonTeam.getTeam().getNameEn())

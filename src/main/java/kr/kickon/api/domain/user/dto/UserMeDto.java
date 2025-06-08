@@ -2,6 +2,7 @@ package kr.kickon.api.domain.user.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import kr.kickon.api.domain.league.dto.LeagueDTO;
+import kr.kickon.api.domain.team.dto.FavoriteTeamDTO;
 import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.global.common.ExampleConstants;
 import kr.kickon.api.global.common.entities.User;
@@ -12,6 +13,7 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -31,8 +33,7 @@ public class UserMeDto extends BaseUserDTO {
     @Schema(description = "마케팅 동의 시각", example = ExampleConstants.datetime)
     private LocalDateTime marketingAgreedAt;
 
-    private TeamDTO favoriteTeam;
-
+    private List<FavoriteTeamDTO> favoriteTeams;
     private LeagueDTO league;
 
     public UserMeDto(User user) {

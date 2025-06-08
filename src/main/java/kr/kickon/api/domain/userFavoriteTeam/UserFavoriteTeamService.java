@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -44,6 +45,10 @@ public class UserFavoriteTeamService implements BaseService<UserFavoriteTeam> {
                 .and(qUserFavoriteTeam.status.eq(DataStatus.ACTIVATED)).and(qUserFavoriteTeam.team.status.eq(DataStatus.ACTIVATED));
         Optional<UserFavoriteTeam> userFavoriteTeam =userFavoriteTeamRepository.findOne(predicate);
         return userFavoriteTeam.orElse(null);
+    }
+
+    public List<UserFavoriteTeam> findTop3ByUserPkOrderByPriorityNumAsc(long userPk){
+        return userFavoriteTeamRepository.findTop3ByUser_PkAndStatusAndTeam_StatusOrderByPriorityNumAsc(userPk, DataStatus.ACTIVATED, DataStatus.ACTIVATED);
     }
 
     public void save(UserFavoriteTeam userFavoriteTeam) {

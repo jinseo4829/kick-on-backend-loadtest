@@ -78,7 +78,7 @@ public class UserService implements BaseService<User> {
             UserFavoriteTeam uft = userFavoriteTeamService.findByUserPk(user.getPk());
             if (uft == null) {
                 String id = uuidGenerator.generateUniqueUUID(userFavoriteTeamService::findById);
-                uft = UserFavoriteTeam.builder().id(id).user(user).team(team).build();
+                uft = UserFavoriteTeam.builder().id(id).user(user).team(team).priorityNum(1).build();
             } else {
                 uft.setTeam(team);
             }

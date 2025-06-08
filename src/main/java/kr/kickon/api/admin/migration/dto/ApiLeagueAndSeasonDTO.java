@@ -1,4 +1,4 @@
-package kr.kickon.api.domain.migration.dto;
+package kr.kickon.api.admin.migration.dto;
 
 import lombok.Data;
 

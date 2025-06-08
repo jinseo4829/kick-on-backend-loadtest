@@ -3,19 +3,15 @@ package kr.kickon.api.domain.team;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.transaction.Transactional;
-import kr.kickon.api.domain.migration.dto.ApiTeamDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.QTeam;
 import kr.kickon.api.global.common.entities.Team;
 import kr.kickon.api.global.common.enums.DataStatus;
-import kr.kickon.api.global.common.enums.ResponseCode;
-import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 

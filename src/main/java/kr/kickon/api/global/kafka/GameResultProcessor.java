@@ -1,13 +1,11 @@
 package kr.kickon.api.global.kafka;
 
 import jakarta.transaction.Transactional;
-import kr.kickon.api.domain.gambleSeason.GambleSeasonService;
 import kr.kickon.api.domain.gambleSeasonPoint.GambleSeasonPointService;
 import kr.kickon.api.domain.gambleSeasonRanking.GambleSeasonRankingService;
 import kr.kickon.api.domain.gambleSeasonTeam.GambleSeasonTeamService;
 import kr.kickon.api.domain.game.GameService;
-import kr.kickon.api.domain.league.LeagueService;
-import kr.kickon.api.domain.migration.dto.ApiGamesDTO;
+import kr.kickon.api.admin.migration.dto.ApiGamesDTO;
 import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.domain.userGameGamble.UserGameGambleService;
 import kr.kickon.api.domain.userPointDetail.UserPointDetailService;
@@ -18,12 +16,10 @@ import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 import org.springframework.kafka.support.KafkaHeaders;
 
 import java.util.ArrayList;
