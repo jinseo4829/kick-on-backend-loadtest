@@ -8,10 +8,9 @@ import com.querydsl.core.types.dsl.NumberTemplate;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.transaction.Transactional;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+
+import java.util.*;
+
 import kr.kickon.api.domain.aws.AwsService;
 import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.news.dto.*;
@@ -29,10 +28,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import software.amazon.awssdk.services.s3.S3Client;
 
@@ -192,17 +187,23 @@ public class NewsService implements BaseService<News> {
         return results.stream().map(this::tupleToNewsListDTO).toList();
     }
 
-    public List<NewsListDTO> findRecent3NewsWithUserTeam(Long teamPk) {
+    public List<NewsListDTO> findRecent3NewsWithUserTeam(Set<Long> teamPks, int limit) {
         QNews news = QNews.news;
         QUser user = QUser.user;
 
         List<Tuple> results = createNewsListDTOQuery()
-                .where(news.team.pk.eq(teamPk))
+                .where(news.team.pk.in(teamPks))
                 .groupBy(news.pk, user.pk)
                 .orderBy(news.createdAt.desc())
-                .limit(3)
+                .limit(limit)
                 .fetch();
-        return results.stream().map(this::tupleToNewsListDTO).toList();
+
+        // 중복 제거를 위한 LinkedHashSet (정렬 유지 + 중복 제거)
+        LinkedHashSet<NewsListDTO> uniqueNews = results.stream()
+                .map(this::tupleToNewsListDTO)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        return new ArrayList<>(uniqueNews).stream().limit(limit).toList();
     }
 
     public List<HotNewsListDTO> findTop5HotNews() {

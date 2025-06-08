@@ -83,4 +83,9 @@ public class ActualSeasonTeamService implements BaseService<ActualSeasonTeam> {
     public ActualSeasonTeam save(ActualSeasonTeam actualSeasonTeam) {
         return actualSeasonTeamRepository.save(actualSeasonTeam);
     }
+
+    // ActualSeasonTeamService
+    public boolean existsByActualSeasonAndTeamPk(ActualSeason actualSeason, Long teamPk) {
+        return actualSeasonTeamRepository.existsByActualSeasonAndTeam_Pk(actualSeason, teamPk);
+    }
 }

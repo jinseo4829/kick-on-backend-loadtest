@@ -13,4 +13,5 @@ import java.util.List;
 @Repository
 public interface UserFavoriteTeamRepository extends JpaRepository<UserFavoriteTeam, Long>, QuerydslPredicateExecutor<UserFavoriteTeam> {
     List<UserFavoriteTeam> findTop3ByUser_PkAndStatusAndTeam_StatusOrderByPriorityNumAsc(Long userPk, DataStatus status, DataStatus teamStatus);
+    List<UserFavoriteTeam> findAllByUserPkAndStatus(Long userPk, DataStatus status);
 }

@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -57,20 +58,32 @@ public class GameController {
     @GetMapping()
     public ResponseEntity<ResponseDTO<LeagueWithGamesDTO>> getGames(@Valid GetGamesRequestDTO paramDto) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
+
+        List<Game> games;
         ActualSeason actualSeason = actualSeasonService.findRecentByLeaguePk(paramDto.getLeague());
-//        System.out.println(actualSeason);
         if(actualSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
-        UserFavoriteTeam userFavoriteTeam = null;
-        List<Game> games = null;
-        if(user!=null) userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
-//        System.out.println(userFavoriteTeam.getTeam().getNameKr());
-        if(userFavoriteTeam==null) {
+        if (user == null) {
             games = gameService.findByActualSeason(actualSeason.getPk(), paramDto.getStatus());
-        } else{
-            ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findByActualSeasonTeam(actualSeason,userFavoriteTeam.getTeam().getPk());
-//            System.out.println(actualSeasonTeam.getActualSeason().getLeague());
-            if(actualSeasonTeam==null) games = gameService.findByActualSeason(actualSeason.getPk(), paramDto.getStatus());
-            else games = gameService.findByActualSeasonByFavoriteTeam(actualSeason.getPk(), paramDto.getStatus(), userFavoriteTeam.getTeam().getPk());
+        } else {
+            List<UserFavoriteTeam> favoriteTeams = userFavoriteTeamService.findAllByUserPk(user.getPk());
+            if (favoriteTeams == null || favoriteTeams.isEmpty()) {
+                games = gameService.findByActualSeason(actualSeason.getPk(), paramDto.getStatus());
+            } else {
+                games = new ArrayList<>();
+                for (UserFavoriteTeam favoriteTeam : favoriteTeams) {
+                    ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findLatestByTeam(
+                            favoriteTeam.getTeam().getPk()
+                    );
+                    if (actualSeasonTeam != null) {
+                        List<Game> teamGames = gameService.findByActualSeasonByFavoriteTeam(
+                                actualSeasonTeam.getActualSeason().getPk(),
+                                paramDto.getStatus(),
+                                favoriteTeam.getTeam().getPk()
+                        );
+                        games.addAll(teamGames);
+                    }
+                }
+            }
         }
 
         // 게임 DTO 리스트 변환
