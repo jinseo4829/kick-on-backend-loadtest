@@ -50,10 +50,14 @@ public class BoardReplyController {
         Board board = boardService.findByPk(request.getBoard());
         if(board == null) throw new NotFoundException(ResponseCode.NOT_FOUND_BOARD);
 
-        if(board.getTeam()!= null){
-            UserFavoriteTeam userFavoriteTeam = userFavoriteTeamService.findByUserPk(user.getPk());
-            if(userFavoriteTeam==null) throw new ForbiddenException(ResponseCode.FORBIDDEN);
-            if(!userFavoriteTeam.getTeam().getPk().equals(board.getTeam().getPk())) throw new ForbiddenException(ResponseCode.FORBIDDEN);
+        List<UserFavoriteTeam> userFavoriteTeams = userFavoriteTeamService.findAllByUserPk(user.getPk());
+
+        if (board.getTeam() != null) {
+            boolean hasTeam = userFavoriteTeams.stream()
+                    .anyMatch(uft -> uft.getTeam().getPk().equals(board.getTeam().getPk()));
+            if (!hasTeam) {
+                throw new ForbiddenException(ResponseCode.FORBIDDEN);
+            }
         }
 
         String id = uuidGenerator.generateUniqueUUID(boardReplyService::findById);
