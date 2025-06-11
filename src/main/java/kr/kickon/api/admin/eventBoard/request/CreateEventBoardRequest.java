@@ -22,7 +22,6 @@ public class CreateEventBoardRequest {
     @Schema(description = "썸네일 S3 file URL", example = ExampleConstants.thumbnail)
     private String thumbnailUrl;
 
-    @NotBlank
     @Schema(description = "임베드 URL", example = "https://naver.com")
     private String embeddedUrl;
 }
