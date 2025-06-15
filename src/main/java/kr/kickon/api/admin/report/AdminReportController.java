@@ -7,9 +7,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import kr.kickon.api.admin.game.response.GetGamesResponse;
 import kr.kickon.api.admin.report.dto.AdminReportDetailDTO;
 import kr.kickon.api.admin.report.dto.AdminReportItemDTO;
+import kr.kickon.api.admin.report.request.UpdateReportStatusRequest;
 import kr.kickon.api.admin.report.response.GetTargetReportsResponse;
 import kr.kickon.api.domain.reportBoard.ReportBoardService;
 import kr.kickon.api.domain.reportNews.ReportNewsService;
@@ -101,4 +103,19 @@ public class AdminReportController {
                 )
         );
     }
+
+    @Operation(summary = "신고 상태 수정", description = "신고 PK 기준으로 신고 상태(reportStatus)를 수정합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "수정 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @ApiResponse(responseCode = "404", description = "해당 신고 없음")
+    })
+    @PatchMapping("/status")
+    public ResponseEntity<ResponseDTO<Void>> updateReportStatus(
+            @RequestBody @Valid UpdateReportStatusRequest request
+    ) {
+        adminReportService.updateReportStatus(request);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
+    }
+
 }

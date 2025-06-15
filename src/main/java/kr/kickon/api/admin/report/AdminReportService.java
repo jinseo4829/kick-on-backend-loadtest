@@ -4,10 +4,17 @@ import com.mysema.commons.lang.Pair;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import jakarta.transaction.Transactional;
 import kr.kickon.api.admin.report.dto.AdminReportDetailDTO;
 import kr.kickon.api.admin.report.dto.AdminReportItemDTO;
+import kr.kickon.api.admin.report.request.UpdateReportStatusRequest;
+import kr.kickon.api.domain.reportBoard.ReportBoardService;
+import kr.kickon.api.domain.reportNews.ReportNewsService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
+import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.error.exceptions.BadRequestException;
+import kr.kickon.api.global.error.exceptions.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,6 +27,9 @@ import java.util.stream.Stream;
 @Slf4j
 public class AdminReportService {
     private final JPAQueryFactory queryFactory;
+
+    private ReportBoardService reportBoardService;
+    private ReportNewsService reportNewsService;
 
     public List<AdminReportItemDTO> getReports(String type, String sort, int offset, int limit) {
         QReportBoard reportBoard = QReportBoard.reportBoard;
@@ -173,6 +183,26 @@ public class AdminReportService {
                     .fetchOne();
 
             return Pair.of(content, total);
+        }
+    }
+
+    @Transactional
+    public void updateReportStatus(UpdateReportStatusRequest request) {
+        String type = request.getType().toUpperCase();
+        Long pk = request.getReportPk();
+
+        if ("BOARD".equals(type)) {
+            ReportBoard report = reportBoardService.findByPk(pk);
+            if(report==null) throw new NotFoundException(ResponseCode.NOT_FOUND_REPORT_BOARD);
+            report.setReportStatus(request.getReportStatus());
+            reportBoardService.save(report);
+        } else if ("NEWS".equals(type)) {
+            ReportNews report = reportNewsService.findByPk(pk);
+            if(report==null) throw new NotFoundException(ResponseCode.NOT_FOUND_REPORT_NEWS);
+            report.setReportStatus(request.getReportStatus());
+            reportNewsService.save(report);
+        } else {
+            throw new BadRequestException(ResponseCode.INVALID_REQUEST);
         }
     }
 }
