@@ -42,7 +42,7 @@ public class AdminGameController {
                     content = @Content(schema = @Schema(implementation = GetGamesResponse.class))),
     })
     public ResponseEntity<ResponseDTO<List<GameListDTO>>> getFilteredGames(@Valid @ModelAttribute GameFilterRequest request) {
-        Pageable pageable = request.toPageable(); // ✨ 헬퍼 메서드로 생성
+        Pageable pageable = request.toPageable();
         Page<Game> gamePage = gameService.findGamesByFilter(request, pageable);
         List<GameListDTO> dtos = gameService.toGameListResponses(gamePage.getContent());
 
@@ -80,6 +80,6 @@ public class AdminGameController {
             @PathVariable Long gamePk,
             @RequestBody @Valid GameUpdateRequest request) {
         gameService.updateGame(gamePk, request);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
 }
