@@ -55,15 +55,15 @@ public class BoardService implements BaseService<Board> {
     @Override
     public Board findById(String uuid) {
         BooleanExpression predicate = QBoard.board.id.eq(uuid).and(QBoard.board.status.eq(DataStatus.ACTIVATED));
-        Optional<Board> actualSeasonRanking = boardRepository.findOne(predicate);
-        return actualSeasonRanking.orElse(null);
+        Optional<Board> board = boardRepository.findOne(predicate);
+        return board.orElse(null);
     }
 
     @Override
     public Board findByPk(Long pk) {
         BooleanExpression predicate = QBoard.board.pk.eq(pk).and(QBoard.board.status.eq(DataStatus.ACTIVATED));
-        Optional<Board> actualSeasonRanking = boardRepository.findOne(predicate);
-        return actualSeasonRanking.orElse(null);
+        Optional<Board> board = boardRepository.findOne(predicate);
+        return board.orElse(null);
     }
 
     @Transactional

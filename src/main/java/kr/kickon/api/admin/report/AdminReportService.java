@@ -1,8 +1,10 @@
 package kr.kickon.api.admin.report;
 
+import com.mysema.commons.lang.Pair;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import kr.kickon.api.admin.report.dto.AdminReportDetailDTO;
 import kr.kickon.api.admin.report.dto.AdminReportItemDTO;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
@@ -116,5 +118,61 @@ public class AdminReportService {
         }
 
         return boardCount + newsCount;
+    }
+
+    public Pair<List<AdminReportDetailDTO>, Long> getReportDetailsByTarget(String type, Long targetPk, int offset, int limit) {
+        QReportBoard reportBoard = QReportBoard.reportBoard;
+        QReportNews reportNews = QReportNews.reportNews;
+        QUser user = QUser.user;
+
+        if (type.equalsIgnoreCase("BOARD")) {
+            List<AdminReportDetailDTO> content = queryFactory
+                    .select(Projections.constructor(AdminReportDetailDTO.class,
+                            reportBoard.pk,
+                            user.pk,
+                            user.nickname,
+                            reportBoard.reason,
+                            reportBoard.reportStatus
+                    ))
+                    .from(reportBoard)
+                    .join(user).on(reportBoard.user.pk.eq(user.pk))
+                    .where(reportBoard.reportedBoard.pk.eq(targetPk).and(reportBoard.status.eq(DataStatus.ACTIVATED)))
+                    .orderBy(reportBoard.createdAt.desc())
+                    .offset(offset)
+                    .limit(limit)
+                    .fetch();
+
+            Long total = queryFactory
+                    .select(reportBoard.count())
+                    .from(reportBoard)
+                    .where(reportBoard.reportedBoard.pk.eq(targetPk).and(reportBoard.status.eq(DataStatus.ACTIVATED)))
+                    .fetchOne();
+
+            return Pair.of(content, total);
+        } else {
+            List<AdminReportDetailDTO> content = queryFactory
+                    .select(Projections.constructor(AdminReportDetailDTO.class,
+                            reportNews.pk,
+                            user.pk,
+                            user.nickname,
+                            reportNews.reason,
+                            reportNews.reportStatus
+                    ))
+                    .from(reportNews)
+                    .join(user).on(reportNews.user.pk.eq(user.pk))
+                    .where(reportNews.reportedNews.pk.eq(targetPk).and(reportNews.status.eq(DataStatus.ACTIVATED)))
+                    .orderBy(reportNews.createdAt.desc())
+                    .offset(offset)
+                    .limit(limit)
+                    .fetch();
+
+            Long total = queryFactory
+                    .select(reportNews.count())
+                    .from(reportNews)
+                    .where(reportNews.reportedNews.pk.eq(targetPk).and(reportNews.status.eq(DataStatus.ACTIVATED)))
+                    .fetchOne();
+
+            return Pair.of(content, total);
+        }
     }
 }
