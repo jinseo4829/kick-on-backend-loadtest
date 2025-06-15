@@ -1,8 +1,11 @@
 package kr.kickon.api.domain.user;
 
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.transaction.Transactional;
+import kr.kickon.api.admin.user.dto.UserListDTO;
+import kr.kickon.api.admin.user.request.UserFilterRequest;
 import kr.kickon.api.domain.aws.AwsService;
 import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.team.TeamService;
@@ -18,6 +21,9 @@ import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.s3.S3Client;
 
@@ -200,6 +206,39 @@ public class UserService implements BaseService<User> {
         BooleanExpression predicate = QUser.user.id.eq(uuid).and(QUser.user.status.eq(DataStatus.ACTIVATED));
         Optional<User> user = userRepository.findOne(predicate);
         return user.orElse(null);
+    }
+
+    public Page<User> findUsersByFilter(UserFilterRequest request, Pageable pageable) {
+        QUser user = QUser.user;
+        BooleanBuilder builder = new BooleanBuilder();
+
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            builder.and(user.email.containsIgnoreCase(request.getEmail()));
+        }
+
+        if (request.getNickname() != null && !request.getNickname().isBlank()) {
+            builder.and(user.nickname.containsIgnoreCase(request.getNickname()));
+        }
+
+        builder.and(user.status.eq(DataStatus.ACTIVATED));
+
+        // total count
+        long total = queryFactory
+                .select(user.count())
+                .from(user)
+                .where(builder)
+                .fetchOne();
+
+        // content
+        List<User> content = queryFactory
+                .selectFrom(user)
+                .where(builder)
+                .orderBy(user.createdAt.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        return new PageImpl<>(content, pageable, total);
     }
 
     public void updatePrivacy(User user, PrivacyUpdateRequest request) {

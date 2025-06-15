@@ -183,7 +183,12 @@ public class GameService implements BaseService<Game> {
         return query.orderBy(QGame.game.startedAt.asc()).limit(6).fetch();
     }
 
-    public List<Game> findByActualSeasonByFavoriteTeam(Long actualSeasonPk, String gameStatus, Long favoriteTeamPk) {
+    public List<Game> findByActualSeasonByFavoriteTeam(
+            Long actualSeasonPk,
+            String gameStatus,
+            Long favoriteTeamPk,
+            int limitPerTeam
+    ) {
         LocalDateTime now = LocalDateTime.now();
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(QGame.game.status.eq(DataStatus.ACTIVATED));
@@ -191,7 +196,7 @@ public class GameService implements BaseService<Game> {
         builder.and(QGame.game.homeTeam.pk.eq(favoriteTeamPk)
                 .or(QGame.game.awayTeam.pk.eq(favoriteTeamPk)));
 
-        if (gameStatus.equals("finished")) {
+        if ("finished".equalsIgnoreCase(gameStatus)) {
             builder.and(QGame.game.gameStatus.in(
                     GameStatus.PROCEEDING,
                     GameStatus.CANCELED,
@@ -204,7 +209,7 @@ public class GameService implements BaseService<Game> {
             return queryFactory.selectFrom(QGame.game)
                     .where(builder)
                     .orderBy(QGame.game.startedAt.desc())
-                    .limit(2)
+                    .limit(limitPerTeam)
                     .fetch();
         } else {
             builder.and(QGame.game.gameStatus.in(
@@ -215,7 +220,7 @@ public class GameService implements BaseService<Game> {
             return queryFactory.selectFrom(QGame.game)
                     .where(builder)
                     .orderBy(QGame.game.startedAt.asc())
-                    .limit(2)
+                    .limit(limitPerTeam)
                     .fetch();
         }
     }
