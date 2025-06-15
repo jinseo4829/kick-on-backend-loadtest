@@ -66,19 +66,28 @@ public class GameController {
             games = gameService.findByActualSeason(actualSeason.getPk(), paramDto.getStatus());
         } else {
             List<UserFavoriteTeam> favoriteTeams = userFavoriteTeamService.findAllByUserPk(user.getPk());
+            games = new ArrayList<>();
+
             if (favoriteTeams == null || favoriteTeams.isEmpty()) {
                 games = gameService.findByActualSeason(actualSeason.getPk(), paramDto.getStatus());
             } else {
-                games = new ArrayList<>();
+                int teamCount = favoriteTeams.size();
+                int limitPerTeam;
+
+                if ("finished".equalsIgnoreCase(paramDto.getStatus())) {
+                    limitPerTeam = 1;
+                } else { // proceeding
+                    limitPerTeam = (teamCount <= 2) ? 2 : 1;
+                }
+
                 for (UserFavoriteTeam favoriteTeam : favoriteTeams) {
-                    ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findLatestByTeam(
-                            favoriteTeam.getTeam().getPk()
-                    );
+                    ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findLatestByTeam(favoriteTeam.getTeam().getPk());
                     if (actualSeasonTeam != null) {
                         List<Game> teamGames = gameService.findByActualSeasonByFavoriteTeam(
                                 actualSeasonTeam.getActualSeason().getPk(),
                                 paramDto.getStatus(),
-                                favoriteTeam.getTeam().getPk()
+                                favoriteTeam.getTeam().getPk(),
+                                limitPerTeam
                         );
                         games.addAll(teamGames);
                     }
