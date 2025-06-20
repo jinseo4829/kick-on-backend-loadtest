@@ -24,6 +24,15 @@ public class TeamDTO {
     @Schema(description = "팀 url", example = ExampleConstants.teamLogoUrl)
     private String logoUrl;
 
+    @Schema(description = "리그 고유 PK", example = "10")
+    private Long leaguePk;
+
+    @Schema(description = "리그 한글 이름", example = "K리그")
+    private String leagueNameKr;
+
+    @Schema(description = "리그 영어 이름", example = "K-League")
+    private String leagueNameEn;
+
 
     public TeamDTO(Team team) {
         this.pk = team.getPk();

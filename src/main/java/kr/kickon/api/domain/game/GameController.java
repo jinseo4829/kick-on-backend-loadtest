@@ -126,7 +126,9 @@ public class GameController {
                     myGambleResultDTO = new UserGameGambleDTO(myUserGameGamble);
                 }
                 gameDTO.setMyGambleResult(myGambleResultDTO);
+
             }
+            gameDTO.setLeague(new LeagueDTO(game.getActualSeason().getLeague()));
             return gameDTO;
         }).collect(Collectors.toList());
         League league = actualSeason.getLeague();

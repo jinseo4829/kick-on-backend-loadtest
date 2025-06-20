@@ -77,22 +77,22 @@ public class UserController {
                     fav.getTeam().getStatus() != DataStatus.ACTIVATED) {
                 continue;
             }
-
-            teamDTOList.add(FavoriteTeamDTO.builder()
+            FavoriteTeamDTO favoriteTeamDTO = FavoriteTeamDTO.builder()
                     .pk(fav.getTeam().getPk())
                     .nameKr(fav.getTeam().getNameKr())
                     .nameEn(fav.getTeam().getNameEn())
                     .logoUrl(fav.getTeam().getLogoUrl())
                     .priorityNum(fav.getPriorityNum())
-                .build());
+                    .build();
 
-            // priorityNum이 가장 낮은 첫 번째 팀 기준으로 league 설정
-            if (league == null) {
-                ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findLatestByTeam(fav.getTeam().getPk());
-                if (actualSeasonTeam != null && actualSeasonTeam.getActualSeason() != null) {
-                    league = actualSeasonTeam.getActualSeason().getLeague();
-                }
+            ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findLatestByTeam(fav.getTeam().getPk());
+            if (actualSeasonTeam != null && actualSeasonTeam.getActualSeason() != null) {
+                league = actualSeasonTeam.getActualSeason().getLeague();
+                favoriteTeamDTO.setLeaguePk(league.getPk());
+                favoriteTeamDTO.setLeagueNameEn(league.getNameEn());
+                favoriteTeamDTO.setLeagueNameKr(league.getNameKr());
             }
+            teamDTOList.add(favoriteTeamDTO);
         }
 
         userDto.setFavoriteTeams(teamDTOList);
