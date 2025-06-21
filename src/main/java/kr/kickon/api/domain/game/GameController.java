@@ -59,37 +59,60 @@ public class GameController {
     public ResponseEntity<ResponseDTO<LeagueWithGamesDTO>> getGames(@Valid GetGamesRequestDTO paramDto) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
 
-        List<Game> games;
-        ActualSeason actualSeason = actualSeasonService.findRecentByLeaguePk(paramDto.getLeague());
-        if(actualSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
+        List<Game> games = List.of();
+
         if (user == null) {
-            games = gameService.findByActualSeason(actualSeason.getPk(), paramDto.getStatus());
+            if(paramDto.getLeague()!= null){
+                ActualSeason actualSeason = actualSeasonService.findRecentByLeaguePk(paramDto.getLeague());
+                if(actualSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
+                games = gameService.findByActualSeason(actualSeason.getPk(), paramDto.getStatus());
+            }
         } else {
             List<UserFavoriteTeam> favoriteTeams = userFavoriteTeamService.findAllByUserPk(user.getPk());
             games = new ArrayList<>();
 
             if (favoriteTeams == null || favoriteTeams.isEmpty()) {
-                games = gameService.findByActualSeason(actualSeason.getPk(), paramDto.getStatus());
-            } else {
-                int teamCount = favoriteTeams.size();
-                int limitPerTeam;
-
-                if ("finished".equalsIgnoreCase(paramDto.getStatus())) {
-                    limitPerTeam = 1;
-                } else { // proceeding
-                    limitPerTeam = (teamCount <= 2) ? 2 : 1;
+                System.out.println("좋아하는 팀 없음");
+                if(paramDto.getLeague()!= null){
+                    ActualSeason actualSeason = actualSeasonService.findRecentByLeaguePk(paramDto.getLeague());
+                    if(actualSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
+                    games = gameService.findByActualSeason(actualSeason.getPk(), paramDto.getStatus());
                 }
-
-                for (UserFavoriteTeam favoriteTeam : favoriteTeams) {
-                    ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findLatestByTeam(favoriteTeam.getTeam().getPk());
+            } else {
+                if(paramDto.getTeam()!=null){
+                    System.out.println("team 넣음");
+                    ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findLatestByTeam(paramDto.getTeam());
                     if (actualSeasonTeam != null) {
                         List<Game> teamGames = gameService.findByActualSeasonByFavoriteTeam(
                                 actualSeasonTeam.getActualSeason().getPk(),
                                 paramDto.getStatus(),
-                                favoriteTeam.getTeam().getPk(),
-                                limitPerTeam
+                                paramDto.getTeam(),
+                                4
                         );
                         games.addAll(teamGames);
+                    }
+                }else{
+                    System.out.println("team 안 넣음");
+                    int teamCount = favoriteTeams.size();
+                    int limitPerTeam;
+
+                    if ("finished".equalsIgnoreCase(paramDto.getStatus())) {
+                        limitPerTeam = 1;
+                    } else { // proceeding
+                        limitPerTeam = (teamCount <= 2) ? 2 : 1;
+                    }
+
+                    for (UserFavoriteTeam favoriteTeam : favoriteTeams) {
+                        ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findLatestByTeam(favoriteTeam.getTeam().getPk());
+                        if (actualSeasonTeam != null) {
+                            List<Game> teamGames = gameService.findByActualSeasonByFavoriteTeam(
+                                    actualSeasonTeam.getActualSeason().getPk(),
+                                    paramDto.getStatus(),
+                                    favoriteTeam.getTeam().getPk(),
+                                    limitPerTeam
+                            );
+                            games.addAll(teamGames);
+                        }
                     }
                 }
             }
@@ -131,9 +154,7 @@ public class GameController {
             gameDTO.setLeague(new LeagueDTO(game.getActualSeason().getLeague()));
             return gameDTO;
         }).collect(Collectors.toList());
-        League league = actualSeason.getLeague();
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, LeagueWithGamesDTO.builder()
-                .league(new LeagueDTO(league))
                 .games(gameDTOs)
                 .build()));
     }
