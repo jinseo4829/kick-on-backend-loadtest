@@ -5,6 +5,9 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.ForeignKey;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import kr.kickon.api.global.common.enums.ContractStatus;
@@ -40,6 +43,14 @@ public class Partners extends BaseEntity{
   @Schema(description = "sns url", example = "https://www.youtube.com/channel/UC1234567890abcdef")
   @Column(columnDefinition = "TEXT")
   private String snsUrl;
+
+  @ManyToOne
+  @JoinColumn(name = "user_pk", foreignKey = @ForeignKey(name = "fk_partners_user"))
+  private User user;
+
+  @ManyToOne
+  @JoinColumn(name = "team_pk", foreignKey = @ForeignKey(name = "fk_partners_team"))
+  private Team team;
 }
 
 

@@ -36,6 +36,9 @@ public class UserMeDto extends BaseUserDTO {
     private List<FavoriteTeamDTO> favoriteTeams;
     private LeagueDTO league;
 
+    @Schema(description = "인플루언서 여부", example = "false")
+    private Boolean isInfluencer;
+
     public UserMeDto(User user) {
         super(user);
         email = user.getEmail();
