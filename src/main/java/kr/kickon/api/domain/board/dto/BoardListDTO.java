@@ -41,4 +41,7 @@ public class BoardListDTO {
 
     @Schema(example = "12354", description = "댓글 수")
     private Integer replies;
+
+    @Schema(description = "인플루언서 여부", example = "false")
+    private Boolean isInfluencer;
 }
