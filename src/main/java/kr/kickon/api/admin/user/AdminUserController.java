@@ -7,8 +7,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import kr.kickon.api.admin.game.response.GetGameDetailResponse;
-import kr.kickon.api.admin.game.response.GetGamesResponse;
 import kr.kickon.api.admin.user.dto.UserDetailDTO;
 import kr.kickon.api.admin.user.dto.UserListDTO;
 import kr.kickon.api.admin.user.request.UserFilterRequest;
