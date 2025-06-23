@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
 import kr.kickon.api.domain.league.dto.LeagueDTO;
+import kr.kickon.api.domain.partners.PartnersService;
 import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.domain.team.dto.FavoriteTeamDTO;
 import kr.kickon.api.domain.team.dto.TeamDTO;
@@ -46,6 +47,7 @@ public class UserController {
     private final ActualSeasonTeamService actualSeasonTeamService;
     private final TeamService teamService;
     private final UUIDGenerator uuidGenerator;
+    private final PartnersService partnersService;
 
     @PatchMapping("/privacy")
     @Operation(summary = "개인정보 동의", description = "개인 정보 동의")
@@ -65,6 +67,8 @@ public class UserController {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         List<UserFavoriteTeam> userFavoriteTeams;
         UserMeDto userDto = new UserMeDto(user);
+        boolean isInfluencer = partnersService.findByUserPk(user.getPk());
+        userDto.setIsInfluencer(isInfluencer);
         userFavoriteTeams = userFavoriteTeamService.findTop3ByUserPkOrderByPriorityNumAsc(user.getPk());
 
         List<FavoriteTeamDTO> teamDTOList = new ArrayList<>();

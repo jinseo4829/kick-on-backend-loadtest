@@ -73,6 +73,7 @@ public class BoardController {
                 .contents(request.getContents())
                 .title(request.getTitle())
                 .hasImage(request.getHasImage())
+                .isPinned(request.getIsPinned())
                 .build();
 
         if(request.getTeam()!=null){
@@ -154,6 +155,7 @@ public class BoardController {
         boardData.setContents(request.getContents());
         boardData.setTitle(request.getTitle());
         boardData.setHasImage(request.getHasImage());
+        boardData.setIsPinned(request.getIsPinned());
 
         if(request.getTeam()!=null){
             Team team  = teamService.findByPk(request.getTeam());

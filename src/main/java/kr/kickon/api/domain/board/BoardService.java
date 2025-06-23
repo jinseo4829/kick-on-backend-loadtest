@@ -19,6 +19,7 @@ import kr.kickon.api.domain.board.dto.BoardListDTO;
 import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
 import kr.kickon.api.domain.board.dto.BoardListDTO;
 import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
+import kr.kickon.api.domain.partners.PartnersService;
 import kr.kickon.api.domain.user.dto.BaseUserDTO;
 import kr.kickon.api.domain.boardKick.BoardKickService;
 import kr.kickon.api.domain.team.dto.TeamDTO;
@@ -49,6 +50,7 @@ public class BoardService implements BaseService<Board> {
     private final UUIDGenerator uuidGenerator;
     private final AwsFileReferenceService awsFileReferenceService;
     private final AwsService awsService;
+    private final PartnersService partnersService;
     @Value("${spring.config.activate.on-profile}")
     private String env;
 
@@ -121,6 +123,7 @@ public class BoardService implements BaseService<Board> {
                         .profileImageUrl(userEntity.getProfileImageUrl())
                         .build())
                 .hasImage(boardEntity.getHasImage())
+                .isPinned(boardEntity.getIsPinned())
                 .createdAt(tuple.get(board.createdAt))
                 .createdAt(boardEntity.getCreatedAt())
                 .likes(tuple.get(3, Long.class).intValue())
@@ -170,6 +173,7 @@ public class BoardService implements BaseService<Board> {
                         .profileImageUrl(userEntity.getProfileImageUrl())
                         .build())
                 .hasImage(boardEntity.getHasImage())
+                .isPinned(boardEntity.getIsPinned())
                 .createdAt(result.get(board.createdAt))
                 .createdAt(boardEntity.getCreatedAt())
                 .likes(result.get(3, Long.class).intValue())
@@ -203,6 +207,8 @@ public class BoardService implements BaseService<Board> {
             .toArray(String[]::new);
 
         boardDetailDTO.setUsedImageKeys(usedImageKeys);
+        boolean isInfluencer = partnersService.findByUserPk(userEntity.getPk());
+        boardDetailDTO.setIsInfluencer(isInfluencer);
         return boardDetailDTO;
     }
 

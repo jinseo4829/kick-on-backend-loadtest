@@ -34,4 +34,8 @@ public class Board extends BaseEntity {
     @Column(nullable = false)
     @Convert(converter = BooleanConverter.class)
     private Boolean hasImage = false;
+
+    @Column()
+    @Convert(converter = BooleanConverter.class)
+    private Boolean isPinned = false;
 }

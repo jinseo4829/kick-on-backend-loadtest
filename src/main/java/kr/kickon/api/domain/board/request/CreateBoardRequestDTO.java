@@ -30,4 +30,7 @@ public class CreateBoardRequestDTO {
 
     @Schema(description = "게시글 내 사용된 이미지 S3 키 배열", example = "[\"user1-2025-05-01-10-00-00.png\"]")
     private String[] usedImageKeys;
+
+    @Schema(description = "게시글 상단 고정 여부", example = "false", nullable = true)
+    private Boolean isPinned;
 }
