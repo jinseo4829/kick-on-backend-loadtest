@@ -20,4 +20,7 @@ public class BoardDetailDTO extends BoardListDTO{
 
     @Schema(example = "true", description = "킥 눌렀는지 여부")
     private Boolean isKicked = false;
+
+    @Schema(description = "인플루언서 여부", example = "false")
+    private Boolean isInfluencer;
 }

@@ -94,19 +94,16 @@ public class BoardService implements BaseService<Board> {
         QBoardReply boardReply = QBoardReply.boardReply;
         QUser user = QUser.user;
         QTeam team = QTeam.team;
-        QPartners partners = QPartners.partners;
         return queryFactory.select(board, user, team,
                         boardKick.pk.countDistinct().coalesce(0L).as("kickCount"),
                         boardViewHistory.pk.countDistinct().coalesce(0L).as("viewCount"),
-                        boardReply.pk.countDistinct().coalesce(0L).as("replyCount"),
-                        partners.pk)
+                        boardReply.pk.countDistinct().coalesce(0L).as("replyCount"))
                 .from(board)
                 .join(user).on(board.user.pk.eq(user.pk))
                 .leftJoin(team).on(board.team.pk.eq(team.pk))
                 .leftJoin(boardKick).on(board.pk.eq(boardKick.board.pk).and(boardKick.status.eq(DataStatus.ACTIVATED)))
                 .leftJoin(boardViewHistory).on(board.pk.eq(boardViewHistory.board.pk).and(boardViewHistory.status.eq(DataStatus.ACTIVATED)))
                 .leftJoin(boardReply).on(board.pk.eq(boardReply.board.pk).and(boardReply.status.eq(DataStatus.ACTIVATED)))
-                .leftJoin(partners).on(partners.user.pk.eq(user.pk).and(partners.status.eq(DataStatus.ACTIVATED)))
                 .where(board.status.eq(DataStatus.ACTIVATED)
                         .and(user.status.eq(DataStatus.ACTIVATED)));
     }
@@ -117,8 +114,6 @@ public class BoardService implements BaseService<Board> {
         User userEntity = tuple.get(user);
         QTeam team = QTeam.team;
         Team teamEntity = tuple.get(team);
-        Long partnerPk = tuple.get(6, Long.class);
-        boolean isInfluencer = (partnerPk != null);
         BoardListDTO boardListDTO = BoardListDTO.builder()
                 .pk(boardEntity.getPk())
                 .title(boardEntity.getTitle())
@@ -128,12 +123,12 @@ public class BoardService implements BaseService<Board> {
                         .profileImageUrl(userEntity.getProfileImageUrl())
                         .build())
                 .hasImage(boardEntity.getHasImage())
+                .isPinned(boardEntity.getIsPinned())
                 .createdAt(tuple.get(board.createdAt))
                 .createdAt(boardEntity.getCreatedAt())
                 .likes(tuple.get(3, Long.class).intValue())
                 .views(tuple.get(4, Long.class).intValue())
                 .replies(tuple.get(5, Long.class).intValue())
-                .isInfluencer(isInfluencer)
                 .build();
 
 
@@ -178,6 +173,7 @@ public class BoardService implements BaseService<Board> {
                         .profileImageUrl(userEntity.getProfileImageUrl())
                         .build())
                 .hasImage(boardEntity.getHasImage())
+                .isPinned(boardEntity.getIsPinned())
                 .createdAt(result.get(board.createdAt))
                 .createdAt(boardEntity.getCreatedAt())
                 .likes(result.get(3, Long.class).intValue())
