@@ -109,17 +109,17 @@ public class AdminPartnersService {
       List<TeamDTO> teamDTOs = favoriteTeams.stream().map(fav -> {
         Team team = fav.getTeam();
 
-        // ✅ 변수명 충돌 방지: teamBuilder 로 이름 변경
         TeamDTO.TeamDTOBuilder teamBuilder = TeamDTO.builder()
             .pk(team.getPk())
             .nameKr(team.getNameKr())
             .nameEn(team.getNameEn())
             .logoUrl(team.getLogoUrl());
 
-        // ✅ 리그 정보 설정
+        // 리그 정보 설정
         ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findLatestByTeam(team.getPk());
         if (actualSeasonTeam != null && actualSeasonTeam.getActualSeason() != null) {
           League league = actualSeasonTeam.getActualSeason().getLeague();
+
           if (league != null) {
             teamBuilder.leaguePk(league.getPk())
                 .leagueNameKr(league.getNameKr())
