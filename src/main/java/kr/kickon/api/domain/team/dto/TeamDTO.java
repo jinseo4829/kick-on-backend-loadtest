@@ -37,7 +37,6 @@ public class TeamDTO {
     @Builder.Default
     private String leagueNameEn = "";
 
-
     public TeamDTO(Team team) {
         this.pk = team.getPk();
         this.nameKr = team.getNameKr();
