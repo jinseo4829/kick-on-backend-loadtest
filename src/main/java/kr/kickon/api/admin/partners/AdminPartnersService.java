@@ -5,14 +5,17 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import kr.kickon.api.admin.partners.dto.PartnersDetailDTO;
 import kr.kickon.api.admin.partners.dto.PartnersListDTO;
+import kr.kickon.api.admin.partners.request.CreatePartnersRequestDTO;
 import kr.kickon.api.admin.partners.request.PartnersFilterRequest;
 import kr.kickon.api.admin.user.dto.UserListDTO;
 import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
 import kr.kickon.api.domain.partners.PartnersRepository;
 import kr.kickon.api.domain.team.dto.TeamDTO;
+import kr.kickon.api.domain.user.UserRepository;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.common.entities.ActualSeasonTeam;
 import kr.kickon.api.global.common.entities.League;
@@ -46,6 +49,7 @@ public class AdminPartnersService {
   private final UserFavoriteTeamService userFavoriteTeamService;
   private final ActualSeasonTeamService actualSeasonTeamService;
   private final PartnersRepository partnersRepository;
+  private final UserRepository userRepository;
 
   public Partners findByPk(Long pk){
     BooleanExpression predicate = QPartners.partners.pk.eq(pk).and(QPartners.partners.status.eq(DataStatus.ACTIVATED));
@@ -184,5 +188,39 @@ public class AdminPartnersService {
         })
         .collect(Collectors.toList());
   }
+  public PartnersDetailDTO createPartners(CreatePartnersRequestDTO request) {
 
+    User user = userRepository.findById(request.getUserPk())
+        .orElseThrow(() -> new NotFoundException(ResponseCode.NOT_FOUND_USER));
+
+    Partners partners = Partners.builder()
+        .id(UUID.randomUUID().toString())
+        .user(user)
+        .name(request.getName())
+        .partnersEmail(request.getPartnersEmail())
+        .snsUrl(request.getSnsUrl())
+        .status(DataStatus.ACTIVATED)
+        .build();
+
+    partnersRepository.save(partners);
+
+    UserListDTO userDto = UserListDTO.fromEntity(user);
+
+    // 응원 팀 리스트
+    List<UserFavoriteTeam> favoriteTeams = userFavoriteTeamService.findAllByUserPk(user.getPk());
+    List<TeamDTO> teamDTOs = convertToTeamDTOs(favoriteTeams); // 기존에 만든 함수 사용
+
+    return PartnersDetailDTO.builder()
+        .pk(partners.getPk())
+        .user(userDto)
+        .name(partners.getName())
+        .partnersEmail(partners.getPartnersEmail())
+        .snsUrl(partners.getSnsUrl())
+        .contractStartDate(partners.getContractStartDate())
+        .contractEndDate(partners.getContractEndDate())
+        .contractStatus(partners.getContractStatus())
+        .etc(partners.getEtc())
+        .favoriteTeams(teamDTOs)
+        .build();
+  }
 }

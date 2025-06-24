@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import kr.kickon.api.admin.partners.dto.PartnersDetailDTO;
 import kr.kickon.api.admin.partners.dto.PartnersListDTO;
+import kr.kickon.api.admin.partners.request.CreatePartnersRequestDTO;
 import kr.kickon.api.admin.partners.request.PartnersFilterRequest;
 import kr.kickon.api.admin.partners.response.GetPartnersDetailResponse;
 import kr.kickon.api.admin.partners.response.GetPartnersResponse;
@@ -27,6 +28,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -73,5 +76,16 @@ public class AdminPartnersController {
     PartnersDetailDTO dto = adminpartnersService.getPartnersDetail(partners);
 
     return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, dto));
+  }
+
+  @PostMapping
+  @Operation(summary = "파트너스 생성", description = "파트너스를 생성합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "성공",
+          content = @Content(schema = @Schema(implementation = GetPartnersDetailResponse.class))),
+  })
+  public ResponseEntity<ResponseDTO<PartnersDetailDTO>> createPartners(@RequestBody CreatePartnersRequestDTO request) {
+    PartnersDetailDTO responseDto = adminpartnersService.createPartners(request);
+    return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, responseDto));
   }
 }
