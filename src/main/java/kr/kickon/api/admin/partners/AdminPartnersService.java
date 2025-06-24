@@ -11,6 +11,9 @@ import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.common.entities.ActualSeasonTeam;
 import kr.kickon.api.global.common.entities.League;
 import kr.kickon.api.global.common.entities.Partners;
+import kr.kickon.api.global.common.entities.QActualSeason;
+import kr.kickon.api.global.common.entities.QActualSeasonTeam;
+import kr.kickon.api.global.common.entities.QLeague;
 import kr.kickon.api.global.common.entities.QPartners;
 import kr.kickon.api.global.common.entities.QTeam;
 import kr.kickon.api.global.common.entities.QUser;
@@ -40,6 +43,9 @@ public class AdminPartnersService {
     QUser user = QUser.user;
     QUserFavoriteTeam userFavoriteTeam = QUserFavoriteTeam.userFavoriteTeam;
     QTeam qteam = QTeam.team;
+    QActualSeasonTeam qactualSeasonTeam = QActualSeasonTeam.actualSeasonTeam;
+    QActualSeason qactualSeason = QActualSeason.actualSeason;
+    QLeague qleague = QLeague.league;
 
     BooleanBuilder builder = new BooleanBuilder();
 
@@ -51,11 +57,18 @@ public class AdminPartnersService {
       builder.and(user.nickname.containsIgnoreCase(request.getNickname()));
     }
 
-    // 팀명으로 필터링
-    if (request.getFavoriteTeam() != null && !request.getFavoriteTeam().isBlank()) {
-      builder.and(qteam.nameKr.containsIgnoreCase(request.getFavoriteTeam()));
+    if (request.getTeamPk() != null) {
+      builder.and(userFavoriteTeam.team.pk.eq(request.getTeamPk()));
       builder.and(userFavoriteTeam.user.eq(user));
     }
+
+    if (request.getLeaguePk() != null) {
+      builder.and(userFavoriteTeam.team.eq(qactualSeasonTeam.team));
+      builder.and(qactualSeasonTeam.actualSeason.eq(qactualSeason));
+      builder.and(qactualSeason.league.eq(qleague));
+      builder.and(qleague.pk.eq(request.getLeaguePk()));
+    }
+
     builder.and(user.status.eq(DataStatus.ACTIVATED));
     builder.and(partners.status.eq(DataStatus.ACTIVATED));
 
@@ -66,6 +79,9 @@ public class AdminPartnersService {
         .join(partners.user, user)
         .leftJoin(userFavoriteTeam).on(userFavoriteTeam.user.eq(user))
         .leftJoin(userFavoriteTeam.team, qteam)
+        .leftJoin(qactualSeasonTeam).on(qactualSeasonTeam.team.eq(userFavoriteTeam.team))
+        .leftJoin(qactualSeason).on(qactualSeasonTeam.actualSeason.eq(qactualSeason))
+        .leftJoin(qleague).on(qactualSeason.league.eq(qleague))
         .where(builder)
         .fetchOne();
 
@@ -75,6 +91,9 @@ public class AdminPartnersService {
         .join(partners.user, user).fetchJoin()
         .leftJoin(userFavoriteTeam).on(userFavoriteTeam.user.eq(user))
         .leftJoin(userFavoriteTeam.team, qteam)
+        .leftJoin(qactualSeasonTeam).on(qactualSeasonTeam.team.eq(userFavoriteTeam.team))
+        .leftJoin(qactualSeason).on(qactualSeasonTeam.actualSeason.eq(qactualSeason))
+        .leftJoin(qleague).on(qactualSeason.league.eq(qleague))
         .where(builder)
         .orderBy(partners.createdAt.desc())
         .offset(pageable.getOffset())

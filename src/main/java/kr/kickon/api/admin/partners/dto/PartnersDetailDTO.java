@@ -1,57 +1,55 @@
 package kr.kickon.api.admin.partners.dto;
-/*
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.global.common.entities.Partners;
-import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.entities.UserFavoriteTeam;
-import kr.kickon.api.global.common.enums.ProviderType;
+import kr.kickon.api.global.common.enums.ContractStatus;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 @Data
+@Builder
+@AllArgsConstructor
 @Schema(name = "AdminPartnersDetailDTO", description = "유저 상세 조회 응답 DTO")
 public class PartnersDetailDTO {
 
-  @Schema(description = "유저 PK", example = "1")
+  @Schema(description = "파트너스 PK", example = "1")
   private Long pk;
 
-  @Schema(description = "유저 닉네임", example = "kickon_user")
-  private String nickname;
-
-  @Schema(description = "유저 이메일", example = "user@example.com")
-  private String email;
-
-  @Schema(description = "소셜 로그인 제공자", example = "KAKAO / NAVER")
-  private ProviderType provider;
-
-  @Schema(description = "개인정보 처리방침 동의 시각", example = "2024-01-01T12:00:00")
-  private LocalDateTime privacyAgreedAt;
-
-  @Schema(description = "마케팅 수신 동의 시각", example = "2024-01-02T15:00:00")
-  private LocalDateTime marketingAgreedAt;
-
-  @Schema(description = "회원 가입 시각", example = "2024-01-01T11:11:11")
-  private LocalDateTime createdAt;
-
-  @Schema(description = "유저 신고/제재 사유", example = "부적절한 닉네임 사용")
-  private String reason;
-
-  @Schema(description = "유저가 응원하는 팀 목록")
+  @Schema(description = "파트너스가 응원하는 팀 리스트")
   private List<TeamDTO> favoriteTeams;
 
-  public AdminPartnersDetailDTO(Partners partners, List<UserFavoriteTeam> favoriteTeams) {
-    this.pk = partners.getPk();
-    this.nickname = partners.getNickname();
-    this.email = partners.getEmail();
-    this.provider = partners.getProvider();
-    this.privacyAgreedAt = partners.getPrivacyAgreedAt();
-    this.marketingAgreedAt = partners.getMarketingAgreedAt();
-    this.createdAt = partners.getCreatedAt();
-    this.reason = partners.getReason();
-    this.favoriteTeams = favoriteTeams.stream()
-        .map(ft -> new TeamDTO(ft.getTeam()))
-        .collect(Collectors.toList());
+  @Schema(description = "파트너스 닉네임", example = "kickon_user")
+  private String nickname;
+
+  @Schema(description = "파트너스 이름", example = "임민서")
+  private String name;
+
+  @Schema(description = "계약 시작일", example = "2024-01-01T12:00:00")
+  private LocalDateTime contractStartDate;
+
+  @Schema(description = "계약 종료일", example = "2024-01-30T12:00:00")
+  private LocalDateTime contractEndDate;
+
+  @Schema(description = "계약 상태", example = "BEFORE_CONTACT")
+  private ContractStatus contractStatus;
+
+  @Schema(description = "기타 정보", example = "etc 정보 예시")
+  private String etc;
+
+  public PartnersDetailDTO PartnersDetailDTO(Partners partners, List<UserFavoriteTeam> favoriteTeams) {
+        return PartnersDetailDTO.builder()
+        .pk(partners.getPk())
+        .name(partners.getName())
+        .nickname(partners.getUser().getNickname())
+        .contractStartDate(partners.getContractStartDate())
+        .contractEndDate(partners.getContractEndDate())
+        .contractStatus(partners.getContractStatus())
+            .etc(partners.getEtc())
+            .build();
   }
-}*/
+}
