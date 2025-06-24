@@ -32,10 +32,10 @@ public class Partners extends BaseEntity{
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
   @Builder.Default
-  private ContractStatus contractStatus = ContractStatus.PRE_CONTRACT;
+  private ContractStatus contractStatus = ContractStatus.BEFORE_CONTACT;
 
   @Column()
-  private LocalDateTime CcontractStartDate;
+  private LocalDateTime contractStartDate;
 
   @Column()
   private LocalDateTime contractEndDate;
