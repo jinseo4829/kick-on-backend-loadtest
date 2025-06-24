@@ -15,11 +15,11 @@ public class PartnersFilterRequest {
   @Schema(description = "닉네임", example = "축잘알유저")
   private String nickname;
 
-  @Schema(description = "리그", example = "프리미어 리그")
-  private String league;
+  @Schema(description = "리그pk", example = "1")
+  private Long leaguePk;
 
-  @Schema(description = "팀", example = "토트넘")
-  private String favoriteTeam;
+  @Schema(description = "팀pk", example = "1647")
+  private Long TeamPk;
 
   @Schema(description = "페이지 번호 (1부터 시작)", example = "1")
   private Integer page = 1;
