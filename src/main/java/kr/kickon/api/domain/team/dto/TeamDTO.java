@@ -11,6 +11,7 @@ import lombok.experimental.SuperBuilder;
 @Setter
 @SuperBuilder
 @AllArgsConstructor
+@NoArgsConstructor
 public class TeamDTO {
     @Schema(description = "사용자 고유 pk", example = "1")
     private Long pk;

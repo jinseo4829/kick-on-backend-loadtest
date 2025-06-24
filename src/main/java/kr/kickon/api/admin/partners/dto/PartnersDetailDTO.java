@@ -3,7 +3,6 @@ package kr.kickon.api.admin.partners.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.global.common.entities.Partners;
 import kr.kickon.api.global.common.entities.UserFavoriteTeam;
