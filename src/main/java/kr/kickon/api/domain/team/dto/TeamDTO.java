@@ -26,13 +26,16 @@ public class TeamDTO {
     private String logoUrl;
 
     @Schema(description = "리그 고유 PK", example = "10")
-    private Long leaguePk;
+    @Builder.Default
+    private Long leaguePk = null;
 
     @Schema(description = "리그 한글 이름", example = "K리그")
-    private String leagueNameKr;
+    @Builder.Default
+    private String leagueNameKr = "";
 
     @Schema(description = "리그 영어 이름", example = "K-League")
-    private String leagueNameEn;
+    @Builder.Default
+    private String leagueNameEn = "";
 
 
     public TeamDTO(Team team) {
