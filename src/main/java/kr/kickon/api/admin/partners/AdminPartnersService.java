@@ -1,11 +1,17 @@
 package kr.kickon.api.admin.partners;
 
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import kr.kickon.api.admin.partners.dto.PartnersDetailDTO;
 import kr.kickon.api.admin.partners.dto.PartnersListDTO;
 import kr.kickon.api.admin.partners.request.PartnersFilterRequest;
+import kr.kickon.api.admin.user.dto.UserListDTO;
 import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
+import kr.kickon.api.domain.partners.PartnersRepository;
 import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.common.entities.ActualSeasonTeam;
@@ -19,8 +25,11 @@ import kr.kickon.api.global.common.entities.QTeam;
 import kr.kickon.api.global.common.entities.QUser;
 import kr.kickon.api.global.common.entities.QUserFavoriteTeam;
 import kr.kickon.api.global.common.entities.Team;
+import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.entities.UserFavoriteTeam;
 import kr.kickon.api.global.common.enums.DataStatus;
+import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.error.exceptions.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -36,6 +45,13 @@ public class AdminPartnersService {
   private final JPAQueryFactory queryFactory;
   private final UserFavoriteTeamService userFavoriteTeamService;
   private final ActualSeasonTeamService actualSeasonTeamService;
+  private final PartnersRepository partnersRepository;
+
+  public Partners findByPk(Long pk){
+    BooleanExpression predicate = QPartners.partners.pk.eq(pk).and(QPartners.partners.status.eq(DataStatus.ACTIVATED));
+    Optional<Partners> partners = partnersRepository.findOne(predicate);
+    return partners.orElse(null);
+  }
 
   public Page<PartnersListDTO> findPartnersByFilter(PartnersFilterRequest request,
       Pageable pageable) {
@@ -73,7 +89,7 @@ public class AdminPartnersService {
     builder.and(partners.status.eq(DataStatus.ACTIVATED));
 
     // total count
-    long total = queryFactory
+    long total = Optional.ofNullable(queryFactory
         .select(partners.count())
         .from(partners)
         .join(partners.user, user)
@@ -83,7 +99,7 @@ public class AdminPartnersService {
         .leftJoin(qactualSeason).on(qactualSeasonTeam.actualSeason.eq(qactualSeason))
         .leftJoin(qleague).on(qactualSeason.league.eq(qleague))
         .where(builder)
-        .fetchOne();
+        .fetchOne()).orElse(0L);
 
     // content
     List<Partners> content = queryFactory
@@ -101,40 +117,72 @@ public class AdminPartnersService {
         .fetch();
 
     List<PartnersListDTO> dtos = content.stream().map(partner -> {
-      PartnersListDTO dto = PartnersListDTO.fromEntity(partner);
-
       List<UserFavoriteTeam> favoriteTeams = userFavoriteTeamService.findAllByUserPk(
           partner.getUser().getPk());
 
-      List<TeamDTO> teamDTOs = favoriteTeams.stream().map(fav -> {
-        Team team = fav.getTeam();
+      List<TeamDTO> teamDTOs = convertToTeamDTOs(favoriteTeams);
 
-        TeamDTO.TeamDTOBuilder teamBuilder = TeamDTO.builder()
-            .pk(team.getPk())
-            .nameKr(team.getNameKr())
-            .nameEn(team.getNameEn())
-            .logoUrl(team.getLogoUrl());
-
-        // 리그 정보 설정
-        ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findLatestByTeam(team.getPk());
-        if (actualSeasonTeam != null && actualSeasonTeam.getActualSeason() != null) {
-          League league = actualSeasonTeam.getActualSeason().getLeague();
-
-          if (league != null) {
-            teamBuilder.leaguePk(league.getPk())
-                .leagueNameKr(league.getNameKr())
-                .leagueNameEn(league.getNameEn());
-          }
-        }
-
-        return teamBuilder.build();
-      }).toList();
-
-
-      dto.setFavoriteTeams(teamDTOs);
-      return dto;
+      return PartnersListDTO.fromEntity(partner)
+          .toBuilder()
+          .favoriteTeams(teamDTOs)
+          .build();
     }).toList();
+
 
     return new PageImpl<>(dtos, pageable, total);
   }
+
+  public PartnersDetailDTO getPartnersDetail(Partners partners) {
+
+    User user = partners.getUser();
+    if (user == null) throw new NotFoundException(ResponseCode.NOT_FOUND_USER);
+    UserListDTO userDto = UserListDTO.fromEntity(user);
+
+    // 유저 응원팀 가져오기
+    List<UserFavoriteTeam> favoriteTeams = userFavoriteTeamService.findAllByUserPk(user.getPk());
+
+    // TeamDTO로 변환
+    List<TeamDTO> teamDTOs = convertToTeamDTOs(favoriteTeams);
+
+    return PartnersDetailDTO.builder()
+        .pk(partners.getPk())
+        .name(partners.getName())
+        .partnersEmail(partners.getPartnersEmail())
+        .contractStartDate(partners.getContractStartDate())
+        .contractEndDate(partners.getContractEndDate())
+        .contractStatus(partners.getContractStatus())
+        .etc(partners.getEtc())
+        .user(userDto)
+        .favoriteTeams(teamDTOs)
+        .build();
+  }
+
+  private List<TeamDTO> convertToTeamDTOs(List<UserFavoriteTeam> favoriteTeams) {
+    return favoriteTeams.stream()
+        .map(fav -> {
+          Team team = fav.getTeam();
+
+          TeamDTO.TeamDTOBuilder teamBuilder = TeamDTO.builder()
+              .pk(team.getPk())
+              .nameKr(team.getNameKr())
+              .nameEn(team.getNameEn())
+              .logoUrl(team.getLogoUrl());
+
+          // 리그 정보 포함
+          ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findLatestByTeam(team.getPk());
+          if (actualSeasonTeam != null && actualSeasonTeam.getActualSeason() != null) {
+            League league = actualSeasonTeam.getActualSeason().getLeague();
+            if (league != null) {
+              teamBuilder
+                  .leaguePk(league.getPk())
+                  .leagueNameKr(league.getNameKr())
+                  .leagueNameEn(league.getNameEn());
+            }
+          }
+
+          return teamBuilder.build();
+        })
+        .collect(Collectors.toList());
+  }
+
 }

@@ -29,6 +29,9 @@ public class Partners extends BaseEntity{
   @Column(length = 10)
   private String name;
 
+  @Column(nullable = false, length = 256)
+  private String partnersEmail;
+
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
   @Builder.Default
@@ -47,10 +50,6 @@ public class Partners extends BaseEntity{
   @ManyToOne
   @JoinColumn(name = "user_pk", foreignKey = @ForeignKey(name = "fk_partners_user"))
   private User user;
-
-  @ManyToOne
-  @JoinColumn(name = "team_pk", foreignKey = @ForeignKey(name = "fk_partners_team"))
-  private Team team;
 }
 
 

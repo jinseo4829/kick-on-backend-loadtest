@@ -10,7 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 @Data
-@Builder
+@Builder(toBuilder = true)
 @Schema(name = "AdminPartnersListDTO", description = "파트너스 리스트 조회 응답 DTO")
 @AllArgsConstructor
 public class PartnersListDTO {
