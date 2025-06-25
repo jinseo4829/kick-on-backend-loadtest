@@ -50,6 +50,10 @@ public class Partners extends BaseEntity{
   @ManyToOne
   @JoinColumn(name = "user_pk", foreignKey = @ForeignKey(name = "fk_partners_user"))
   private User user;
+
+  @ManyToOne
+  @JoinColumn(name = "team_pk", foreignKey = @ForeignKey(name = "fk_partners_team"))
+  private Team team;
 }
 
 

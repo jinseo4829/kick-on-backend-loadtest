@@ -1,15 +1,18 @@
 package kr.kickon.api.admin.partners.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
 @Schema(description = "파트너스 생성 요청 DTO")
 public class CreatePartnersRequestDTO {
 
-  @Schema(description = "파트너스가 응원하는 팀pk", example = "1647")
+  @NotNull
+  @Schema(description = "파트너스 팀pk", example = "1647")
   private Long teamPk;
 
+  @NotNull
   @Schema(description = "파트너스 userPk", example = "38")
   private Long userPk;
 

@@ -6,7 +6,6 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import kr.kickon.api.admin.partners.dto.PartnersDetailDTO;
 import kr.kickon.api.admin.partners.dto.PartnersListDTO;
 import kr.kickon.api.admin.partners.request.CreatePartnersRequestDTO;
@@ -14,6 +13,7 @@ import kr.kickon.api.admin.partners.request.PartnersFilterRequest;
 import kr.kickon.api.admin.user.dto.UserListDTO;
 import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
 import kr.kickon.api.domain.partners.PartnersRepository;
+import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.domain.user.UserRepository;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
@@ -29,7 +29,6 @@ import kr.kickon.api.global.common.entities.QUser;
 import kr.kickon.api.global.common.entities.QUserFavoriteTeam;
 import kr.kickon.api.global.common.entities.Team;
 import kr.kickon.api.global.common.entities.User;
-import kr.kickon.api.global.common.entities.UserFavoriteTeam;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
@@ -46,10 +45,10 @@ import org.springframework.stereotype.Service;
 public class AdminPartnersService {
 
   private final JPAQueryFactory queryFactory;
-  private final UserFavoriteTeamService userFavoriteTeamService;
   private final ActualSeasonTeamService actualSeasonTeamService;
   private final PartnersRepository partnersRepository;
   private final UserRepository userRepository;
+  private final TeamService teamService;
 
   public Partners findByPk(Long pk){
     BooleanExpression predicate = QPartners.partners.pk.eq(pk).and(QPartners.partners.status.eq(DataStatus.ACTIVATED));
@@ -61,13 +60,14 @@ public class AdminPartnersService {
       Pageable pageable) {
     QPartners partners = QPartners.partners;
     QUser user = QUser.user;
-    QUserFavoriteTeam userFavoriteTeam = QUserFavoriteTeam.userFavoriteTeam;
     QTeam qteam = QTeam.team;
     QActualSeasonTeam qactualSeasonTeam = QActualSeasonTeam.actualSeasonTeam;
     QActualSeason qactualSeason = QActualSeason.actualSeason;
     QLeague qleague = QLeague.league;
 
-    BooleanBuilder builder = new BooleanBuilder();
+    BooleanBuilder builder = new BooleanBuilder()
+        .and(user.status.eq(DataStatus.ACTIVATED))
+        .and(partners.status.eq(DataStatus.ACTIVATED));
 
     if (request.getName() != null && !request.getName().isBlank()) {
       builder.and(partners.name.containsIgnoreCase(request.getName()));
@@ -78,28 +78,19 @@ public class AdminPartnersService {
     }
 
     if (request.getTeamPk() != null) {
-      builder.and(userFavoriteTeam.team.pk.eq(request.getTeamPk()));
-      builder.and(userFavoriteTeam.user.eq(user));
+      builder.and(partners.team.pk.eq(request.getTeamPk()));
     }
 
     if (request.getLeaguePk() != null) {
-      builder.and(userFavoriteTeam.team.eq(qactualSeasonTeam.team));
-      builder.and(qactualSeasonTeam.actualSeason.eq(qactualSeason));
-      builder.and(qactualSeason.league.eq(qleague));
       builder.and(qleague.pk.eq(request.getLeaguePk()));
     }
-
-    builder.and(user.status.eq(DataStatus.ACTIVATED));
-    builder.and(partners.status.eq(DataStatus.ACTIVATED));
 
     // total count
     long total = Optional.ofNullable(queryFactory
         .select(partners.count())
         .from(partners)
         .join(partners.user, user)
-        .leftJoin(userFavoriteTeam).on(userFavoriteTeam.user.eq(user))
-        .leftJoin(userFavoriteTeam.team, qteam)
-        .leftJoin(qactualSeasonTeam).on(qactualSeasonTeam.team.eq(userFavoriteTeam.team))
+        .leftJoin(qactualSeasonTeam).on(qactualSeasonTeam.team.eq(partners.team))
         .leftJoin(qactualSeason).on(qactualSeasonTeam.actualSeason.eq(qactualSeason))
         .leftJoin(qleague).on(qactualSeason.league.eq(qleague))
         .where(builder)
@@ -109,9 +100,7 @@ public class AdminPartnersService {
     List<Partners> content = queryFactory
         .selectFrom(partners)
         .join(partners.user, user).fetchJoin()
-        .leftJoin(userFavoriteTeam).on(userFavoriteTeam.user.eq(user))
-        .leftJoin(userFavoriteTeam.team, qteam)
-        .leftJoin(qactualSeasonTeam).on(qactualSeasonTeam.team.eq(userFavoriteTeam.team))
+        .leftJoin(qactualSeasonTeam).on(qactualSeasonTeam.team.eq(partners.team))
         .leftJoin(qactualSeason).on(qactualSeasonTeam.actualSeason.eq(qactualSeason))
         .leftJoin(qleague).on(qactualSeason.league.eq(qleague))
         .where(builder)
@@ -121,14 +110,11 @@ public class AdminPartnersService {
         .fetch();
 
     List<PartnersListDTO> dtos = content.stream().map(partner -> {
-      List<UserFavoriteTeam> favoriteTeams = userFavoriteTeamService.findAllByUserPk(
-          partner.getUser().getPk());
-
-      List<TeamDTO> teamDTOs = convertToTeamDTOs(favoriteTeams);
+      TeamDTO teamDTO = convertToTeamDTO(partner.getTeam());
 
       return PartnersListDTO.fromEntity(partner)
           .toBuilder()
-          .favoriteTeams(teamDTOs)
+          .team(teamDTO)
           .build();
     }).toList();
 
@@ -142,11 +128,8 @@ public class AdminPartnersService {
     if (user == null) throw new NotFoundException(ResponseCode.NOT_FOUND_USER);
     UserListDTO userDto = UserListDTO.fromEntity(user);
 
-    // 유저 응원팀 가져오기
-    List<UserFavoriteTeam> favoriteTeams = userFavoriteTeamService.findAllByUserPk(user.getPk());
-
     // TeamDTO로 변환
-    List<TeamDTO> teamDTOs = convertToTeamDTOs(favoriteTeams);
+    TeamDTO teamDTO = convertToTeamDTO(partners.getTeam());
 
     return PartnersDetailDTO.builder()
         .pk(partners.getPk())
@@ -157,41 +140,36 @@ public class AdminPartnersService {
         .contractStatus(partners.getContractStatus())
         .etc(partners.getEtc())
         .user(userDto)
-        .favoriteTeams(teamDTOs)
+        .team(teamDTO)
         .build();
   }
 
-  private List<TeamDTO> convertToTeamDTOs(List<UserFavoriteTeam> favoriteTeams) {
-    return favoriteTeams.stream()
-        .map(fav -> {
-          Team team = fav.getTeam();
+  private TeamDTO convertToTeamDTO(Team team) {
+    TeamDTO.TeamDTOBuilder teamBuilder = TeamDTO.builder()
+        .pk(team.getPk())
+        .nameKr(team.getNameKr())
+        .nameEn(team.getNameEn())
+        .logoUrl(team.getLogoUrl());
 
-          TeamDTO.TeamDTOBuilder teamBuilder = TeamDTO.builder()
-              .pk(team.getPk())
-              .nameKr(team.getNameKr())
-              .nameEn(team.getNameEn())
-              .logoUrl(team.getLogoUrl());
+    // 리그 정보 포함
+    ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findLatestByTeam(team.getPk());
+    if (actualSeasonTeam != null && actualSeasonTeam.getActualSeason() != null) {
+      League league = actualSeasonTeam.getActualSeason().getLeague();
+      if (league != null) {
+        teamBuilder
+            .leaguePk(league.getPk())
+            .leagueNameKr(league.getNameKr())
+            .leagueNameEn(league.getNameEn());
+      }
+    }
 
-          // 리그 정보 포함
-          ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findLatestByTeam(team.getPk());
-          if (actualSeasonTeam != null && actualSeasonTeam.getActualSeason() != null) {
-            League league = actualSeasonTeam.getActualSeason().getLeague();
-            if (league != null) {
-              teamBuilder
-                  .leaguePk(league.getPk())
-                  .leagueNameKr(league.getNameKr())
-                  .leagueNameEn(league.getNameEn());
-            }
-          }
-
-          return teamBuilder.build();
-        })
-        .collect(Collectors.toList());
+    return teamBuilder.build();
   }
   public PartnersDetailDTO createPartners(CreatePartnersRequestDTO request) {
 
     User user = userRepository.findById(request.getUserPk())
         .orElseThrow(() -> new NotFoundException(ResponseCode.NOT_FOUND_USER));
+    Team team = teamService.findByPk(request.getTeamPk());
 
     Partners partners = Partners.builder()
         .id(UUID.randomUUID().toString())
@@ -199,16 +177,14 @@ public class AdminPartnersService {
         .name(request.getName())
         .partnersEmail(request.getPartnersEmail())
         .snsUrl(request.getSnsUrl())
+        .team(team)
         .status(DataStatus.ACTIVATED)
         .build();
 
     partnersRepository.save(partners);
 
     UserListDTO userDto = UserListDTO.fromEntity(user);
-
-    // 응원 팀 리스트
-    List<UserFavoriteTeam> favoriteTeams = userFavoriteTeamService.findAllByUserPk(user.getPk());
-    List<TeamDTO> teamDTOs = convertToTeamDTOs(favoriteTeams); // 기존에 만든 함수 사용
+    TeamDTO teamDTO = convertToTeamDTO(team);
 
     return PartnersDetailDTO.builder()
         .pk(partners.getPk())
@@ -220,7 +196,7 @@ public class AdminPartnersService {
         .contractEndDate(partners.getContractEndDate())
         .contractStatus(partners.getContractStatus())
         .etc(partners.getEtc())
-        .favoriteTeams(teamDTOs)
+        .team(teamDTO)
         .build();
   }
 }
