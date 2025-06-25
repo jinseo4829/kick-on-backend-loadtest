@@ -19,7 +19,7 @@ public class PartnersFilterRequest {
   private Long leaguePk;
 
   @Schema(description = "팀pk", example = "1647")
-  private Long TeamPk;
+  private Long teamPk;
 
   @Schema(description = "페이지 번호 (1부터 시작)", example = "1")
   private Integer page = 1;

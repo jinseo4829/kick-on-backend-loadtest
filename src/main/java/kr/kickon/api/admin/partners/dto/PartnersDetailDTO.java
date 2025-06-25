@@ -2,7 +2,6 @@ package kr.kickon.api.admin.partners.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
-import java.util.List;
 import kr.kickon.api.admin.user.dto.UserListDTO;
 import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.global.common.enums.ContractStatus;
@@ -18,8 +17,8 @@ public class PartnersDetailDTO {
   @Schema(description = "파트너스 PK", example = "1")
   private Long pk;
 
-  @Schema(description = "파트너스가 응원하는 팀 리스트")
-  private List<TeamDTO> favoriteTeams;
+  @Schema(description = "파트너스 팀")
+  private TeamDTO team;
 
   @Schema(description = "파트너스 user 정보")
   private UserListDTO user;

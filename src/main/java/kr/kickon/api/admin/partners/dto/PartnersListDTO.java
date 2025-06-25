@@ -18,8 +18,8 @@ public class PartnersListDTO {
   @Schema(description = "파트너스 PK", example = "1")
   private Long pk;
 
-  @Schema(description = "파트너스가 응원하는 팀 리스트")
-  private List<TeamDTO> favoriteTeams;
+  @Schema(description = "파트너스 팀")
+  private TeamDTO team;
 
   @Schema(description = "파트너스 닉네임", example = "kickon_user")
   private String nickname;
