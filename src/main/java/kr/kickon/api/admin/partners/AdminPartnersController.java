@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -87,5 +88,16 @@ public class AdminPartnersController {
   public ResponseEntity<ResponseDTO<PartnersDetailDTO>> createPartners(@RequestBody CreatePartnersRequestDTO request) {
     PartnersDetailDTO responseDto = adminpartnersService.createPartners(request);
     return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, responseDto));
+  }
+
+  @DeleteMapping("/{partnersPk}")
+  @Operation(summary = "파트너스 삭제", description = "파트너스를 삭제합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "성공"),
+  })
+  public ResponseEntity<ResponseDTO> deletePartners(@PathVariable Long partnersPk) {
+    Partners partners = adminpartnersService.findByPk(partnersPk);
+    adminpartnersService.deletePartners(partners);
+    return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
   }
 }

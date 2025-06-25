@@ -3,6 +3,7 @@ package kr.kickon.api.admin.partners;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -18,6 +19,8 @@ import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.domain.user.UserRepository;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.common.entities.ActualSeasonTeam;
+import kr.kickon.api.global.common.entities.AwsFileReference;
+import kr.kickon.api.global.common.entities.Board;
 import kr.kickon.api.global.common.entities.League;
 import kr.kickon.api.global.common.entities.Partners;
 import kr.kickon.api.global.common.entities.QActualSeason;
@@ -38,6 +41,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.s3.S3Client;
 
 @Service
 @Slf4j
@@ -165,6 +169,7 @@ public class AdminPartnersService {
 
     return teamBuilder.build();
   }
+  @Transactional
   public PartnersDetailDTO createPartners(CreatePartnersRequestDTO request) {
 
     User user = userRepository.findById(request.getUserPk())
@@ -198,5 +203,11 @@ public class AdminPartnersService {
         .etc(partners.getEtc())
         .team(teamDTO)
         .build();
+  }
+
+  @Transactional
+  public void deletePartners(Partners partners) {
+    partners.setStatus(DataStatus.DEACTIVATED);
+    partnersRepository.save(partners);
   }
 }
