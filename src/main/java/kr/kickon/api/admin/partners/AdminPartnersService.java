@@ -11,12 +11,14 @@ import kr.kickon.api.admin.partners.dto.PartnersDetailDTO;
 import kr.kickon.api.admin.partners.dto.PartnersListDTO;
 import kr.kickon.api.admin.partners.request.CreatePartnersRequestDTO;
 import kr.kickon.api.admin.partners.request.PartnersFilterRequest;
+import kr.kickon.api.admin.partners.request.PatchPartnersRequestDTO;
 import kr.kickon.api.admin.user.dto.UserListDTO;
 import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
 import kr.kickon.api.domain.partners.PartnersRepository;
 import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.domain.user.UserRepository;
+import kr.kickon.api.domain.user.UserService;
 import kr.kickon.api.global.common.entities.ActualSeasonTeam;
 import kr.kickon.api.global.common.entities.League;
 import kr.kickon.api.global.common.entities.Partners;
@@ -28,6 +30,7 @@ import kr.kickon.api.global.common.entities.QTeam;
 import kr.kickon.api.global.common.entities.QUser;
 import kr.kickon.api.global.common.entities.Team;
 import kr.kickon.api.global.common.entities.User;
+import kr.kickon.api.global.common.enums.ContractStatus;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
@@ -46,7 +49,7 @@ public class AdminPartnersService {
   private final JPAQueryFactory queryFactory;
   private final ActualSeasonTeamService actualSeasonTeamService;
   private final PartnersRepository partnersRepository;
-  private final UserRepository userRepository;
+  private final UserService userService;
   private final TeamService teamService;
 
   public Partners findByPk(Long pk){
@@ -167,9 +170,10 @@ public class AdminPartnersService {
   @Transactional
   public PartnersDetailDTO createPartners(CreatePartnersRequestDTO request) {
 
-    User user = userRepository.findById(request.getUserPk())
-        .orElseThrow(() -> new NotFoundException(ResponseCode.NOT_FOUND_USER));
+    User user = userService.findByPk(request.getUserPk());
+    if (user == null) throw new NotFoundException(ResponseCode.NOT_FOUND_USER);
     Team team = teamService.findByPk(request.getTeamPk());
+    if (team == null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
 
     Partners partners = Partners.builder()
         .id(UUID.randomUUID().toString())
@@ -205,4 +209,65 @@ public class AdminPartnersService {
     partners.setStatus(DataStatus.DEACTIVATED);
     partnersRepository.save(partners);
   }
+
+  @Transactional
+  public PartnersDetailDTO patchPartners(Partners partners, PatchPartnersRequestDTO request) {
+
+    if (request.getName() != null) {
+      partners.setName(request.getName());
+    }
+    if (request.getPartnersEmail() != null) {
+      partners.setPartnersEmail(request.getPartnersEmail());
+    }
+    if (request.getSnsUrl() != null) {
+      partners.setSnsUrl(request.getSnsUrl());
+    }
+    if (request.getEtc() != null) {
+      partners.setEtc(request.getEtc());
+    }
+    if (request.getTeamPk() != null) {
+      Team team = teamService.findByPk(request.getTeamPk());
+      if (team == null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
+      partners.setTeam(team);
+    }
+    if (request.getUserPk() != null) {
+      User user = userService.findByPk(request.getUserPk());
+      if (user == null) throw new NotFoundException(ResponseCode.NOT_FOUND_USER);
+      partners.setUser(user);
+    }
+    if (request.getContractStartDate() != null) {
+      partners.setContractStartDate(request.getContractStartDate());
+    }
+    if (request.getContractEndDate() != null) {
+      partners.setContractEndDate(request.getContractEndDate());
+    }
+    if (request.getContractStatus() != null) {
+      try {
+        partners.setContractStatus(ContractStatus.valueOf(request.getContractStatus()));
+      } catch (IllegalArgumentException e) {
+        throw new IllegalArgumentException("계약 상태 값이 유효하지 않습니다: " + request.getContractStatus());
+      }
+    }
+
+    partnersRepository.save(partners);
+
+    // DTO로 변환
+    UserListDTO userDto = UserListDTO.fromEntity(partners.getUser());
+    TeamDTO teamDTO = convertToTeamDTO(partners.getTeam());
+
+    return PartnersDetailDTO.builder()
+        .pk(partners.getPk())
+        .user(userDto)
+        .name(partners.getName())
+        .partnersEmail(partners.getPartnersEmail())
+        .snsUrl(partners.getSnsUrl())
+        .contractStartDate(partners.getContractStartDate())
+        .contractEndDate(partners.getContractEndDate())
+        .contractStatus(partners.getContractStatus())
+        .etc(partners.getEtc())
+        .team(teamDTO)
+        .build();
+  }
+
+
 }
