@@ -17,7 +17,6 @@ import kr.kickon.api.admin.partners.response.GetPartnersResponse;
 import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.Partners;
-import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import lombok.RequiredArgsConstructor;
