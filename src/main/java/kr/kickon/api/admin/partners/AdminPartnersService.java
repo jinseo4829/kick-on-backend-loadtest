@@ -17,10 +17,7 @@ import kr.kickon.api.domain.partners.PartnersRepository;
 import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.domain.user.UserRepository;
-import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.common.entities.ActualSeasonTeam;
-import kr.kickon.api.global.common.entities.AwsFileReference;
-import kr.kickon.api.global.common.entities.Board;
 import kr.kickon.api.global.common.entities.League;
 import kr.kickon.api.global.common.entities.Partners;
 import kr.kickon.api.global.common.entities.QActualSeason;
@@ -29,7 +26,6 @@ import kr.kickon.api.global.common.entities.QLeague;
 import kr.kickon.api.global.common.entities.QPartners;
 import kr.kickon.api.global.common.entities.QTeam;
 import kr.kickon.api.global.common.entities.QUser;
-import kr.kickon.api.global.common.entities.QUserFavoriteTeam;
 import kr.kickon.api.global.common.entities.Team;
 import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.enums.DataStatus;
@@ -41,7 +37,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import software.amazon.awssdk.services.s3.S3Client;
 
 @Service
 @Slf4j
