@@ -3,7 +3,7 @@ package kr.kickon.api.global.common.enums;
 import java.util.Arrays;
 
 public enum ProviderType {
-    NAVER, KAKAO;
+    NAVER, KAKAO, AI;
 
     public static ProviderType fromString(String provider) {
         return Arrays.stream(ProviderType.values())

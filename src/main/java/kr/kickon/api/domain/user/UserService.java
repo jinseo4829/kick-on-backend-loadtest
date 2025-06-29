@@ -59,6 +59,10 @@ public class UserService implements BaseService<User> {
 //                .fetch();
 //    }
 
+    public boolean existsByEmailAndProvider(String email, ProviderType providerType) {
+        return userRepository.existsByEmailAndProvider(email, providerType);
+    }
+
     public void deleteUser(User user){
         user.setStatus(DataStatus.DEACTIVATED);
         saveUser(user);

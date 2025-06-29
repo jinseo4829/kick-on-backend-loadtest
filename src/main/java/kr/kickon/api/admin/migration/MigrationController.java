@@ -9,11 +9,14 @@ import kr.kickon.api.admin.migration.dto.ApiGamesDTO;
 import kr.kickon.api.admin.migration.dto.ApiLeagueAndSeasonDTO;
 import kr.kickon.api.admin.migration.dto.ApiRankingDTO;
 import kr.kickon.api.admin.migration.dto.ApiTeamDTO;
+import kr.kickon.api.domain.team.TeamService;
+import kr.kickon.api.domain.user.UserService;
+import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.common.ResponseDTO;
-import kr.kickon.api.global.common.entities.Country;
-import kr.kickon.api.global.common.entities.Game;
-import kr.kickon.api.global.common.entities.League;
+import kr.kickon.api.global.common.entities.*;
+import kr.kickon.api.global.common.enums.ProviderType;
 import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.common.enums.UserAccountStatus;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.kafka.KafkaGameProducer;
 import lombok.AllArgsConstructor;
@@ -23,9 +26,11 @@ import org.springframework.kafka.support.SendResult;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @AllArgsConstructor
@@ -39,6 +44,54 @@ public class MigrationController {
     private final LeagueService leagueService;
     private final GameService gameService;
     private final KafkaGameProducer kafkaGameProducer;
+    private final TeamService teamService;
+    private final UserService userService;
+    private final UserFavoriteTeamService userFavoriteTeamService;
+
+    @PostMapping("/ai-user")
+    @Operation(summary = "AI 유저 마이그레이션", description = "팀당 하나씩 AI 유저를 생성합니다. 이미 존재하는 경우 건너뜁니다.")
+    public ResponseEntity<ResponseDTO<String>> migrateAiUsers() {
+        List<Team> teams = teamService.findAll();
+
+        int createdCount = 0;
+        for (Team team : teams) {
+            String baseName = team.getNameKr() != null && !team.getNameKr().isBlank()
+                    ? team.getNameKr()
+                    : team.getNameEn(); // fallback
+            String aiEmail = baseName.replaceAll("\\s+", "").toLowerCase() + "@kick-on.ai"; // ✅ 도메인 변경
+
+            // 이미 AI 유저가 있는지 확인
+            if (userService.existsByEmailAndProvider(aiEmail, ProviderType.AI)) {
+                log.info("✅ 이미 존재: {}", aiEmail);
+                continue;
+            }
+
+            // AI 유저 생성
+            User aiUser = User.builder()
+                    .id(UUID.randomUUID().toString())
+                    .email(aiEmail)
+                    .provider(ProviderType.AI)
+                    .providerId("AI")
+                    .userStatus(UserAccountStatus.DEFAULT)
+                    .nickname(team.getNameKr()!=null ? team.getNameKr() : team.getNameEn() + "AI")
+                    .privacyAgreedAt(LocalDateTime.now())
+                    .build();
+
+            userService.saveUser(aiUser);
+            createdCount++;
+
+            // AI 유저의 응원팀 설정
+            UserFavoriteTeam favoriteTeam = UserFavoriteTeam.builder()
+                    .id(UUID.randomUUID().toString())
+                    .user(aiUser)
+                    .team(team)
+                    .priorityNum(1)
+                    .build();
+            userFavoriteTeamService.save(favoriteTeam);
+        }
+
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, createdCount + "명 생성 완료"));
+    }
 
     @Operation(summary = "팀 불러오기", description = "각 리그 별로 속한 팀 불러오기")
     @PostMapping("/teams")

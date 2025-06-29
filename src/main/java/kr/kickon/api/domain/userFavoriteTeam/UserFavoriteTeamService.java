@@ -2,6 +2,7 @@ package kr.kickon.api.domain.userFavoriteTeam;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import jakarta.transaction.Transactional;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.QUser;
 import kr.kickon.api.global.common.entities.QUserFavoriteTeam;
@@ -55,6 +56,7 @@ public class UserFavoriteTeamService implements BaseService<UserFavoriteTeam> {
         return userFavoriteTeamRepository.findAllByUserPkAndStatus(userPk, DataStatus.ACTIVATED);
     }
 
+    @Transactional
     public void save(UserFavoriteTeam userFavoriteTeam) {
         userFavoriteTeamRepository.save(userFavoriteTeam);
     }
