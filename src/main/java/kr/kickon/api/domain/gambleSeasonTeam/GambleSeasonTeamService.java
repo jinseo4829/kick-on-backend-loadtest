@@ -2,7 +2,10 @@ package kr.kickon.api.domain.gambleSeasonTeam;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.util.List;
 import kr.kickon.api.domain.gambleSeasonTeam.GambleSeasonTeamRepository;
+import kr.kickon.api.domain.team.dto.SeasonTeamDTO;
+import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.GambleSeasonTeam;
 import kr.kickon.api.global.common.entities.QGambleSeasonTeam;
@@ -46,4 +49,14 @@ public class GambleSeasonTeamService implements BaseService<GambleSeasonTeam> {
         Optional<GambleSeasonTeam> gambleSeasonTeamData = gambleSeasonTeamRepository.findOne(predicate);
         return gambleSeasonTeamData.orElse(null);
     }
+
+    public List<SeasonTeamDTO> findAllByGambleSeasonPk(Long seasonPk) {
+        return gambleSeasonTeamRepository
+            .findAllByGambleSeason_PkAndStatus(seasonPk, DataStatus.ACTIVATED)
+            .stream()
+            .map(gst -> new SeasonTeamDTO(gst.getTeam()))
+            .toList();
+    }
+
 }
+

@@ -1,13 +1,22 @@
 package kr.kickon.api.admin.gambleSeason;
 
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import kr.kickon.api.admin.gambleSeason.dto.GambleSeasonDetailDTO;
 import kr.kickon.api.admin.gambleSeason.dto.GambleSeasonListDTO;
 import kr.kickon.api.admin.gambleSeason.request.GambleSeasonFilterRequest;
+import kr.kickon.api.domain.gambleSeason.GambleSeasonRepository;
+import kr.kickon.api.domain.gambleSeasonRanking.GambleSeasonRankingService;
+import kr.kickon.api.domain.gambleSeasonRanking.dto.GetGambleSeasonRankingDTO;
+import kr.kickon.api.domain.gambleSeasonTeam.GambleSeasonTeamService;
+import kr.kickon.api.domain.team.dto.SeasonTeamDTO;
+import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.global.common.entities.GambleSeason;
+import kr.kickon.api.global.common.entities.GambleSeasonTeam;
 import kr.kickon.api.global.common.entities.QActualSeason;
 import kr.kickon.api.global.common.entities.QGambleSeason;
 import kr.kickon.api.global.common.entities.QLeague;
@@ -27,6 +36,15 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminGambleSeasonService {
 
   private final JPAQueryFactory queryFactory;
+  private final GambleSeasonRepository gambleSeasonRepository;
+  private final GambleSeasonTeamService gambleSeasonTeamService;
+  private final GambleSeasonRankingService gambleSeasonRankingService;
+
+  public GambleSeason findByPk(Long pk){
+    BooleanExpression predicate = QGambleSeason.gambleSeason.pk.eq(pk).and(QGambleSeason.gambleSeason.status.eq(DataStatus.ACTIVATED));
+    Optional<GambleSeason> gambleSeason = gambleSeasonRepository.findOne(predicate);
+    return gambleSeason.orElse(null);
+  }
 
   @Transactional
   public Page<GambleSeasonListDTO> findGambleSeasonByFilter(GambleSeasonFilterRequest request,
@@ -88,5 +106,16 @@ public class AdminGambleSeasonService {
         .toList();
 
     return new PageImpl<>(dtos, pageable, total);
+  }
+
+  @Transactional
+  public GambleSeasonDetailDTO getGambleSeasonDetail(GambleSeason season) {
+    List<SeasonTeamDTO> teamList =
+        gambleSeasonTeamService.findAllByGambleSeasonPk(season.getPk());
+
+    List<GetGambleSeasonRankingDTO> rankingList =
+        gambleSeasonRankingService.getRankingDtoBySeasonPk(season.getPk());
+
+    return GambleSeasonDetailDTO.fromEntity(season, teamList, rankingList);
   }
 }

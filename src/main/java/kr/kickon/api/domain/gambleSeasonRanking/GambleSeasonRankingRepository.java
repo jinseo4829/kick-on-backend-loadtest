@@ -1,6 +1,9 @@
 package kr.kickon.api.domain.gambleSeasonRanking;
 
+import java.util.List;
 import kr.kickon.api.global.common.entities.GambleSeasonRanking;
+import kr.kickon.api.global.common.entities.GambleSeasonTeam;
+import kr.kickon.api.global.common.enums.DataStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 import org.springframework.stereotype.Repository;

@@ -74,7 +74,7 @@ public class AdminPartnersController {
   })
   public ResponseEntity<ResponseDTO<PartnersDetailDTO>> getPartnersDetail(@PathVariable Long pk) {
     Partners partners = adminpartnersService.findByPk(pk);
-    if (partners == null) throw new NotFoundException(ResponseCode.NOT_FOUND_USER);
+    if (partners == null) throw new NotFoundException(ResponseCode.NOT_FOUND_PARTNERS);
     PartnersDetailDTO dto = adminpartnersService.getPartnersDetail(partners);
 
     return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, dto));
@@ -98,7 +98,7 @@ public class AdminPartnersController {
   })
   public ResponseEntity<ResponseDTO> deletePartners(@PathVariable Long pk) {
     Partners partners = adminpartnersService.findByPk(pk);
-    if (partners == null) throw new NotFoundException(ResponseCode.NOT_FOUND_USER);
+    if (partners == null) throw new NotFoundException(ResponseCode.NOT_FOUND_PARTNERS);
     adminpartnersService.deletePartners(partners);
     return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
   }
@@ -112,7 +112,7 @@ public class AdminPartnersController {
   public ResponseEntity<ResponseDTO<PartnersDetailDTO>> patchPartners(@PathVariable Long pk,
       @RequestBody PatchPartnersRequestDTO request) {
     Partners partners = adminpartnersService.findByPk(pk);
-    if (partners == null) throw new NotFoundException(ResponseCode.NOT_FOUND_USER);
+    if (partners == null) throw new NotFoundException(ResponseCode.NOT_FOUND_PARTNERS);
     PartnersDetailDTO responseDto = adminpartnersService.patchPartners(partners, request);
     return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, responseDto));
   }
