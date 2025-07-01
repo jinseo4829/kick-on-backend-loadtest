@@ -37,7 +37,7 @@ public class GambleSeasonDetailDTO {
   @Schema(description = "설명(비고)")
   private String description;
 
-  @Schema(description = "참여 팀 리스트", example = "PENDING")
+  @Schema(description = "참여 팀 리스트")
   private List<SeasonTeamDTO> gambleSeasonTeams;
 
   @Schema(description = "팀 순위")

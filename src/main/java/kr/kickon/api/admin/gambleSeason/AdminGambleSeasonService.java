@@ -11,6 +11,7 @@ import kr.kickon.api.admin.gambleSeason.dto.GambleSeasonDetailDTO;
 import kr.kickon.api.admin.gambleSeason.dto.GambleSeasonListDTO;
 import kr.kickon.api.admin.gambleSeason.request.CreateGambleSeasonRequestDTO;
 import kr.kickon.api.admin.gambleSeason.request.GambleSeasonFilterRequest;
+import kr.kickon.api.admin.gambleSeason.request.PatchGambleSeasonRequestDTO;
 import kr.kickon.api.domain.actualSeason.ActualSeasonService;
 import kr.kickon.api.domain.gambleSeason.GambleSeasonRepository;
 import kr.kickon.api.domain.gambleSeasonRanking.GambleSeasonRankingService;
@@ -165,5 +166,52 @@ public class AdminGambleSeasonService {
         .operatingStatus(gambleSeason.getOperatingStatus())
         .description(gambleSeason.getDescription())
         .build();
+  }
+
+  @Transactional
+  public GambleSeasonDetailDTO patchGambleSeason(GambleSeason gambleSeason, PatchGambleSeasonRequestDTO request) {
+
+    if (request.getLeaguePk() != null) {
+      League league = leagueService.findByPk(request.getLeaguePk());
+      if (league == null)
+        throw new NotFoundException(ResponseCode.NOT_FOUND_LEAGUE);
+      ActualSeason actualSeason =
+          actualSeasonService.findRecentByLeaguePk(league.getPk());
+      if (actualSeason == null) {
+        throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
+      }
+      gambleSeason.setActualSeason(actualSeason);
+    }
+    if (request.getTitle() != null) {
+      gambleSeason.setTitle(request.getTitle());
+    }
+    if (request.getStartedAt() != null) {
+      gambleSeason.setStartedAt(LocalDateTime.parse(request.getStartedAt()));
+    }
+    if (request.getFinishedAt() != null) {
+      gambleSeason.setFinishedAt(LocalDateTime.parse(request.getFinishedAt()));
+    }
+    if (request.getOperatingStatus() != null) {
+      try {
+        gambleSeason.setOperatingStatus(OperatingStatus.valueOf(request.getOperatingStatus()));
+      } catch (IllegalArgumentException e) {
+        throw new IllegalArgumentException("상태 값이 유효하지 않습니다: " + request.getOperatingStatus());
+      }
+    }
+    if (request.getDescription() != null) {
+      gambleSeason.setDescription(request.getDescription());
+    }
+
+    // 참여 팀 목록 수정
+    gambleSeasonTeamService.patchSeasonTeams(gambleSeason, request.getGambleSeasonTeams());
+    gambleSeasonRepository.save(gambleSeason);
+
+    List<SeasonTeamDTO> teamList =
+        gambleSeasonTeamService.findAllByGambleSeasonPk(gambleSeason.getPk());
+
+    List<GetGambleSeasonRankingDTO> rankingList =
+        gambleSeasonRankingService.getRankingDtoBySeasonPk(gambleSeason.getPk());
+
+    return GambleSeasonDetailDTO.fromEntity(gambleSeason, teamList, rankingList);
   }
 }

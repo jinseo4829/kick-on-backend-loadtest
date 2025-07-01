@@ -12,11 +12,9 @@ import kr.kickon.api.admin.gambleSeason.dto.GambleSeasonDetailDTO;
 import kr.kickon.api.admin.gambleSeason.dto.GambleSeasonListDTO;
 import kr.kickon.api.admin.gambleSeason.request.CreateGambleSeasonRequestDTO;
 import kr.kickon.api.admin.gambleSeason.request.GambleSeasonFilterRequest;
+import kr.kickon.api.admin.gambleSeason.request.PatchGambleSeasonRequestDTO;
 import kr.kickon.api.admin.gambleSeason.response.GetGambleSeasonDetailResponse;
 import kr.kickon.api.admin.gambleSeason.response.GetGambleSeasonResponse;
-import kr.kickon.api.admin.partners.dto.PartnersDetailDTO;
-import kr.kickon.api.admin.partners.request.CreatePartnersRequestDTO;
-import kr.kickon.api.admin.partners.response.GetPartnersDetailResponse;
 import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.GambleSeason;
@@ -29,6 +27,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -87,6 +86,20 @@ public class AdminGambleSeasonController {
   })
   public ResponseEntity<ResponseDTO<GambleSeasonDetailDTO>> createGambleSeason(@RequestBody CreateGambleSeasonRequestDTO request) {
     GambleSeasonDetailDTO responseDto = adminGambleSeasonService.createGambleSeason(request);
+    return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, responseDto));
+  }
+
+  @PatchMapping("/{pk}")
+  @Operation(summary = "승부 예측 시즌 수정", description = "pk값으로 승부 예측 시즌을 수정합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "성공",
+          content = @Content(schema = @Schema(implementation = GetGambleSeasonDetailResponse.class))),
+  })
+  public ResponseEntity<ResponseDTO<GambleSeasonDetailDTO>> patchGambleSeason(@PathVariable Long pk,
+      @RequestBody PatchGambleSeasonRequestDTO request) {
+    GambleSeason gambleSeason = adminGambleSeasonService.findByPk(pk);
+    if (gambleSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_GAMBLE_SEASON);
+    GambleSeasonDetailDTO responseDto = adminGambleSeasonService.patchGambleSeason(gambleSeason, request);
     return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, responseDto));
   }
 }
