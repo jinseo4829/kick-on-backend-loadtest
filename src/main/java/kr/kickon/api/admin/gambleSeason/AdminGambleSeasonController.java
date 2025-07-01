@@ -10,10 +10,13 @@ import jakarta.validation.Valid;
 import java.util.List;
 import kr.kickon.api.admin.gambleSeason.dto.GambleSeasonDetailDTO;
 import kr.kickon.api.admin.gambleSeason.dto.GambleSeasonListDTO;
+import kr.kickon.api.admin.gambleSeason.request.CreateGambleSeasonRequestDTO;
 import kr.kickon.api.admin.gambleSeason.request.GambleSeasonFilterRequest;
 import kr.kickon.api.admin.gambleSeason.response.GetGambleSeasonDetailResponse;
 import kr.kickon.api.admin.gambleSeason.response.GetGambleSeasonResponse;
 import kr.kickon.api.admin.partners.dto.PartnersDetailDTO;
+import kr.kickon.api.admin.partners.request.CreatePartnersRequestDTO;
+import kr.kickon.api.admin.partners.response.GetPartnersDetailResponse;
 import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.GambleSeason;
@@ -27,6 +30,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -72,5 +77,16 @@ public class AdminGambleSeasonController {
     GambleSeasonDetailDTO dto = adminGambleSeasonService.getGambleSeasonDetail(gambleSeason);
 
     return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, dto));
+  }
+
+  @PostMapping
+  @Operation(summary = "승부 예측 시즌 생성", description = "승부 예측 시즌을 생성합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "성공",
+          content = @Content(schema = @Schema(implementation = GetGambleSeasonDetailResponse.class))),
+  })
+  public ResponseEntity<ResponseDTO<GambleSeasonDetailDTO>> createGambleSeason(@RequestBody CreateGambleSeasonRequestDTO request) {
+    GambleSeasonDetailDTO responseDto = adminGambleSeasonService.createGambleSeason(request);
+    return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, responseDto));
   }
 }

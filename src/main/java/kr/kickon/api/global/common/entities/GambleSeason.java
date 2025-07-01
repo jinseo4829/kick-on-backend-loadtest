@@ -3,14 +3,18 @@ package kr.kickon.api.global.common.entities;
 import jakarta.persistence.*;
 import kr.kickon.api.global.common.enums.OperatingStatus;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "GambleSeason")
 @Getter
 @Setter
+@SuperBuilder
+@NoArgsConstructor
 public class GambleSeason extends BaseEntity {
     @Column(nullable = false, length = 50)
     private String title;

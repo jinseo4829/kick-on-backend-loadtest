@@ -34,8 +34,8 @@ public class GambleSeasonDetailDTO {
   @Schema(description = "상태", example = "PROCEEDING")
   private OperatingStatus operatingStatus;
 
-  @Schema(description = "비고")
-  private String etc;
+  @Schema(description = "설명(비고)")
+  private String description;
 
   @Schema(description = "참여 팀 리스트", example = "PENDING")
   private List<SeasonTeamDTO> gambleSeasonTeams;
@@ -61,7 +61,7 @@ public class GambleSeasonDetailDTO {
         .startedAt(season.getStartedAt())
         .finishedAt(season.getFinishedAt())
         .operatingStatus(season.getOperatingStatus())
-        .etc(season.getEtc())
+        .description(season.getDescription())
         .league(leagueDto)
         .gambleSeasonTeams(seasonTeamList)
         .gambleSeasonRanking(rankingList)
