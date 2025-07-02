@@ -12,4 +12,6 @@ import java.util.List;
 @Repository
 public interface ActualSeasonTeamRepository extends JpaRepository<ActualSeasonTeam, Long>, QuerydslPredicateExecutor<ActualSeasonTeam> {
     boolean existsByActualSeasonAndTeam_Pk(ActualSeason actualSeason, Long teamPk);
+    List<ActualSeasonTeam> findAllByActualSeason_PkAndStatus(Long actualSeasonPk, DataStatus status);
+
 }

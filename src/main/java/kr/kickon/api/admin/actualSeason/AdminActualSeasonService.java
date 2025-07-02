@@ -1,11 +1,16 @@
 package kr.kickon.api.admin.actualSeason;
 
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
 import java.util.Optional;
+import kr.kickon.api.admin.actualSeason.dto.ActualSeasonDetailDTO;
 import kr.kickon.api.admin.actualSeason.request.ActualSeasonFilterRequest;
 import kr.kickon.api.admin.gambleSeason.dto.GambleSeasonListDTO;
+import kr.kickon.api.domain.actualSeason.ActualSeasonRepository;
+import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
+import kr.kickon.api.domain.team.dto.SeasonTeamDTO;
 import kr.kickon.api.global.common.entities.ActualSeason;
 import kr.kickon.api.global.common.entities.QActualSeason;
 import kr.kickon.api.global.common.entities.QLeague;
@@ -25,6 +30,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminActualSeasonService {
 
   private final JPAQueryFactory queryFactory;
+  private final ActualSeasonRepository actualSeasonRepository;
+  private final ActualSeasonTeamService actualSeasonTeamService;
+  public ActualSeason findByPk(Long pk){
+    BooleanExpression predicate = QActualSeason.actualSeason.pk.eq(pk).and(QActualSeason.actualSeason.status.eq(DataStatus.ACTIVATED));
+    Optional<ActualSeason> actualSeason = actualSeasonRepository.findOne(predicate);
+    return actualSeason.orElse(null);
+  }
 
   @Transactional
   public Page<GambleSeasonListDTO> findActualSeasonByFilter(ActualSeasonFilterRequest request,
@@ -70,5 +82,13 @@ public class AdminActualSeasonService {
         .toList();
 
     return new PageImpl<>(dtos, pageable, total);
+  }
+
+  @Transactional
+  public ActualSeasonDetailDTO getActualSeasonDetail(ActualSeason season) {
+    List<SeasonTeamDTO> teamList =
+        actualSeasonTeamService.findAllByActualSeasonPk(season.getPk());
+
+    return ActualSeasonDetailDTO.fromEntity(season, teamList);
   }
 }

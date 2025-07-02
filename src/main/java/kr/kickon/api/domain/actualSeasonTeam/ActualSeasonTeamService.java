@@ -3,6 +3,7 @@ package kr.kickon.api.domain.actualSeasonTeam;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import kr.kickon.api.domain.team.dto.SeasonTeamDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.ActualSeason;
 import kr.kickon.api.global.common.entities.ActualSeasonTeam;
@@ -87,5 +88,13 @@ public class ActualSeasonTeamService implements BaseService<ActualSeasonTeam> {
     // ActualSeasonTeamService
     public boolean existsByActualSeasonAndTeamPk(ActualSeason actualSeason, Long teamPk) {
         return actualSeasonTeamRepository.existsByActualSeasonAndTeam_Pk(actualSeason, teamPk);
+    }
+
+    public List<SeasonTeamDTO> findAllByActualSeasonPk(Long seasonPk) {
+        return actualSeasonTeamRepository
+            .findAllByActualSeason_PkAndStatus(seasonPk, DataStatus.ACTIVATED)
+            .stream()
+            .map(gst -> new SeasonTeamDTO(gst.getTeam()))
+            .toList();
     }
 }
