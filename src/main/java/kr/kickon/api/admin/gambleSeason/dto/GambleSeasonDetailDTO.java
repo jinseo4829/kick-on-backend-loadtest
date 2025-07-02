@@ -19,7 +19,7 @@ public class GambleSeasonDetailDTO {
   @Schema(description = "승부 예측 시즌 PK", example = "1")
   private Long pk;
 
-  @Schema(description = "리그", example = "PENDING")
+  @Schema(description = "리그")
   private LeagueDTO league;
 
   @Schema(description = "제목", example = "24/25 K 리그")
