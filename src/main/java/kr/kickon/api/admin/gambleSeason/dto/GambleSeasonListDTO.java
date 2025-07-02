@@ -3,6 +3,7 @@ package kr.kickon.api.admin.gambleSeason.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import kr.kickon.api.domain.league.dto.LeagueDTO;
+import kr.kickon.api.global.common.entities.ActualSeason;
 import kr.kickon.api.global.common.entities.GambleSeason;
 import kr.kickon.api.global.common.entities.League;
 import kr.kickon.api.global.common.enums.OperatingStatus;
@@ -51,4 +52,21 @@ public class GambleSeasonListDTO {
         .league(leagueDto)
         .build();
   }
+
+  public static GambleSeasonListDTO fromActualSeason(ActualSeason actualSeason) {
+    LeagueDTO leagueDto = null;
+    if (actualSeason.getLeague() != null) {
+      leagueDto = new LeagueDTO(actualSeason.getLeague());
+    }
+
+    return GambleSeasonListDTO.builder()
+        .pk(actualSeason.getPk())
+        .title(actualSeason.getTitle())
+        .startedAt(actualSeason.getStartedAt().atStartOfDay())
+        .finishedAt(actualSeason.getFinishedAt().atStartOfDay())
+        .operatingStatus(actualSeason.getOperatingStatus())
+        .league(leagueDto)
+        .build();
+  }
+
 }
