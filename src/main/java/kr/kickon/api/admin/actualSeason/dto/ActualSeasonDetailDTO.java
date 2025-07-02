@@ -36,7 +36,7 @@ public class ActualSeasonDetailDTO {
   @Schema(description = "설명(비고)")
   private String description;
 
-  @Schema(description = "연도")
+  @Schema(description = "연도", example = "2025")
   private int year;
   
   @Schema(description = "참여 팀 리스트")

@@ -10,12 +10,17 @@ import jakarta.validation.Valid;
 import java.util.List;
 import kr.kickon.api.admin.actualSeason.dto.ActualSeasonDetailDTO;
 import kr.kickon.api.admin.actualSeason.request.ActualSeasonFilterRequest;
+import kr.kickon.api.admin.actualSeason.request.PatchActualSeasonRequestDTO;
 import kr.kickon.api.admin.actualSeason.response.GetActualSeasonDetailResponse;
+import kr.kickon.api.admin.gambleSeason.dto.GambleSeasonDetailDTO;
 import kr.kickon.api.admin.gambleSeason.dto.GambleSeasonListDTO;
+import kr.kickon.api.admin.gambleSeason.request.PatchGambleSeasonRequestDTO;
+import kr.kickon.api.admin.gambleSeason.response.GetGambleSeasonDetailResponse;
 import kr.kickon.api.admin.gambleSeason.response.GetGambleSeasonResponse;
 import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.ActualSeason;
+import kr.kickon.api.global.common.entities.GambleSeason;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +30,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -71,5 +78,19 @@ public class AdminActualSeasonController {
     ActualSeasonDetailDTO dto = adminActualSeasonService.getActualSeasonDetail(actualSeason);
 
     return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, dto));
+  }
+
+  @PatchMapping("/{pk}")
+  @Operation(summary = "시즌 수정", description = "pk값으로 시즌을 수정합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "성공",
+          content = @Content(schema = @Schema(implementation = GetActualSeasonDetailResponse.class))),
+  })
+  public ResponseEntity<ResponseDTO<ActualSeasonDetailDTO>> patchActualSeason(@PathVariable Long pk,
+      @RequestBody PatchActualSeasonRequestDTO request) {
+    ActualSeason actualSeason = adminActualSeasonService.findByPk(pk);
+    if (actualSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
+    ActualSeasonDetailDTO responseDto = adminActualSeasonService.patchActualSeason(actualSeason, request);
+    return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, responseDto));
   }
 }
