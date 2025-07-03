@@ -12,15 +12,11 @@ import kr.kickon.api.admin.actualSeason.dto.ActualSeasonDetailDTO;
 import kr.kickon.api.admin.actualSeason.request.ActualSeasonFilterRequest;
 import kr.kickon.api.admin.actualSeason.request.PatchActualSeasonRequestDTO;
 import kr.kickon.api.admin.actualSeason.response.GetActualSeasonDetailResponse;
-import kr.kickon.api.admin.gambleSeason.dto.GambleSeasonDetailDTO;
 import kr.kickon.api.admin.gambleSeason.dto.GambleSeasonListDTO;
-import kr.kickon.api.admin.gambleSeason.request.PatchGambleSeasonRequestDTO;
-import kr.kickon.api.admin.gambleSeason.response.GetGambleSeasonDetailResponse;
 import kr.kickon.api.admin.gambleSeason.response.GetGambleSeasonResponse;
 import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.ActualSeason;
-import kr.kickon.api.global.common.entities.GambleSeason;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -92,5 +89,17 @@ public class AdminActualSeasonController {
     if (actualSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
     ActualSeasonDetailDTO responseDto = adminActualSeasonService.patchActualSeason(actualSeason, request);
     return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, responseDto));
+  }
+
+  @DeleteMapping("/{pk}")
+  @Operation(summary = "시즌 삭제", description = "시즌을 삭제합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "성공"),
+  })
+  public ResponseEntity<ResponseDTO> deleteActualSeason(@PathVariable Long pk) {
+    ActualSeason actualSeason = adminActualSeasonService.findByPk(pk);
+    if (actualSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
+    adminActualSeasonService.deleteActualSeason(actualSeason);
+    return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
   }
 }

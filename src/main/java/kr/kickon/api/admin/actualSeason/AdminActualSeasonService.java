@@ -141,4 +141,10 @@ public class AdminActualSeasonService {
 
     return ActualSeasonDetailDTO.fromEntity(season, teamList);
   }
+
+  @Transactional
+  public void deleteActualSeason(ActualSeason actualSeason) {
+    actualSeason.setStatus(DataStatus.DEACTIVATED);
+    actualSeasonRepository.save(actualSeason);
+  }
 }
