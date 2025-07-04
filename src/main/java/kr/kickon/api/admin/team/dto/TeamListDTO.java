@@ -1,16 +1,14 @@
 package kr.kickon.api.admin.team.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import kr.kickon.api.admin.gambleSeason.dto.GambleSeasonListDTO;
 import kr.kickon.api.domain.league.dto.LeagueDTO;
 import kr.kickon.api.global.common.ExampleConstants;
-import kr.kickon.api.global.common.entities.ActualSeason;
-import kr.kickon.api.global.common.entities.GambleSeason;
+import kr.kickon.api.global.common.entities.Team;
 import lombok.Builder;
 import lombok.Data;
 
 @Data
-@Builder
+@Builder(toBuilder = true)
 @Schema(description = "팀 리스트 응답 DTO")
 public class TeamListDTO {
 
@@ -20,29 +18,29 @@ public class TeamListDTO {
   @Schema(description = "리그")
   private LeagueDTO league;
 
-  @Schema(description = "팀 이름", example = ExampleConstants.teamName)
-  private String teamName;
+  @Schema(description = "한글 이름", example = ExampleConstants.teamKrName)
+  private String nameKr;
 
-  @Schema(description = "진행 중 시즌", example = "PROCEEDING")
-  private ActualSeason operatingStatus;
+  @Schema(description = "영어 이름", example = ExampleConstants.teamnameEn)
+  private String nameEn;
 
-  public static kr.kickon.api.admin.gambleSeason.dto.GambleSeasonListDTO fromEntity(
-      GambleSeason gambleSeason) {
+  @Schema(description = "팀 url", example = ExampleConstants.teamLogoUrl)
+  private String logoUrl;
 
-    LeagueDTO leagueDto = null;
-    if (gambleSeason.getActualSeason() != null &&
-        gambleSeason.getActualSeason().getLeague() != null) {
+  @Schema(description = "진행 중 시즌PK", example = "1")
+  private Long seasonPk;
 
-      leagueDto = new LeagueDTO(gambleSeason.getActualSeason().getLeague());
-    }
+  @Schema(description = "진행 중 시즌 title", example = "24/25 K 리그")
+  private String seasonTitle;
 
-    return GambleSeasonListDTO.builder()
-        .pk(gambleSeason.getPk())
-        .title(gambleSeason.getTitle())
-        .startedAt(gambleSeason.getStartedAt())
-        .finishedAt(gambleSeason.getFinishedAt())
-        .operatingStatus(gambleSeason.getOperatingStatus())
-        .league(leagueDto)
+  public static kr.kickon.api.admin.team.dto.TeamListDTO fromEntity(
+      Team team) {
+
+    return TeamListDTO.builder()
+        .pk(team.getPk())
+        .nameKr(team.getNameKr())
+        .nameEn(team.getNameEn())
+        .logoUrl(team.getLogoUrl())
         .build();
   }
 }
