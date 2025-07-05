@@ -12,8 +12,10 @@ import kr.kickon.api.domain.actualSeason.ActualSeasonService;
 import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
 import kr.kickon.api.domain.game.dto.*;
 import kr.kickon.api.domain.game.request.GetGamesRequestDTO;
+import kr.kickon.api.domain.game.response.CalendarDateDTO;
 import kr.kickon.api.domain.game.response.GetGamesResponse;
 import kr.kickon.api.domain.game.response.LeagueWithGamesDTO;
+import kr.kickon.api.domain.game.response.NextGameDateDTO;
 import kr.kickon.api.domain.league.dto.LeagueDTO;
 import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
@@ -27,11 +29,15 @@ import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -59,13 +65,17 @@ public class GameController {
     public ResponseEntity<ResponseDTO<LeagueWithGamesDTO>> getGames(@Valid GetGamesRequestDTO paramDto) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
 
+        // LocalDate → LocalDateTime 변환
+        LocalDateTime fromDateTime = (paramDto.getFrom() != null) ? paramDto.getFrom().atStartOfDay() : null;
+        LocalDateTime toDateTime = (paramDto.getTo() != null) ? paramDto.getTo().atTime(23,59,59) : null;
+
         List<Game> games = List.of();
 
         if (user == null) {
             if(paramDto.getLeague()!= null){
                 ActualSeason actualSeason = actualSeasonService.findRecentByLeaguePk(paramDto.getLeague());
                 if(actualSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
-                games = gameService.findByActualSeason(actualSeason.getPk(), paramDto.getStatus());
+                games = gameService.findByActualSeason(actualSeason.getPk(), paramDto.getStatus(), fromDateTime, toDateTime);
             }
         } else {
             List<UserFavoriteTeam> favoriteTeams = userFavoriteTeamService.findAllByUserPk(user.getPk());
@@ -76,7 +86,7 @@ public class GameController {
                 if(paramDto.getLeague()!= null){
                     ActualSeason actualSeason = actualSeasonService.findRecentByLeaguePk(paramDto.getLeague());
                     if(actualSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
-                    games = gameService.findByActualSeason(actualSeason.getPk(), paramDto.getStatus());
+                    games = gameService.findByActualSeason(actualSeason.getPk(), paramDto.getStatus(), fromDateTime, toDateTime);
                 }
             } else {
                 if(paramDto.getTeam()!=null){
@@ -87,7 +97,9 @@ public class GameController {
                                 actualSeasonTeam.getActualSeason().getPk(),
                                 paramDto.getStatus(),
                                 paramDto.getTeam(),
-                                4
+                                4,
+                                fromDateTime,
+                                toDateTime
                         );
                         games.addAll(teamGames);
                     }
@@ -109,7 +121,9 @@ public class GameController {
                                     actualSeasonTeam.getActualSeason().getPk(),
                                     paramDto.getStatus(),
                                     favoriteTeam.getTeam().getPk(),
-                                    limitPerTeam
+                                    limitPerTeam,
+                                    fromDateTime,
+                                    toDateTime
                             );
                             games.addAll(teamGames);
                         }
@@ -158,5 +172,55 @@ public class GameController {
                 .games(gameDTOs)
                 .build()));
     }
+
+    @Operation(
+            summary = "달력에 경기 일정 표시",
+            description = "특정 리그와 월(month) 기준으로, 해당 월에 경기 있는 날짜 리스트를 반환"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공",
+                    content = @Content(schema = @Schema(implementation = CalendarDateDTO.class))),
+    })
+    @GetMapping("/calendar")
+    public ResponseEntity<ResponseDTO<CalendarDateDTO>> getCalendarDates(
+            @RequestParam Long league,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate month
+    ) {
+        List<LocalDate> dates = gameService.getCalendarDates(league, month);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, new CalendarDateDTO(dates)));
+    }
+
+    @Operation(
+            summary = "가장 가까운 예정 경기 날짜 조회",
+            description = "아직 끝나지 않은 경기(PENDING, POSTPONED, PROCEEDING) 중에서 가장 가까운 경기 날짜 반환"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공",
+                    content = @Content(schema = @Schema(implementation = NextGameDateDTO.class))),
+    })
+    @GetMapping("/calendar/next")
+    public ResponseEntity<ResponseDTO<NextGameDateDTO>> getNextAvailableGameDate(
+            @RequestParam Long league,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate after
+    ) {
+        LocalDate nextDate = gameService.getNextAvailableGameDate(league, after);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, new NextGameDateDTO(nextDate)));
+    }
+
+    @Operation(
+            summary = "현재 승부예측 오픈 기간 조회",
+            description = "오늘 기준으로 승부예측 오픈된 4주 기간(일요일 기준) 반환"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공",
+                    content = @Content(schema = @Schema(implementation = PredictOpenDTO.class))),
+    })
+    @GetMapping("/predict/open")
+    public ResponseEntity<ResponseDTO<PredictOpenDTO>> getPredictOpenPeriod() {
+        LocalDate today = LocalDate.now();
+        PredictOpenDTO period = gameService.getPredictOpenPeriod(today);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, period));
+    }
+
 
 }

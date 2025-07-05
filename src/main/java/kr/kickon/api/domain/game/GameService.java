@@ -25,7 +25,10 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Optional;
 
@@ -166,7 +169,8 @@ public class GameService implements BaseService<Game> {
         return gameRepository.save(game);
     }
 
-    public List<Game> findByActualSeason(Long actualSeasonPk, String gameStatus){
+    public List<Game> findByActualSeason(Long actualSeasonPk, String gameStatus, LocalDateTime from, LocalDateTime to){
+
         JPAQuery<Game> query = queryFactory.selectFrom(QGame.game)
                 .where(QGame.game.status.eq(DataStatus.ACTIVATED).and(QGame.game.actualSeason.pk.eq(actualSeasonPk)));
 
@@ -180,14 +184,20 @@ public class GameService implements BaseService<Game> {
                     .orderBy(QGame.game.startedAt.asc());
         }
 
-        return query.orderBy(QGame.game.startedAt.asc()).limit(6).fetch();
+        if (from != null && to != null) {
+            query.where(QGame.game.startedAt.between(from, to));
+        }
+
+        return query.limit(6).fetch();
     }
 
     public List<Game> findByActualSeasonByFavoriteTeam(
             Long actualSeasonPk,
             String gameStatus,
             Long favoriteTeamPk,
-            int limitPerTeam
+            int limitPerTeam,
+            LocalDateTime from,
+            LocalDateTime to
     ) {
         LocalDateTime now = LocalDateTime.now();
         BooleanBuilder builder = new BooleanBuilder();
@@ -206,24 +216,27 @@ public class GameService implements BaseService<Game> {
                     GameStatus.PENDING
             ));
             builder.and(QGame.game.startedAt.lt(now.minusHours(2)));
-            return queryFactory.selectFrom(QGame.game)
-                    .where(builder)
-                    .orderBy(QGame.game.startedAt.desc())
-                    .limit(limitPerTeam)
-                    .fetch();
         } else {
             builder.and(QGame.game.gameStatus.in(
                     GameStatus.POSTPONED,
                     GameStatus.PENDING
             ));
             builder.and(QGame.game.startedAt.goe(now.plusHours(2)));
-            return queryFactory.selectFrom(QGame.game)
-                    .where(builder)
-                    .orderBy(QGame.game.startedAt.asc())
-                    .limit(limitPerTeam)
-                    .fetch();
         }
+
+        if (from != null && to != null) {
+            builder.and(QGame.game.startedAt.between(from, to));
+        }
+
+        return queryFactory.selectFrom(QGame.game)
+                .where(builder)
+                .orderBy("finished".equalsIgnoreCase(gameStatus) ?
+                        QGame.game.startedAt.desc() :
+                        QGame.game.startedAt.asc())
+                .limit(limitPerTeam)
+                .fetch();
     }
+
 
     public List<Game> findByToday() {
         // QGame 객체 생성
@@ -334,5 +347,47 @@ public class GameService implements BaseService<Game> {
                 .fetchOne();
 
         return new PageImpl<>(content, pageable, total);
+    }
+
+    public List<LocalDate> getCalendarDates(Long leaguePk, LocalDate monthStart) {
+        LocalDate monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth());
+
+        List<Game> games = queryFactory.selectFrom(QGame.game)
+                .where(QGame.game.status.eq(DataStatus.ACTIVATED)
+                        .and(QGame.game.actualSeason.league.pk.eq(leaguePk))
+                        .and(QGame.game.startedAt.between(monthStart.atStartOfDay(), monthEnd.atTime(23,59,59))))
+                .fetch();
+
+        return games.stream()
+                .map(game -> game.getStartedAt().toLocalDate())
+                .distinct()
+                .toList();
+    }
+
+    public LocalDate getNextAvailableGameDate(Long leaguePk, LocalDate today) {
+        QGame game = QGame.game;
+        Game nextGame = queryFactory.selectFrom(game)
+                .where(
+                        game.status.eq(DataStatus.ACTIVATED)
+                                .and(game.actualSeason.league.pk.eq(leaguePk))
+                                .and(game.gameStatus.in(GameStatus.PENDING, GameStatus.POSTPONED, GameStatus.PROCEEDING))
+                                .and(game.startedAt.goe(today.atStartOfDay()))
+                )
+                .orderBy(game.startedAt.asc())
+                .fetchFirst();
+
+        if (nextGame == null) {
+            return null;
+        }
+        return nextGame.getStartedAt().toLocalDate();
+    }
+
+    public PredictOpenDTO getPredictOpenPeriod(LocalDate today) {
+        // 오늘 기준 가장 가까운 지난 일요일 찾기
+        LocalDate startDate = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY));
+        // 그로부터 4주 후 토요일까지
+        LocalDate endDate = startDate.plusWeeks(4).minusDays(1);
+
+        return new PredictOpenDTO(startDate, endDate, 4);
     }
 }
