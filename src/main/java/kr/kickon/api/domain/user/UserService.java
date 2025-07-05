@@ -86,6 +86,16 @@ public class UserService implements BaseService<User> {
             List<Long> requestedTeamPks = request.getTeams();
             List<UserFavoriteTeam> existingList = userFavoriteTeamService.findAllByUserPk(user.getPk());
 
+            // 변경 제한 기간 체크
+            for (UserFavoriteTeam oldUft : existingList) {
+                if (oldUft.getStatus() == DataStatus.ACTIVATED) {
+                    LocalDateTime createdAt = oldUft.getCreatedAt();
+                    if (createdAt != null && createdAt.plusMonths(3).isAfter(LocalDateTime.now())) {
+                        throw new BadRequestException(ResponseCode.CANNOT_CHANGE_TEAM_YET);
+                    }
+                }
+            }
+
             // 기존 팀 매핑
             Map<Long, UserFavoriteTeam> teamMap = existingList.stream()
                     .collect(Collectors.toMap(uf -> uf.getTeam().getPk(), Function.identity()));

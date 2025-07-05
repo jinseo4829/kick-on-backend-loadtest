@@ -12,10 +12,7 @@ import kr.kickon.api.domain.actualSeason.ActualSeasonService;
 import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
 import kr.kickon.api.domain.game.dto.*;
 import kr.kickon.api.domain.game.request.GetGamesRequestDTO;
-import kr.kickon.api.domain.game.response.CalendarDateDTO;
-import kr.kickon.api.domain.game.response.GetGamesResponse;
-import kr.kickon.api.domain.game.response.LeagueWithGamesDTO;
-import kr.kickon.api.domain.game.response.NextGameDateDTO;
+import kr.kickon.api.domain.game.response.*;
 import kr.kickon.api.domain.league.dto.LeagueDTO;
 import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
@@ -221,6 +218,56 @@ public class GameController {
         PredictOpenDTO period = gameService.getPredictOpenPeriod(today);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, period));
     }
+
+    @Operation(
+            summary = "내가 참여한 경기 캘린더 조회",
+            description = "내가 승부예측에 참여한 경기 날짜 리스트를 반환 (캘린더 점찍기 용)"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공",
+                    content = @Content(schema = @Schema(implementation = MyPredictionDatesDTO.class))),
+    })
+    @GetMapping("/my-calendar")
+    public ResponseEntity<ResponseDTO<MyPredictionDatesDTO>> getMyPredictionDates() {
+        User user = jwtTokenProvider.getUserFromSecurityContext();
+        List<LocalDate> dates = gameService.getMyPredictionDates(user.getPk());
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, new MyPredictionDatesDTO(dates)));
+    }
+
+    @Operation(
+            summary = "내가 참여한 경기 리스트 조회",
+            description = "선택한 날짜에 내가 승부예측에 참여한 경기 리스트 반환"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공",
+                    content = @Content(schema = @Schema(implementation = GetGamesResponse.class))),
+    })
+    @GetMapping("/my-predictions")
+    public ResponseEntity<ResponseDTO<LeagueWithGamesDTO>> getMyPredictions(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
+    ) {
+        User user = jwtTokenProvider.getUserFromSecurityContext();
+        List<GameDTO> gameDTOs = gameService.getMyPredictions(user.getPk(), from, to);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS,
+                LeagueWithGamesDTO.builder().games(gameDTOs).build()));
+    }
+
+    @Operation(
+            summary = "내 예측 통계 조회",
+            description = "내 누적 성공률, 참여율, 이번 달 성과, 포인트, 가장 많이 적중한 응원팀 반환"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공",
+                    content = @Content(schema = @Schema(implementation = MyPredictionStatsDTO.class))),
+    })
+    @GetMapping("/my-stats")
+    public ResponseEntity<ResponseDTO<MyPredictionStatsDTO>> getMyPredictionStats() {
+        User user = jwtTokenProvider.getUserFromSecurityContext();
+        MyPredictionStatsDTO stats = gameService.getMyPredictionStats(user.getPk());
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, stats));
+    }
+
 
 
 }

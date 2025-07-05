@@ -10,11 +10,19 @@ import kr.kickon.api.admin.game.dto.GameListDTO;
 import kr.kickon.api.admin.game.request.GameFilterRequest;
 import kr.kickon.api.admin.game.request.GameUpdateRequest;
 import kr.kickon.api.admin.migration.dto.ApiGamesDTO;
+import kr.kickon.api.domain.game.dto.GambleResultDTO;
+import kr.kickon.api.domain.game.dto.GameDTO;
+import kr.kickon.api.domain.game.response.MyPredictionStatsDTO;
+import kr.kickon.api.domain.game.response.PredictOpenDTO;
+import kr.kickon.api.domain.league.LeagueService;
+import kr.kickon.api.domain.league.dto.LeagueDTO;
+import kr.kickon.api.domain.team.dto.TeamDTO;
+import kr.kickon.api.domain.userGameGamble.UserGameGambleService;
+import kr.kickon.api.domain.userGameGamble.dto.UserGameGambleDTO;
+import kr.kickon.api.domain.userPointEvent.UserPointEventService;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
-import kr.kickon.api.global.common.enums.DataStatus;
-import kr.kickon.api.global.common.enums.GameStatus;
-import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.common.enums.*;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +38,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -38,6 +48,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class GameService implements BaseService<Game> {
     private final GameRepository gameRepository;
+    private final UserGameGambleService userGameGambleService;
+    private final UserPointEventService userPointEventService;
     private final JPAQueryFactory queryFactory;
     private final UUIDGenerator uuidGenerator;
     public static String[] ScheduledStatus = {"TBD", "NS"};
@@ -390,4 +402,96 @@ public class GameService implements BaseService<Game> {
 
         return new PredictOpenDTO(startDate, endDate, 4);
     }
+
+    public List<LocalDate> getMyPredictionDates(Long userPk) {
+        return userGameGambleService.findByUserPk(userPk).stream()
+                .map(gamble -> gamble.getGame().getStartedAt().toLocalDate())
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+    }
+
+    public List<GameDTO> getMyPredictions(Long userPk, LocalDate from, LocalDate to) {
+        LocalDateTime start = from.atStartOfDay();
+        LocalDateTime end = to.atTime(23, 59, 59);
+
+        return userGameGambleService.findByUserPk(userPk).stream()
+                .filter(gamble -> !gamble.getGame().getStartedAt().isBefore(start)
+                        && !gamble.getGame().getStartedAt().isAfter(end))
+                .map(gamble -> {
+                    Game game = gamble.getGame();
+
+                    TeamDTO homeTeamDTO = new TeamDTO(game.getHomeTeam());
+                    TeamDTO awayTeamDTO = new TeamDTO(game.getAwayTeam());
+
+                    Map<PredictedResult, Long> userGamblePredictedResult = userGameGambleService.findGambleCountByGamePk(game.getPk());
+                    long homeCount = userGamblePredictedResult.getOrDefault(PredictedResult.HOME, 0L);
+                    long awayCount = userGamblePredictedResult.getOrDefault(PredictedResult.AWAY, 0L);
+                    long drawCount = userGamblePredictedResult.getOrDefault(PredictedResult.DRAW, 0L);
+
+                    long totalParticipation = homeCount + awayCount + drawCount;
+                    int homeRatio = (totalParticipation > 0) ? (int) ((homeCount * 100) / totalParticipation) : 0;
+                    int awayRatio = (totalParticipation > 0) ? (int) ((awayCount * 100) / totalParticipation) : 0;
+                    int drawRatio = (totalParticipation > 0) ? (int) ((drawCount * 100) / totalParticipation) : 0;
+                    GambleResultDTO gambleResultDTO = new GambleResultDTO(homeRatio, awayRatio, drawRatio, totalParticipation);
+
+                    UserGameGambleDTO myGambleResultDTO = new kr.kickon.api.domain.userGameGamble.dto.UserGameGambleDTO(gamble);
+
+                    GameDTO gameDTO = new GameDTO(homeTeamDTO, awayTeamDTO, game, gambleResultDTO);
+                    gameDTO.setMyGambleResult(myGambleResultDTO);
+                    gameDTO.setLeague(new LeagueDTO(game.getActualSeason().getLeague()));
+                    return gameDTO;
+                })
+                .collect(Collectors.toList());
+    }
+
+    public MyPredictionStatsDTO getMyPredictionStats(Long userPk) {
+        // 1. 전체 예측 참여 내역 조회
+        List<UserGameGamble> gambles = userGameGambleService.findByUserPk(userPk);
+
+        int totalParticipation = gambles.size();
+        int totalHit = (int) gambles.stream()
+                .filter(g -> g.getGambleStatus() == GambleStatus.SUCCEED || g.getGambleStatus() == GambleStatus.PERFECT)
+                .count();
+        double totalSuccessRate = (totalParticipation > 0) ? (double) totalHit / totalParticipation : 0.0;
+
+        // 2. 내 응원팀 경기 대비 참여율
+        int totalFavoriteGames = userGameGambleService.countFavoriteTeamGames(userPk);
+        double participationRate = (totalFavoriteGames > 0) ? (double) totalParticipation / totalFavoriteGames : 0.0;
+
+        // 3. 이번 달 통계
+        LocalDate now = LocalDate.now();
+        LocalDateTime startOfMonth = now.withDayOfMonth(1).atStartOfDay();
+        LocalDateTime endOfMonth = now.withDayOfMonth(now.lengthOfMonth()).atTime(23,59,59);
+
+        List<UserGameGamble> thisMonthGambles = gambles.stream()
+                .filter(g -> !g.getCreatedAt().isBefore(startOfMonth) && !g.getCreatedAt().isAfter(endOfMonth))
+                .toList();
+
+        int thisMonthParticipation = thisMonthGambles.size();
+        int thisMonthHit = (int) thisMonthGambles.stream()
+                .filter(g -> g.getGambleStatus() == GambleStatus.SUCCEED || g.getGambleStatus() == GambleStatus.PERFECT)
+                .count();
+        double thisMonthSuccessRate = (thisMonthParticipation > 0) ? (double) thisMonthHit / thisMonthParticipation : 0.0;
+
+        // 4. 포인트
+        int thisMonthPoints = userPointEventService.getPointSumByUser(userPk, startOfMonth, endOfMonth);
+        int totalPoints = userPointEventService.getPointSumByUser(userPk, null, null);
+
+        // 5. 가장 많이 적중한 응원팀
+        String mostHitTeamName = userGameGambleService.getMostHitTeamName(userPk);
+
+        return MyPredictionStatsDTO.builder()
+                .totalSuccessRate(totalSuccessRate)
+                .totalParticipationCount(totalParticipation)
+                .participationRate(participationRate)
+                .thisMonthSuccessRate(thisMonthSuccessRate)
+                .thisMonthHitSummary(thisMonthHit + "/" + thisMonthParticipation)
+                .thisMonthPoints(thisMonthPoints)
+                .totalPoints(totalPoints)
+                .mostHitTeamName(mostHitTeamName)
+                .build();
+    }
+
+
 }
