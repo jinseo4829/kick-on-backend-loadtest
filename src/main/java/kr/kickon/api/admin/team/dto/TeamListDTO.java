@@ -4,11 +4,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import kr.kickon.api.domain.league.dto.LeagueDTO;
 import kr.kickon.api.global.common.ExampleConstants;
 import kr.kickon.api.global.common.entities.Team;
-import lombok.Builder;
 import lombok.Data;
+import lombok.experimental.SuperBuilder;
 
 @Data
-@Builder(toBuilder = true)
+@SuperBuilder(toBuilder = true)
 @Schema(description = "팀 리스트 응답 DTO")
 public class TeamListDTO {
 
@@ -28,10 +28,10 @@ public class TeamListDTO {
   private String logoUrl;
 
   @Schema(description = "진행 중 시즌PK", example = "1")
-  private Long seasonPk;
+  private Long actualSeasonPk;
 
   @Schema(description = "진행 중 시즌 title", example = "24/25 K 리그")
-  private String seasonTitle;
+  private String actualSeasonTitle;
 
   public static kr.kickon.api.admin.team.dto.TeamListDTO fromEntity(
       Team team) {
