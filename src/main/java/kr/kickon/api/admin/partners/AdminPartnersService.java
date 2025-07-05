@@ -4,6 +4,7 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.transaction.Transactional;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -17,7 +18,6 @@ import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
 import kr.kickon.api.domain.partners.PartnersRepository;
 import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.domain.team.dto.TeamDTO;
-import kr.kickon.api.domain.user.UserRepository;
 import kr.kickon.api.domain.user.UserService;
 import kr.kickon.api.global.common.entities.ActualSeasonTeam;
 import kr.kickon.api.global.common.entities.League;
@@ -237,10 +237,10 @@ public class AdminPartnersService {
       partners.setUser(user);
     }
     if (request.getContractStartDate() != null) {
-      partners.setContractStartDate(request.getContractStartDate());
+      partners.setContractStartDate(LocalDateTime.parse(request.getContractStartDate()));
     }
     if (request.getContractEndDate() != null) {
-      partners.setContractEndDate(request.getContractEndDate());
+      partners.setContractEndDate(LocalDateTime.parse(request.getContractEndDate()));
     }
     if (request.getContractStatus() != null) {
       try {

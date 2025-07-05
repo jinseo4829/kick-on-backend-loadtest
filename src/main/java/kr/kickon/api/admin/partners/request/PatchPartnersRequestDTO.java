@@ -25,10 +25,10 @@ public class PatchPartnersRequestDTO {
   private String snsUrl;
 
   @Schema(description = "계약 시작일", example = "2024-01-01T12:00:00")
-  private LocalDateTime contractStartDate;
+  private String contractStartDate;
 
   @Schema(description = "계약 종료일", example = "2024-01-30T12:00:00")
-  private LocalDateTime contractEndDate;
+  private String contractEndDate;
 
   @Schema(description = "계약 상태", example = "BEFORE_CONTACT")
   private String contractStatus;

@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -125,4 +126,36 @@ public class GambleSeasonRankingService implements BaseService<GambleSeasonRanki
 
         gambleSeasonRankingRepository.saveAll(rankings);
     }
+
+    @Transactional
+    public List<GetGambleSeasonRankingDTO> getRankingDtoBySeasonPk(Long seasonPk) {
+
+        // 랭킹 엔티티를 순위 기준으로 조회
+        List<GambleSeasonRanking> rankings =
+            findRecentSeasonRankingByGambleSeason(seasonPk);
+
+        // DTO 변환
+        return rankings.stream()
+            .map(r -> {
+                Double points = Optional.ofNullable(r.getPoints())
+                    .map(Integer::doubleValue)
+                    .orElseGet(() ->
+                        gambleSeasonPointService
+                            .findTotalPointByGambleSeasonAndTeam(
+                                r.getGambleSeason().getPk(),
+                                r.getTeam().getPk())
+                            .doubleValue()
+                    );
+
+                return GetGambleSeasonRankingDTO.builder()
+                    .rankOrder(r.getRankOrder())
+                    .teamLogoUrl(r.getTeam().getLogoUrl())
+                    .teamName(r.getTeam().getNameKr())
+                    .gameNum(r.getGameNum())
+                    .points(points)
+                    .build();
+            })
+            .toList();
+    }
+
 }
