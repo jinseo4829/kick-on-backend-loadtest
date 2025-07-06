@@ -12,9 +12,8 @@ import kr.kickon.api.admin.game.request.GameUpdateRequest;
 import kr.kickon.api.admin.migration.dto.ApiGamesDTO;
 import kr.kickon.api.domain.game.dto.GambleResultDTO;
 import kr.kickon.api.domain.game.dto.GameDTO;
-import kr.kickon.api.domain.game.response.MyPredictionStatsDTO;
-import kr.kickon.api.domain.game.response.PredictOpenDTO;
-import kr.kickon.api.domain.league.LeagueService;
+import kr.kickon.api.domain.game.response.MyPredictionStatsResponse;
+import kr.kickon.api.domain.game.response.PredictOpenResponse;
 import kr.kickon.api.domain.league.dto.LeagueDTO;
 import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.domain.userGameGamble.UserGameGambleService;
@@ -394,13 +393,13 @@ public class GameService implements BaseService<Game> {
         return nextGame.getStartedAt().toLocalDate();
     }
 
-    public PredictOpenDTO getPredictOpenPeriod(LocalDate today) {
+    public PredictOpenResponse getPredictOpenPeriod(LocalDate today) {
         // 오늘 기준 가장 가까운 지난 일요일 찾기
         LocalDate startDate = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY));
         // 그로부터 4주 후 토요일까지
         LocalDate endDate = startDate.plusWeeks(4).minusDays(1);
 
-        return new PredictOpenDTO(startDate, endDate, 4);
+        return new PredictOpenResponse(startDate, endDate, 4);
     }
 
     public List<LocalDate> getMyPredictionDates(Long userPk) {
@@ -445,7 +444,7 @@ public class GameService implements BaseService<Game> {
                 .collect(Collectors.toList());
     }
 
-    public MyPredictionStatsDTO getMyPredictionStats(Long userPk) {
+    public MyPredictionStatsResponse getMyPredictionStats(Long userPk) {
         // 1. 전체 예측 참여 내역 조회
         List<UserGameGamble> gambles = userGameGambleService.findByUserPk(userPk);
 
@@ -481,7 +480,7 @@ public class GameService implements BaseService<Game> {
         // 5. 가장 많이 적중한 응원팀
         String mostHitTeamName = userGameGambleService.getMostHitTeamName(userPk);
 
-        return MyPredictionStatsDTO.builder()
+        return MyPredictionStatsResponse.builder()
                 .totalSuccessRate(totalSuccessRate)
                 .totalParticipationCount(totalParticipation)
                 .participationRate(participationRate)

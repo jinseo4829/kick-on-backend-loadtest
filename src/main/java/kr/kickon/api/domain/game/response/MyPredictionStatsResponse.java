@@ -9,7 +9,7 @@ import lombok.Data;
 @Builder
 @AllArgsConstructor
 @Schema(description = "내 예측 통계 DTO")
-public class MyPredictionStatsDTO {
+public class MyPredictionStatsResponse {
     @Schema(description = "누적 성공률 (0.75 -> 75%)")
     private double totalSuccessRate;
 

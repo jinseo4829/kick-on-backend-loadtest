@@ -9,7 +9,7 @@ import java.time.LocalDate;
 @Data
 @AllArgsConstructor
 @Schema(description = "가장 가까운 예정 경기 날짜 DTO")
-public class NextGameDateDTO {
+public class NextGameDateResponse {
 
     @Schema(description = "가장 가까운 예정 경기 날짜", example = "2025-07-03")
     private LocalDate nextDate;

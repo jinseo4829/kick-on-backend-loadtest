@@ -9,7 +9,7 @@ import java.time.LocalDate;
 @Data
 @AllArgsConstructor
 @Schema(description = "승부예측 오픈된 기간 DTO")
-public class PredictOpenDTO {
+public class PredictOpenResponse {
 
     @Schema(description = "승부예측 시작일 (일요일 기준)", example = "2025-07-06")
     private LocalDate startDate;

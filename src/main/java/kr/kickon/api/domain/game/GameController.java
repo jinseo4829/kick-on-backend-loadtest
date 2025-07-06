@@ -59,7 +59,7 @@ public class GameController {
                     content = @Content(schema = @Schema(implementation = GetGamesResponse.class))),
     })
     @GetMapping()
-    public ResponseEntity<ResponseDTO<LeagueWithGamesDTO>> getGames(@Valid GetGamesRequestDTO paramDto) {
+    public ResponseEntity<ResponseDTO<LeagueWithGamesResponse>> getGames(@Valid GetGamesRequestDTO paramDto) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
 
         // LocalDate → LocalDateTime 변환
@@ -165,7 +165,7 @@ public class GameController {
             gameDTO.setLeague(new LeagueDTO(game.getActualSeason().getLeague()));
             return gameDTO;
         }).collect(Collectors.toList());
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, LeagueWithGamesDTO.builder()
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, LeagueWithGamesResponse.builder()
                 .games(gameDTOs)
                 .build()));
     }
@@ -176,15 +176,15 @@ public class GameController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공",
-                    content = @Content(schema = @Schema(implementation = CalendarDateDTO.class))),
+                    content = @Content(schema = @Schema(implementation = CalendarDateResponse.class))),
     })
     @GetMapping("/calendar")
-    public ResponseEntity<ResponseDTO<CalendarDateDTO>> getCalendarDates(
+    public ResponseEntity<ResponseDTO<CalendarDateResponse>> getCalendarDates(
             @RequestParam Long league,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate month
     ) {
         List<LocalDate> dates = gameService.getCalendarDates(league, month);
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, new CalendarDateDTO(dates)));
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, new CalendarDateResponse(dates)));
     }
 
     @Operation(
@@ -193,15 +193,15 @@ public class GameController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공",
-                    content = @Content(schema = @Schema(implementation = NextGameDateDTO.class))),
+                    content = @Content(schema = @Schema(implementation = NextGameDateResponse.class))),
     })
     @GetMapping("/calendar/next")
-    public ResponseEntity<ResponseDTO<NextGameDateDTO>> getNextAvailableGameDate(
+    public ResponseEntity<ResponseDTO<NextGameDateResponse>> getNextAvailableGameDate(
             @RequestParam Long league,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate after
     ) {
         LocalDate nextDate = gameService.getNextAvailableGameDate(league, after);
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, new NextGameDateDTO(nextDate)));
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, new NextGameDateResponse(nextDate)));
     }
 
     @Operation(
@@ -210,12 +210,12 @@ public class GameController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공",
-                    content = @Content(schema = @Schema(implementation = PredictOpenDTO.class))),
+                    content = @Content(schema = @Schema(implementation = PredictOpenResponse.class))),
     })
     @GetMapping("/predict/open")
-    public ResponseEntity<ResponseDTO<PredictOpenDTO>> getPredictOpenPeriod() {
+    public ResponseEntity<ResponseDTO<PredictOpenResponse>> getPredictOpenPeriod() {
         LocalDate today = LocalDate.now();
-        PredictOpenDTO period = gameService.getPredictOpenPeriod(today);
+        PredictOpenResponse period = gameService.getPredictOpenPeriod(today);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, period));
     }
 
@@ -225,13 +225,13 @@ public class GameController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공",
-                    content = @Content(schema = @Schema(implementation = MyPredictionDatesDTO.class))),
+                    content = @Content(schema = @Schema(implementation = MyPredictionDatesResponse.class))),
     })
     @GetMapping("/my-calendar")
-    public ResponseEntity<ResponseDTO<MyPredictionDatesDTO>> getMyPredictionDates() {
+    public ResponseEntity<ResponseDTO<MyPredictionDatesResponse>> getMyPredictionDates() {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         List<LocalDate> dates = gameService.getMyPredictionDates(user.getPk());
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, new MyPredictionDatesDTO(dates)));
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, new MyPredictionDatesResponse(dates)));
     }
 
     @Operation(
@@ -243,14 +243,14 @@ public class GameController {
                     content = @Content(schema = @Schema(implementation = GetGamesResponse.class))),
     })
     @GetMapping("/my-predictions")
-    public ResponseEntity<ResponseDTO<LeagueWithGamesDTO>> getMyPredictions(
+    public ResponseEntity<ResponseDTO<LeagueWithGamesResponse>> getMyPredictions(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
     ) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         List<GameDTO> gameDTOs = gameService.getMyPredictions(user.getPk(), from, to);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS,
-                LeagueWithGamesDTO.builder().games(gameDTOs).build()));
+                LeagueWithGamesResponse.builder().games(gameDTOs).build()));
     }
 
     @Operation(
@@ -259,12 +259,12 @@ public class GameController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공",
-                    content = @Content(schema = @Schema(implementation = MyPredictionStatsDTO.class))),
+                    content = @Content(schema = @Schema(implementation = MyPredictionStatsResponse.class))),
     })
     @GetMapping("/my-stats")
-    public ResponseEntity<ResponseDTO<MyPredictionStatsDTO>> getMyPredictionStats() {
+    public ResponseEntity<ResponseDTO<MyPredictionStatsResponse>> getMyPredictionStats() {
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        MyPredictionStatsDTO stats = gameService.getMyPredictionStats(user.getPk());
+        MyPredictionStatsResponse stats = gameService.getMyPredictionStats(user.getPk());
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, stats));
     }
 

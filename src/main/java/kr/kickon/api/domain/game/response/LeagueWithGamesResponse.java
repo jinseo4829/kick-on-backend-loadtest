@@ -11,7 +11,7 @@ import java.util.List;
 @Data
 @Builder
 @Schema(description = "게임, 리그 response dto")
-public class LeagueWithGamesDTO {
+public class LeagueWithGamesResponse {
     LeagueDTO league;
     List<GameDTO> games;
 }
