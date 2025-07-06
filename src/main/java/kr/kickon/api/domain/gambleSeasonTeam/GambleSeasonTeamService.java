@@ -12,6 +12,8 @@ import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.domain.team.dto.SeasonTeamDTO;
 import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.global.common.BaseService;
+import kr.kickon.api.global.common.entities.ActualSeason;
+import kr.kickon.api.global.common.entities.ActualSeasonTeam;
 import kr.kickon.api.global.common.entities.GambleSeason;
 import kr.kickon.api.global.common.entities.GambleSeasonTeam;
 import kr.kickon.api.global.common.entities.QGambleSeasonTeam;
@@ -108,6 +110,11 @@ public class GambleSeasonTeamService implements BaseService<GambleSeasonTeam> {
             .forEach(gst -> {
                 gst.setStatus(DataStatus.DEACTIVATED);
             });
+    }
+
+    public void patchGambleSeasonTeam(GambleSeason gambleSeason,Long teamPk) {
+        GambleSeasonTeam gambleSeasonTeam = findRecentOperatingByTeamPk(teamPk);
+        gambleSeasonTeam.setGambleSeason(gambleSeason);
     }
 }
 

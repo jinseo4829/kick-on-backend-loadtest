@@ -148,4 +148,9 @@ public class ActualSeasonTeamService implements BaseService<ActualSeasonTeam> {
                 ast.setStatus(DataStatus.DEACTIVATED);
             });
     }
+
+    public void patchActualSeasonTeam(ActualSeason actualSeason,Long teamPk) {
+        ActualSeasonTeam actualSeasonTeam = findLatestByTeam(teamPk);
+        actualSeasonTeam.setActualSeason(actualSeason);
+    }
 }
