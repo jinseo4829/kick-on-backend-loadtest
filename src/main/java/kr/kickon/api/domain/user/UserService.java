@@ -75,7 +75,7 @@ public class UserService implements BaseService<User> {
                 // 닉네임 중복 검사
                 boolean isDuplicated = existsByNickname(request.getNickname());
                 if (isDuplicated) {
-                    throw new BadRequestException(ResponseCode.DUPLICATED_NICKNAME); // ResponseCode에 정의 필요
+                    throw new BadRequestException(ResponseCode.DUPLICATED_NICKNAME);
                 }
                 user.setNickname(request.getNickname());
             }
@@ -85,6 +85,16 @@ public class UserService implements BaseService<User> {
         if (request.getTeams() != null) {
             List<Long> requestedTeamPks = request.getTeams();
             List<UserFavoriteTeam> existingList = userFavoriteTeamService.findAllByUserPk(user.getPk());
+
+            // 변경 제한 기간 체크
+            for (UserFavoriteTeam oldUft : existingList) {
+                if (oldUft.getStatus() == DataStatus.ACTIVATED) {
+                    LocalDateTime createdAt = oldUft.getCreatedAt();
+                    if (createdAt != null && createdAt.plusMonths(6).isAfter(LocalDateTime.now())) {
+                        throw new BadRequestException(ResponseCode.CANNOT_CHANGE_TEAM_YET);
+                    }
+                }
+            }
 
             // 기존 팀 매핑
             Map<Long, UserFavoriteTeam> teamMap = existingList.stream()

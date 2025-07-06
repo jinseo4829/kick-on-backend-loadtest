@@ -166,6 +166,53 @@ public class UserGameGambleService implements BaseService<UserGameGamble> {
         userGameGambleRepository.saveAll(userGameGambles);
     }
 
+    public List<UserGameGamble> findByUserPk(Long userPk) {
+        QUserGameGamble gamble = QUserGameGamble.userGameGamble;
+        return queryFactory
+                .selectFrom(gamble)
+                .where(gamble.user.pk.eq(userPk)
+                        .and(gamble.status.eq(DataStatus.ACTIVATED)))
+                .fetch();
+    }
+
+    public int countFavoriteTeamGames(Long userPk) {
+        QUserFavoriteTeam favoriteTeam = QUserFavoriteTeam.userFavoriteTeam;
+        QGame game = QGame.game;
+
+        List<Long> favoriteTeamPks = queryFactory
+                .select(favoriteTeam.team.pk)
+                .from(favoriteTeam)
+                .where(favoriteTeam.user.pk.eq(userPk))
+                .fetch();
+
+        if (favoriteTeamPks.isEmpty()) return 0;
+
+        return queryFactory
+                .selectFrom(game)
+                .where(game.status.eq(DataStatus.ACTIVATED)
+                        .and(
+                                game.homeTeam.pk.in(favoriteTeamPks)
+                                        .or(game.awayTeam.pk.in(favoriteTeamPks))
+                        ))
+                .fetch().size();
+    }
+
+    public String getMostHitTeamName(Long userPk) {
+        QUserGameGamble gamble = QUserGameGamble.userGameGamble;
+
+        var result = queryFactory
+                .select(gamble.supportingTeam.nameKr, gamble.supportingTeam.pk.count())
+                .from(gamble)
+                .where(gamble.user.pk.eq(userPk)
+                        .and(gamble.gambleStatus.in(GambleStatus.SUCCEED, GambleStatus.PERFECT)))
+                .groupBy(gamble.supportingTeam.nameKr)
+                .orderBy(gamble.supportingTeam.pk.count().desc())
+                .fetchFirst();
+
+        return (result != null) ? result.get(0, String.class) : null;
+    }
+
+
     public void save(UserGameGamble userGameGamble) {
         userGameGambleRepository.save(userGameGamble);
     }
