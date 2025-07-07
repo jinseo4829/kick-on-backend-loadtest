@@ -18,6 +18,7 @@ import kr.kickon.api.domain.gambleSeasonRanking.GambleSeasonRankingService;
 import kr.kickon.api.domain.gambleSeasonTeam.GambleSeasonTeamService;
 import kr.kickon.api.domain.league.dto.LeagueDTO;
 import kr.kickon.api.domain.team.TeamRepository;
+import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.common.entities.ActualSeason;
 import kr.kickon.api.global.common.entities.ActualSeasonRanking;
 import kr.kickon.api.global.common.entities.ActualSeasonTeam;
@@ -53,6 +54,7 @@ public class AdminTeamService {
   private final GambleSeasonRankingService gambleSeasonRankingService;
   private final ActualSeasonService actualSeasonService;
   private final GambleSeasonTeamService gambleSeasonTeamService;
+  private final UserFavoriteTeamService userFavoriteTeamService;
 
   public Team findByPk(Long pk) {
     BooleanExpression predicate = QTeam.team.pk.eq(pk).and(QTeam.team.status.eq(DataStatus.ACTIVATED));
@@ -124,18 +126,25 @@ public class AdminTeamService {
           ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService
               .findLatestByTeam(tm.getPk());
 
-          Long seasonPk = null;
-          String seasonTitle = null;
-          if (actualSeasonTeam.getActualSeason() != null) {
-            seasonPk = actualSeasonTeam.getActualSeason().getPk();
-            seasonTitle = actualSeasonTeam.getActualSeason().getTitle();
+          Integer actualRankOrder = null;
+          ActualSeasonRanking ar =
+              actualSeasonRankingService.findByActualSeasonAndTeam(actualSeasonTeam.getActualSeason()
+                  .getPk(), actualSeasonTeam.getTeam().getPk());
+          if (ar != null) actualRankOrder = ar.getRankOrder();
+
+          TeamListDTO.SeasonInfo actualSeasonInfo = null;
+          if (actualSeasonTeam != null && actualSeasonTeam.getActualSeason() != null) {
+            actualSeasonInfo = TeamListDTO.SeasonInfo.builder()
+                .pk(actualSeasonTeam.getActualSeason().getPk())
+                .title(actualSeasonTeam.getActualSeason().getTitle())
+                .rankOrder(actualRankOrder)
+                .build();
           }
 
           return TeamListDTO.fromEntity(tm)
               .toBuilder()
               .league(new LeagueDTO(lg))
-              .actualSeasonPk(seasonPk)
-              .actualSeasonTitle(seasonTitle)
+              .actualSeason(actualSeasonInfo)
               .build();
         })
         .toList();
@@ -146,38 +155,57 @@ public class AdminTeamService {
   @Transactional
   public TeamDetailDTO getTeamDetail(Team team) {
 
-    ActualSeasonTeam ast = actualSeasonTeamService.findLatestByTeam(team.getPk());
+    TeamDetailDTO.SeasonInfo actualSeasonInfo = null;
+    TeamDetailDTO.SeasonInfo gambleSeasonInfo = null;
     LeagueDTO leagueDto = null;
-    League league = ast.getActualSeason().getLeague();
 
-    Long actualSeasonPk = ast.getActualSeason().getPk();
-    String actualSeasonTitle = ast.getActualSeason().getTitle();
-    if (league != null) {
-      leagueDto = new LeagueDTO(ast.getActualSeason().getLeague());
-    }
-    ActualSeasonRanking actualSeasonRanking = actualSeasonRankingService.findByActualSeasonAndTeam(
-        actualSeasonPk, team.getPk());
+    ActualSeasonTeam ast = actualSeasonTeamService.findLatestByTeam(team.getPk());
+    if (ast != null && ast.getActualSeason() != null) {
+      ActualSeason actualSeason = ast.getActualSeason();
+
+      League league = actualSeason.getLeague();
+      if (league != null) {
+        leagueDto = new LeagueDTO(league);
+      }
+
+      Integer actualRankOrder = null;
+      ActualSeasonRanking ar =
+          actualSeasonRankingService.findByActualSeasonAndTeam(actualSeason.getPk(), team.getPk());
+      if (ar != null) actualRankOrder = ar.getRankOrder();
+
+    actualSeasonInfo = TeamDetailDTO.SeasonInfo.builder()
+        .pk(actualSeason.getPk())
+        .title(actualSeason.getTitle())
+        .rankOrder(actualRankOrder)
+        .build();
+  }
 
     // GambleSeasonTeam 기반 정보
-    GambleSeason gs = gambleSeasonService.findRecentOperatingSeasonByLeaguePk(league.getPk());
-    Long gambleSeasonPk = null;
-    String gambleSeasonTitle = null;
-    if (gs != null) {
-      gambleSeasonPk = gs.getPk();
-      gambleSeasonTitle = gs.getTitle();
-    }
 
-    GambleSeasonRanking gambleSeasonRanking = gambleSeasonRankingService.findByTeamPk(team.getPk());
+    if (leagueDto != null) {
+      GambleSeason gs =
+          gambleSeasonService.findRecentOperatingSeasonByLeaguePk(leagueDto.getPk());
+      if (gs != null) {
+        Integer gambleRankOrder = null;
+        GambleSeasonRanking gr = gambleSeasonRankingService.findByTeamPk(team.getPk());
+        if (gr != null)
+          gambleRankOrder = gr.getRankOrder();
+
+        gambleSeasonInfo = TeamDetailDTO.SeasonInfo.builder()
+            .pk(gs.getPk())
+            .title(gs.getTitle())
+            .rankOrder(gambleRankOrder)
+            .build();
+      }
+    }
+    Integer fanCnt = userFavoriteTeamService.countFansByTeamPk(team.getPk());
 
     return TeamDetailDTO.fromEntity(team)
         .toBuilder()
         .league(leagueDto)
-        .actualSeasonPk(actualSeasonPk)
-        .actualSeasonTitle(actualSeasonTitle)
-        .actualSeasonRankOrder(actualSeasonRanking.getRankOrder())
-        .gambleSeasonPk(gambleSeasonPk)
-        .gambleSeasonTitle(gambleSeasonTitle)
-        .gambleSeasonRankOrder(gambleSeasonRanking.getRankOrder())
+        .actualSeason(actualSeasonInfo)
+        .gambleSeason(gambleSeasonInfo)
+        .fanCount(fanCnt != null ? fanCnt : 0)
         .build();
   }
 
@@ -206,6 +234,6 @@ public class AdminTeamService {
     if (request.getLogoUrl() != null) {
       team.setLogoUrl(request.getLogoUrl());
     }
-    return TeamDetailDTO.fromEntity(team);
+    return getTeamDetail(team);
   }
 }

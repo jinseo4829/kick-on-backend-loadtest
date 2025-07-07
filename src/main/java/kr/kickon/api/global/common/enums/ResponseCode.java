@@ -22,6 +22,7 @@ public enum ResponseCode {
     DUPLICATED_NICKNAME(HttpStatus.BAD_REQUEST, "DUPLICATED_NICKNAME", "이미 사용중인 닉네임 입니다."),
     DUPLICATED_FILE(HttpStatus.BAD_REQUEST, "DUPLICATED_FILE", "이미 생성한 파일입니다."),
     INVALID_ADMIN_EVENT_BOARD_UPDATE_REQUEST(HttpStatus.BAD_REQUEST, "INVALID_ADMIN_EVENT_BOARD_UPDATE_REQUEST", "isDisplayed가 true일땐 무조건 순서가 들어가야 합니다."),
+    CANNOT_CHANGE_TEAM_YET(HttpStatus.BAD_REQUEST, "CANNOT_CHANGE_TEAM_YET", "아직 팀 변경 가능 기간이 아닙니다."),
 
     // ✅ 401 Unauthorized
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "인증이 필요합니다. 로그인 후 이용해주세요."),

@@ -10,11 +10,18 @@ import kr.kickon.api.admin.game.dto.GameListDTO;
 import kr.kickon.api.admin.game.request.GameFilterRequest;
 import kr.kickon.api.admin.game.request.GameUpdateRequest;
 import kr.kickon.api.admin.migration.dto.ApiGamesDTO;
+import kr.kickon.api.domain.game.dto.GambleResultDTO;
+import kr.kickon.api.domain.game.dto.GameDTO;
+import kr.kickon.api.domain.game.response.MyPredictionStatsResponse;
+import kr.kickon.api.domain.game.response.PredictOpenResponse;
+import kr.kickon.api.domain.league.dto.LeagueDTO;
+import kr.kickon.api.domain.team.dto.TeamDTO;
+import kr.kickon.api.domain.userGameGamble.UserGameGambleService;
+import kr.kickon.api.domain.userGameGamble.dto.UserGameGambleDTO;
+import kr.kickon.api.domain.userPointEvent.UserPointEventService;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
-import kr.kickon.api.global.common.enums.DataStatus;
-import kr.kickon.api.global.common.enums.GameStatus;
-import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.common.enums.*;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
@@ -25,9 +32,14 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -35,6 +47,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class GameService implements BaseService<Game> {
     private final GameRepository gameRepository;
+    private final UserGameGambleService userGameGambleService;
+    private final UserPointEventService userPointEventService;
     private final JPAQueryFactory queryFactory;
     private final UUIDGenerator uuidGenerator;
     public static String[] ScheduledStatus = {"TBD", "NS"};
@@ -166,7 +180,8 @@ public class GameService implements BaseService<Game> {
         return gameRepository.save(game);
     }
 
-    public List<Game> findByActualSeason(Long actualSeasonPk, String gameStatus){
+    public List<Game> findByActualSeason(Long actualSeasonPk, String gameStatus, LocalDateTime from, LocalDateTime to){
+
         JPAQuery<Game> query = queryFactory.selectFrom(QGame.game)
                 .where(QGame.game.status.eq(DataStatus.ACTIVATED).and(QGame.game.actualSeason.pk.eq(actualSeasonPk)));
 
@@ -180,14 +195,20 @@ public class GameService implements BaseService<Game> {
                     .orderBy(QGame.game.startedAt.asc());
         }
 
-        return query.orderBy(QGame.game.startedAt.asc()).limit(6).fetch();
+        if (from != null && to != null) {
+            query.where(QGame.game.startedAt.between(from, to));
+        }
+
+        return query.limit(6).fetch();
     }
 
     public List<Game> findByActualSeasonByFavoriteTeam(
             Long actualSeasonPk,
             String gameStatus,
             Long favoriteTeamPk,
-            int limitPerTeam
+            int limitPerTeam,
+            LocalDateTime from,
+            LocalDateTime to
     ) {
         LocalDateTime now = LocalDateTime.now();
         BooleanBuilder builder = new BooleanBuilder();
@@ -206,24 +227,27 @@ public class GameService implements BaseService<Game> {
                     GameStatus.PENDING
             ));
             builder.and(QGame.game.startedAt.lt(now.minusHours(2)));
-            return queryFactory.selectFrom(QGame.game)
-                    .where(builder)
-                    .orderBy(QGame.game.startedAt.desc())
-                    .limit(limitPerTeam)
-                    .fetch();
         } else {
             builder.and(QGame.game.gameStatus.in(
                     GameStatus.POSTPONED,
                     GameStatus.PENDING
             ));
             builder.and(QGame.game.startedAt.goe(now.plusHours(2)));
-            return queryFactory.selectFrom(QGame.game)
-                    .where(builder)
-                    .orderBy(QGame.game.startedAt.asc())
-                    .limit(limitPerTeam)
-                    .fetch();
         }
+
+        if (from != null && to != null) {
+            builder.and(QGame.game.startedAt.between(from, to));
+        }
+
+        return queryFactory.selectFrom(QGame.game)
+                .where(builder)
+                .orderBy("finished".equalsIgnoreCase(gameStatus) ?
+                        QGame.game.startedAt.desc() :
+                        QGame.game.startedAt.asc())
+                .limit(limitPerTeam)
+                .fetch();
     }
+
 
     public List<Game> findByToday() {
         // QGame 객체 생성
@@ -335,4 +359,138 @@ public class GameService implements BaseService<Game> {
 
         return new PageImpl<>(content, pageable, total);
     }
+
+    public List<LocalDate> getCalendarDates(Long leaguePk, LocalDate monthStart) {
+        LocalDate monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth());
+
+        List<Game> games = queryFactory.selectFrom(QGame.game)
+                .where(QGame.game.status.eq(DataStatus.ACTIVATED)
+                        .and(QGame.game.actualSeason.league.pk.eq(leaguePk))
+                        .and(QGame.game.startedAt.between(monthStart.atStartOfDay(), monthEnd.atTime(23,59,59))))
+                .fetch();
+
+        return games.stream()
+                .map(game -> game.getStartedAt().toLocalDate())
+                .distinct()
+                .toList();
+    }
+
+    public LocalDate getNextAvailableGameDate(Long leaguePk, LocalDate today) {
+        QGame game = QGame.game;
+        Game nextGame = queryFactory.selectFrom(game)
+                .where(
+                        game.status.eq(DataStatus.ACTIVATED)
+                                .and(game.actualSeason.league.pk.eq(leaguePk))
+                                .and(game.gameStatus.in(GameStatus.PENDING, GameStatus.POSTPONED, GameStatus.PROCEEDING))
+                                .and(game.startedAt.goe(today.atStartOfDay()))
+                )
+                .orderBy(game.startedAt.asc())
+                .fetchFirst();
+
+        if (nextGame == null) {
+            return null;
+        }
+        return nextGame.getStartedAt().toLocalDate();
+    }
+
+    public PredictOpenResponse getPredictOpenPeriod(LocalDate today) {
+        // 오늘 기준 가장 가까운 지난 일요일 찾기
+        LocalDate startDate = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY));
+        // 그로부터 4주 후 토요일까지
+        LocalDate endDate = startDate.plusWeeks(4).minusDays(1);
+
+        return new PredictOpenResponse(startDate, endDate, 4);
+    }
+
+    public List<LocalDate> getMyPredictionDates(Long userPk) {
+        return userGameGambleService.findByUserPk(userPk).stream()
+                .map(gamble -> gamble.getGame().getStartedAt().toLocalDate())
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+    }
+
+    public List<GameDTO> getMyPredictions(Long userPk, LocalDate from, LocalDate to) {
+        LocalDateTime start = from.atStartOfDay();
+        LocalDateTime end = to.atTime(23, 59, 59);
+
+        return userGameGambleService.findByUserPk(userPk).stream()
+                .filter(gamble -> !gamble.getGame().getStartedAt().isBefore(start)
+                        && !gamble.getGame().getStartedAt().isAfter(end))
+                .map(gamble -> {
+                    Game game = gamble.getGame();
+
+                    TeamDTO homeTeamDTO = new TeamDTO(game.getHomeTeam());
+                    TeamDTO awayTeamDTO = new TeamDTO(game.getAwayTeam());
+
+                    Map<PredictedResult, Long> userGamblePredictedResult = userGameGambleService.findGambleCountByGamePk(game.getPk());
+                    long homeCount = userGamblePredictedResult.getOrDefault(PredictedResult.HOME, 0L);
+                    long awayCount = userGamblePredictedResult.getOrDefault(PredictedResult.AWAY, 0L);
+                    long drawCount = userGamblePredictedResult.getOrDefault(PredictedResult.DRAW, 0L);
+
+                    long totalParticipation = homeCount + awayCount + drawCount;
+                    int homeRatio = (totalParticipation > 0) ? (int) ((homeCount * 100) / totalParticipation) : 0;
+                    int awayRatio = (totalParticipation > 0) ? (int) ((awayCount * 100) / totalParticipation) : 0;
+                    int drawRatio = (totalParticipation > 0) ? (int) ((drawCount * 100) / totalParticipation) : 0;
+                    GambleResultDTO gambleResultDTO = new GambleResultDTO(homeRatio, awayRatio, drawRatio, totalParticipation);
+
+                    UserGameGambleDTO myGambleResultDTO = new kr.kickon.api.domain.userGameGamble.dto.UserGameGambleDTO(gamble);
+
+                    GameDTO gameDTO = new GameDTO(homeTeamDTO, awayTeamDTO, game, gambleResultDTO);
+                    gameDTO.setMyGambleResult(myGambleResultDTO);
+                    gameDTO.setLeague(new LeagueDTO(game.getActualSeason().getLeague()));
+                    return gameDTO;
+                })
+                .collect(Collectors.toList());
+    }
+
+    public MyPredictionStatsResponse getMyPredictionStats(Long userPk) {
+        // 1. 전체 예측 참여 내역 조회
+        List<UserGameGamble> gambles = userGameGambleService.findByUserPk(userPk);
+
+        int totalParticipation = gambles.size();
+        int totalHit = (int) gambles.stream()
+                .filter(g -> g.getGambleStatus() == GambleStatus.SUCCEED || g.getGambleStatus() == GambleStatus.PERFECT)
+                .count();
+        double totalSuccessRate = (totalParticipation > 0) ? (double) totalHit / totalParticipation : 0.0;
+
+        // 2. 내 응원팀 경기 대비 참여율
+        int totalFavoriteGames = userGameGambleService.countFavoriteTeamGames(userPk);
+        double participationRate = (totalFavoriteGames > 0) ? (double) totalParticipation / totalFavoriteGames : 0.0;
+
+        // 3. 이번 달 통계
+        LocalDate now = LocalDate.now();
+        LocalDateTime startOfMonth = now.withDayOfMonth(1).atStartOfDay();
+        LocalDateTime endOfMonth = now.withDayOfMonth(now.lengthOfMonth()).atTime(23,59,59);
+
+        List<UserGameGamble> thisMonthGambles = gambles.stream()
+                .filter(g -> !g.getCreatedAt().isBefore(startOfMonth) && !g.getCreatedAt().isAfter(endOfMonth))
+                .toList();
+
+        int thisMonthParticipation = thisMonthGambles.size();
+        int thisMonthHit = (int) thisMonthGambles.stream()
+                .filter(g -> g.getGambleStatus() == GambleStatus.SUCCEED || g.getGambleStatus() == GambleStatus.PERFECT)
+                .count();
+        double thisMonthSuccessRate = (thisMonthParticipation > 0) ? (double) thisMonthHit / thisMonthParticipation : 0.0;
+
+        // 4. 포인트
+        int thisMonthPoints = userPointEventService.getPointSumByUser(userPk, startOfMonth, endOfMonth);
+        int totalPoints = userPointEventService.getPointSumByUser(userPk, null, null);
+
+        // 5. 가장 많이 적중한 응원팀
+        String mostHitTeamName = userGameGambleService.getMostHitTeamName(userPk);
+
+        return MyPredictionStatsResponse.builder()
+                .totalSuccessRate(totalSuccessRate)
+                .totalParticipationCount(totalParticipation)
+                .participationRate(participationRate)
+                .thisMonthSuccessRate(thisMonthSuccessRate)
+                .thisMonthHitSummary(thisMonthHit + "/" + thisMonthParticipation)
+                .thisMonthPoints(thisMonthPoints)
+                .totalPoints(totalPoints)
+                .mostHitTeamName(mostHitTeamName)
+                .build();
+    }
+
+
 }

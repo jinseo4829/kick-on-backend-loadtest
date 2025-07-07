@@ -117,6 +117,25 @@ public class UserPointEventService implements BaseService<UserPointEvent> {
 
     }
 
+    public int getPointSumByUser(Long userPk, LocalDateTime from, LocalDateTime to) {
+        QUserPointEvent pointEvent = QUserPointEvent.userPointEvent;
+
+        var query = queryFactory
+                .select(pointEvent.point.sum())
+                .from(pointEvent)
+                .where(pointEvent.user.pk.eq(userPk)
+                        .and(pointEvent.pointStatus.eq(PointStatus.SAVE))
+                        .and(pointEvent.category.eq(PointCategory.GAMBLE))
+                        .and(pointEvent.status.eq(DataStatus.ACTIVATED)));
+
+        if (from != null && to != null) {
+            query.where(pointEvent.createdAt.between(from, to));
+        }
+
+        Integer sum = query.fetchOne();
+        return sum != null ? sum : 0;
+    }
+
     public UserPointEvent save(UserPointEvent userPointEvent) {
         return userPointEventRepository.save(userPointEvent);
     }

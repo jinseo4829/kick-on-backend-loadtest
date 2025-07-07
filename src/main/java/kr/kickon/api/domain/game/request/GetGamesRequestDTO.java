@@ -7,6 +7,8 @@ import jakarta.validation.constraints.Positive;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @Data
 @NoArgsConstructor
 public class GetGamesRequestDTO {
@@ -22,4 +24,10 @@ public class GetGamesRequestDTO {
     @Positive(message = "팀 pk값은 양수입니다.")
     @Schema(description = "팀 pk 값, 옵셔널", example = "2")
     private Long team;
+
+    @Schema(description = "조회 시작 날짜 (YYYY-MM-DD), 옵셔널", example = "2025-08-01")
+    private LocalDate from;
+
+    @Schema(description = "조회 종료 날짜 (YYYY-MM-DD), 옵셔널", example = "2025-08-31")
+    private LocalDate to;
 }

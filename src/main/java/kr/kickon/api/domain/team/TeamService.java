@@ -42,6 +42,10 @@ public class TeamService implements BaseService<Team> {
         return team.orElse(null);
     }
 
+    public List<Team> findAll(){
+        return queryFactory.selectFrom(QTeam.team).where(QTeam.team.status.eq(DataStatus.ACTIVATED)).fetch();
+    }
+
     public Team findByApiId(Long apiId) {
         BooleanExpression predicate = QTeam.team.apiId.eq(apiId).and(QTeam.team.status.eq(DataStatus.ACTIVATED));
         Optional<Team> team = teamRepository.findOne(predicate);

@@ -137,6 +137,7 @@ public class AdminPartnersService {
         .pk(partners.getPk())
         .name(partners.getName())
         .partnersEmail(partners.getPartnersEmail())
+        .snsUrl(partners.getSnsUrl())
         .contractStartDate(partners.getContractStartDate())
         .contractEndDate(partners.getContractEndDate())
         .contractStatus(partners.getContractStatus())

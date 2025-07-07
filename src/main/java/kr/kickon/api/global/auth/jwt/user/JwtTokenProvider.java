@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-public class JwtTokenProvider{
+public class  JwtTokenProvider{
     public static final String TOKEN_PREFIX = "Bearer ";
     public final String AUTH_PK = "pk";
     public final String AUTHORITIES_KEY = "auth";
@@ -74,6 +74,17 @@ public class JwtTokenProvider{
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(accessValidity)
                 .signWith(getSignInKey(),Jwts.SIG.HS256)
+                .compact();
+    }
+
+    public String createPermanentAccessToken(Map<String, Object> claims, Long pk, String authorities) {
+        Date farFutureDate = new Date(System.currentTimeMillis() + (100L * 365 * 24 * 60 * 60 * 1000)); // 100년
+        return Jwts.builder()
+                .claims(claims)
+                .subject(pk + "_" + authorities)
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(farFutureDate)
+                .signWith(getSignInKey(), Jwts.SIG.HS256)
                 .compact();
     }
 
