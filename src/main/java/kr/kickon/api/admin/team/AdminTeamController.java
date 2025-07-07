@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import kr.kickon.api.admin.team.dto.TeamDetailDTO;
 import kr.kickon.api.admin.team.dto.TeamListDTO;
+import kr.kickon.api.admin.team.request.PatchTeamRequestDTO;
 import kr.kickon.api.admin.team.request.TeamFilterRequest;
 import kr.kickon.api.admin.team.response.GetTeamDetailResponse;
 import kr.kickon.api.admin.team.response.GetTeamsResponse;
@@ -26,7 +27,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -72,5 +75,19 @@ public class AdminTeamController {
     if (team == null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
     TeamDetailDTO dto = adminTeamService.getTeamDetail(team);
     return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, dto));
+  }
+
+  @PatchMapping("/{pk}")
+  @Operation(summary = "팀 수정", description = "pk값으로 팀을 수정합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "성공",
+          content = @Content(schema = @Schema(implementation = GetTeamDetailResponse.class))),
+  })
+  public ResponseEntity<ResponseDTO<TeamDetailDTO>> patchTeam(@PathVariable Long pk,
+      @RequestBody PatchTeamRequestDTO request) {
+    Team team = adminTeamService.findByPk(pk);
+    if (team == null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
+    TeamDetailDTO responseDto = adminTeamService.patchTeam(team, request);
+    return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, responseDto));
   }
 }

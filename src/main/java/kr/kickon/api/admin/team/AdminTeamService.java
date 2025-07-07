@@ -8,11 +8,14 @@ import java.util.List;
 import java.util.Optional;
 import kr.kickon.api.admin.team.dto.TeamDetailDTO;
 import kr.kickon.api.admin.team.dto.TeamListDTO;
+import kr.kickon.api.admin.team.request.PatchTeamRequestDTO;
 import kr.kickon.api.admin.team.request.TeamFilterRequest;
+import kr.kickon.api.domain.actualSeason.ActualSeasonService;
 import kr.kickon.api.domain.actualSeasonRanking.ActualSeasonRankingService;
 import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
 import kr.kickon.api.domain.gambleSeason.GambleSeasonService;
 import kr.kickon.api.domain.gambleSeasonRanking.GambleSeasonRankingService;
+import kr.kickon.api.domain.gambleSeasonTeam.GambleSeasonTeamService;
 import kr.kickon.api.domain.league.dto.LeagueDTO;
 import kr.kickon.api.domain.team.TeamRepository;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
@@ -28,6 +31,8 @@ import kr.kickon.api.global.common.entities.QLeague;
 import kr.kickon.api.global.common.entities.QTeam;
 import kr.kickon.api.global.common.entities.Team;
 import kr.kickon.api.global.common.enums.DataStatus;
+import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.error.exceptions.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -47,6 +52,8 @@ public class AdminTeamService {
   private final GambleSeasonService gambleSeasonService;
   private final ActualSeasonRankingService actualSeasonRankingService;
   private final GambleSeasonRankingService gambleSeasonRankingService;
+  private final ActualSeasonService actualSeasonService;
+  private final GambleSeasonTeamService gambleSeasonTeamService;
   private final UserFavoriteTeamService userFavoriteTeamService;
 
   public Team findByPk(Long pk) {
@@ -200,5 +207,33 @@ public class AdminTeamService {
         .gambleSeason(gambleSeasonInfo)
         .fanCount(fanCnt != null ? fanCnt : 0)
         .build();
+  }
+
+  @Transactional
+  public TeamDetailDTO patchTeam(
+      Team team, PatchTeamRequestDTO request) {
+
+    if (request.getNameKr() != null) {
+      team.setNameKr(request.getNameKr());
+    }
+    if (request.getNameEn() != null) {
+      team.setNameEn(request.getNameEn());
+    }
+    if (request.getActualSeasonPk() != null) {
+      ActualSeason actualSeason = actualSeasonService.findByPk(request.getActualSeasonPk());
+      if (actualSeason == null)
+        throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
+      actualSeasonTeamService.patchActualSeasonTeam(actualSeason, team.getPk());
+    }
+    if (request.getGambleSeasonPk() != null) {
+      GambleSeason gambleSeason = gambleSeasonService.findByPk(request.getGambleSeasonPk());
+      if (gambleSeason == null)
+        throw new NotFoundException(ResponseCode.NOT_FOUND_GAMBLE_SEASON);
+      gambleSeasonTeamService.patchGambleSeasonTeam(gambleSeason, team.getPk());
+    }
+    if (request.getLogoUrl() != null) {
+      team.setLogoUrl(request.getLogoUrl());
+    }
+    return getTeamDetail(team);
   }
 }
