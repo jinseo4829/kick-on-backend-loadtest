@@ -2,14 +2,25 @@ package kr.kickon.api.admin.team;
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
 import java.util.Optional;
+import kr.kickon.api.admin.team.dto.TeamDetailDTO;
 import kr.kickon.api.admin.team.dto.TeamListDTO;
 import kr.kickon.api.admin.team.request.TeamFilterRequest;
+import kr.kickon.api.domain.actualSeasonRanking.ActualSeasonRankingService;
 import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
+import kr.kickon.api.domain.gambleSeason.GambleSeasonService;
+import kr.kickon.api.domain.gambleSeasonRanking.GambleSeasonRankingService;
 import kr.kickon.api.domain.league.dto.LeagueDTO;
+import kr.kickon.api.domain.team.TeamRepository;
+import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
+import kr.kickon.api.global.common.entities.ActualSeason;
+import kr.kickon.api.global.common.entities.ActualSeasonRanking;
 import kr.kickon.api.global.common.entities.ActualSeasonTeam;
+import kr.kickon.api.global.common.entities.GambleSeason;
+import kr.kickon.api.global.common.entities.GambleSeasonRanking;
 import kr.kickon.api.global.common.entities.League;
 import kr.kickon.api.global.common.entities.QActualSeason;
 import kr.kickon.api.global.common.entities.QActualSeasonTeam;
@@ -32,6 +43,17 @@ public class AdminTeamService {
 
   private final JPAQueryFactory queryFactory;
   private final ActualSeasonTeamService actualSeasonTeamService;
+  private final TeamRepository teamRepository;
+  private final GambleSeasonService gambleSeasonService;
+  private final ActualSeasonRankingService actualSeasonRankingService;
+  private final GambleSeasonRankingService gambleSeasonRankingService;
+  private final UserFavoriteTeamService userFavoriteTeamService;
+
+  public Team findByPk(Long pk) {
+    BooleanExpression predicate = QTeam.team.pk.eq(pk).and(QTeam.team.status.eq(DataStatus.ACTIVATED));
+    Optional<Team> team = teamRepository.findOne(predicate);
+    return team.orElse(null);
+  }
 
   @Transactional
   public Page<TeamListDTO> findTeamByFilter(TeamFilterRequest request,
@@ -90,29 +112,93 @@ public class AdminTeamService {
         .limit(pageable.getPageSize())
         .fetch();
 
-    List<TeamListDTO> dtos = content.stream()
+    List<TeamListDTO> dtos = (List<TeamListDTO>) content.stream()
         .map(t -> {
           Team tm = t.get(team);
           League lg = t.get(league);
           ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService
               .findLatestByTeam(tm.getPk());
 
-          Long seasonPk = null;
-          String seasonTitle = null;
-          if (ast != null && actualSeasonTeam.getActualSeason() != null) {
-            seasonPk = actualSeasonTeam.getActualSeason().getPk();
-            seasonTitle = actualSeasonTeam.getActualSeason().getTitle();
+          Integer actualRankOrder = null;
+          ActualSeasonRanking ar =
+              actualSeasonRankingService.findByActualSeasonAndTeam(actualSeasonTeam.getActualSeason()
+                  .getPk(), actualSeasonTeam.getTeam().getPk());
+          if (ar != null) actualRankOrder = ar.getRankOrder();
+
+          TeamListDTO.SeasonInfo actualSeasonInfo = null;
+          if (actualSeasonTeam != null && actualSeasonTeam.getActualSeason() != null) {
+            actualSeasonInfo = TeamListDTO.SeasonInfo.builder()
+                .pk(actualSeasonTeam.getActualSeason().getPk())
+                .title(actualSeasonTeam.getActualSeason().getTitle())
+                .rankOrder(actualRankOrder)
+                .build();
           }
 
           return TeamListDTO.fromEntity(tm)
               .toBuilder()
               .league(new LeagueDTO(lg))
-              .seasonPk(seasonPk)
-              .seasonTitle(seasonTitle)
+              .actualSeason(actualSeasonInfo)
               .build();
         })
         .toList();
 
     return new PageImpl<>(dtos, pageable, total);
+  }
+
+  @Transactional
+  public TeamDetailDTO getTeamDetail(Team team) {
+
+    TeamDetailDTO.SeasonInfo actualSeasonInfo = null;
+    TeamDetailDTO.SeasonInfo gambleSeasonInfo = null;
+    LeagueDTO leagueDto = null;
+
+    ActualSeasonTeam ast = actualSeasonTeamService.findLatestByTeam(team.getPk());
+    if (ast != null && ast.getActualSeason() != null) {
+      ActualSeason actualSeason = ast.getActualSeason();
+
+      League league = actualSeason.getLeague();
+      if (league != null) {
+        leagueDto = new LeagueDTO(league);
+      }
+
+      Integer actualRankOrder = null;
+      ActualSeasonRanking ar =
+          actualSeasonRankingService.findByActualSeasonAndTeam(actualSeason.getPk(), team.getPk());
+      if (ar != null) actualRankOrder = ar.getRankOrder();
+
+    actualSeasonInfo = TeamDetailDTO.SeasonInfo.builder()
+        .pk(actualSeason.getPk())
+        .title(actualSeason.getTitle())
+        .rankOrder(actualRankOrder)
+        .build();
+  }
+
+    // GambleSeasonTeam 기반 정보
+
+    if (leagueDto != null) {
+      GambleSeason gs =
+          gambleSeasonService.findRecentOperatingSeasonByLeaguePk(leagueDto.getPk());
+      if (gs != null) {
+        Integer gambleRankOrder = null;
+        GambleSeasonRanking gr = gambleSeasonRankingService.findByTeamPk(team.getPk());
+        if (gr != null)
+          gambleRankOrder = gr.getRankOrder();
+
+        gambleSeasonInfo = TeamDetailDTO.SeasonInfo.builder()
+            .pk(gs.getPk())
+            .title(gs.getTitle())
+            .rankOrder(gambleRankOrder)
+            .build();
+      }
+    }
+    Integer fanCnt = userFavoriteTeamService.countFansByTeamPk(team.getPk());
+
+    return TeamDetailDTO.fromEntity(team)
+        .toBuilder()
+        .league(leagueDto)
+        .actualSeason(actualSeasonInfo)
+        .gambleSeason(gambleSeasonInfo)
+        .fanCount(fanCnt != null ? fanCnt : 0)
+        .build();
   }
 }

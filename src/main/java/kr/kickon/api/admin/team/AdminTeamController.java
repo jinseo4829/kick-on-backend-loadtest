@@ -8,12 +8,17 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
+import kr.kickon.api.admin.team.dto.TeamDetailDTO;
 import kr.kickon.api.admin.team.dto.TeamListDTO;
 import kr.kickon.api.admin.team.request.TeamFilterRequest;
+import kr.kickon.api.admin.team.response.GetTeamDetailResponse;
 import kr.kickon.api.admin.team.response.GetTeamsResponse;
+import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
+import kr.kickon.api.global.common.entities.Team;
 import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.error.exceptions.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -21,6 +26,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -53,5 +59,18 @@ public class AdminTeamController {
             )
         )
     );
+  }
+
+  @GetMapping("/{pk}")
+  @Operation(summary = "팀 상세 조회", description = "pk값으로 팀 상세 정보를 조회합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "성공",
+          content = @Content(schema = @Schema(implementation = GetTeamDetailResponse.class))),
+  })
+  public ResponseEntity<ResponseDTO<TeamDetailDTO>> getTeamDetail(@PathVariable Long pk) {
+    Team team = adminTeamService.findByPk(pk);
+    if (team == null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
+    TeamDetailDTO dto = adminTeamService.getTeamDetail(team);
+    return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, dto));
   }
 }
