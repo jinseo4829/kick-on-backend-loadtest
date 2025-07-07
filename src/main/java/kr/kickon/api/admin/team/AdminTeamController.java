@@ -13,6 +13,7 @@ import kr.kickon.api.admin.team.dto.TeamListDTO;
 import kr.kickon.api.admin.team.request.TeamFilterRequest;
 import kr.kickon.api.admin.team.response.GetTeamDetailResponse;
 import kr.kickon.api.admin.team.response.GetTeamsResponse;
+import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.Team;
@@ -70,7 +71,6 @@ public class AdminTeamController {
     Team team = adminTeamService.findByPk(pk);
     if (team == null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
     TeamDetailDTO dto = adminTeamService.getTeamDetail(team);
-
     return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, dto));
   }
 }

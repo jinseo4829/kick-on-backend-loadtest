@@ -59,4 +59,27 @@ public class UserFavoriteTeamService implements BaseService<UserFavoriteTeam> {
         userFavoriteTeamRepository.save(userFavoriteTeam);
     }
 
+     /*
+     * 특정 팀을 즐겨찾기로 등록한 유저 수(팬 수)를 반환
+     * @param teamPk 팀 PK
+     * @return 팬 수
+     */
+    public Integer countFansByTeamPk(Long teamPk) {
+        QUserFavoriteTeam ft = QUserFavoriteTeam.userFavoriteTeam;
+        QUser u = QUser.user;
+
+        Long count = queryFactory
+            .select(ft.count())
+            .from(ft)
+            .join(ft.user, u) // 유저 활성 상태인 지 확인
+            .where(
+                ft.team.pk.eq(teamPk),
+                ft.status.eq(DataStatus.ACTIVATED),
+                ft.team.status.eq(DataStatus.ACTIVATED),
+                u.status.eq(DataStatus.ACTIVATED)
+            )
+            .fetchOne(); // 없으면 null
+
+        return count != null ? count.intValue() : 0;
+    }
 }
