@@ -24,6 +24,7 @@ import kr.kickon.api.global.common.entities.ActualSeasonRanking;
 import kr.kickon.api.global.common.entities.ActualSeasonTeam;
 import kr.kickon.api.global.common.entities.GambleSeason;
 import kr.kickon.api.global.common.entities.GambleSeasonRanking;
+import kr.kickon.api.global.common.entities.GambleSeasonTeam;
 import kr.kickon.api.global.common.entities.League;
 import kr.kickon.api.global.common.entities.QActualSeason;
 import kr.kickon.api.global.common.entities.QActualSeasonTeam;
@@ -183,11 +184,12 @@ public class AdminTeamService {
     // GambleSeasonTeam 기반 정보
 
     if (leagueDto != null) {
-      GambleSeason gs =
-          gambleSeasonService.findRecentOperatingSeasonByLeaguePk(leagueDto.getPk());
+      GambleSeasonTeam gst =
+          gambleSeasonTeamService.findRecentOperatingByTeamPk(team.getPk());
+      GambleSeason gs = gst.getGambleSeason();
       if (gs != null) {
         Integer gambleRankOrder = null;
-        GambleSeasonRanking gr = gambleSeasonRankingService.findByTeamPk(team.getPk());
+        GambleSeasonRanking gr = gambleSeasonRankingService.findByGambleSeasonAndTeam(gs.getPk(), team.getPk());
         if (gr != null)
           gambleRankOrder = gr.getRankOrder();
 
