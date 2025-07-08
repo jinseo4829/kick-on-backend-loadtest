@@ -158,4 +158,10 @@ public class GambleSeasonRankingService implements BaseService<GambleSeasonRanki
             .toList();
     }
 
+    public GambleSeasonRanking findByGambleSeasonAndTeam(Long gambleSeasonPk, Long teamPk) {
+        BooleanExpression predicate = QGambleSeasonRanking.gambleSeasonRanking.gambleSeason.pk.eq(gambleSeasonPk).and(QGambleSeasonRanking.gambleSeasonRanking.status.eq(DataStatus.ACTIVATED).and(QGambleSeasonRanking.gambleSeasonRanking.team.pk.eq(teamPk)));
+        Optional<GambleSeasonRanking> gambleSeasonRanking = gambleSeasonRankingRepository.findOne(predicate);
+        return gambleSeasonRanking.orElse(null);
+    }
+
 }
