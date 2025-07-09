@@ -186,8 +186,8 @@ public class AdminTeamService {
     if (leagueDto != null) {
       GambleSeasonTeam gst =
           gambleSeasonTeamService.findRecentOperatingByTeamPk(team.getPk());
-      GambleSeason gs = gst.getGambleSeason();
-      if (gs != null) {
+      if (gst != null && gst.getGambleSeason() != null) {
+        GambleSeason gs = gst.getGambleSeason();
         Integer gambleRankOrder = null;
         GambleSeasonRanking gr = gambleSeasonRankingService.findByGambleSeasonAndTeam(gs.getPk(), team.getPk());
         if (gr != null)
