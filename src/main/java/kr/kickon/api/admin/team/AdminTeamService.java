@@ -214,28 +214,33 @@ public class AdminTeamService {
   @Transactional
   public TeamDetailDTO patchTeam(
       Team team, PatchTeamRequestDTO request) {
-
-    if (request.getNameKr() != null) {
-      team.setNameKr(request.getNameKr());
+    try {
+      if (request.getNameKr() != null) {
+        team.setNameKr(request.getNameKr());
+      }
+      if (request.getNameEn() != null) {
+        team.setNameEn(request.getNameEn());
+      }
+      if (request.getActualSeasonPk() != null) {
+        ActualSeason actualSeason = actualSeasonService.findByPk(request.getActualSeasonPk());
+        if (actualSeason == null)
+          throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
+        actualSeasonTeamService.patchActualSeasonTeam(actualSeason, team.getPk());
+      }
+      if (request.getGambleSeasonPk() != null) {
+        GambleSeason gambleSeason = gambleSeasonService.findByPk(request.getGambleSeasonPk());
+        if (gambleSeason == null)
+          throw new NotFoundException(ResponseCode.NOT_FOUND_GAMBLE_SEASON);
+        gambleSeasonTeamService.patchGambleSeasonTeam(gambleSeason, team.getPk());
+      }
+      if (request.getLogoUrl() != null) {
+        team.setLogoUrl(request.getLogoUrl());
+      }
+      return getTeamDetail(team);
+    } catch (Exception e) {
+      log.error("Error during patchTeam, teamPk={}, request={}, error={}", team.getPk(), request,
+          e.toString(), e);
+      throw e;
     }
-    if (request.getNameEn() != null) {
-      team.setNameEn(request.getNameEn());
-    }
-    if (request.getActualSeasonPk() != null) {
-      ActualSeason actualSeason = actualSeasonService.findByPk(request.getActualSeasonPk());
-      if (actualSeason == null)
-        throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
-      actualSeasonTeamService.patchActualSeasonTeam(actualSeason, team.getPk());
-    }
-    if (request.getGambleSeasonPk() != null) {
-      GambleSeason gambleSeason = gambleSeasonService.findByPk(request.getGambleSeasonPk());
-      if (gambleSeason == null)
-        throw new NotFoundException(ResponseCode.NOT_FOUND_GAMBLE_SEASON);
-      gambleSeasonTeamService.patchGambleSeasonTeam(gambleSeason, team.getPk());
-    }
-    if (request.getLogoUrl() != null) {
-      team.setLogoUrl(request.getLogoUrl());
-    }
-    return getTeamDetail(team);
   }
 }
