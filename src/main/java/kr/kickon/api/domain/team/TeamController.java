@@ -13,6 +13,7 @@ import kr.kickon.api.domain.team.response.GetTeamsResponseDTO;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.ActualSeason;
 import kr.kickon.api.global.common.entities.ActualSeasonTeam;
+import kr.kickon.api.global.common.entities.League;
 import kr.kickon.api.global.common.entities.Team;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.BadRequestException;
@@ -49,12 +50,16 @@ public class TeamController {
         if(league!=null){
             ActualSeason actualSeason = actualSeasonService.findRecentByLeaguePk(league);
             if(actualSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
+            League lg = actualSeason.getLeague();
             List<ActualSeasonTeam> actualSeasonTeamList = actualSeasonTeamService.findByActualSeason(actualSeason.getPk(), keyword);
             List<TeamDTO> teamDTOList = actualSeasonTeamList.stream().map(actualSeasonTeam -> (TeamDTO) TeamDTO.builder()
                     .pk(actualSeasonTeam.getTeam().getPk())
                     .nameKr(actualSeasonTeam.getTeam().getNameKr())
                     .nameEn(actualSeasonTeam.getTeam().getNameEn())
                     .logoUrl(actualSeasonTeam.getTeam().getLogoUrl())
+                    .leaguePk(lg != null ? lg.getPk() : null)
+                    .leagueNameKr(lg != null ? lg.getNameKr() : "")
+                    .leagueNameEn(lg != null ? lg.getNameEn() : "")
                     .build()).toList();
             return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, teamDTOList));
         }else{
