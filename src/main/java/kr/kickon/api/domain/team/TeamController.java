@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.kickon.api.domain.actualSeason.ActualSeasonService;
 import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
 import kr.kickon.api.domain.team.dto.TeamDTO;
+import kr.kickon.api.domain.team.request.TeamListFilterRequest;
 import kr.kickon.api.domain.team.response.GetTeamsResponseDTO;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.ActualSeason;
@@ -22,11 +23,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -45,7 +45,11 @@ public class TeamController {
                     content = @Content(schema = @Schema(implementation = GetTeamsResponseDTO.class)))
     })
     @GetMapping()
-    public ResponseEntity<ResponseDTO<List<TeamDTO>>> getTeams(@RequestParam(required = false) Long league, @RequestParam(required = false) String keyword) {
+    public ResponseEntity<ResponseDTO<List<TeamDTO>>> getTeams(
+        @RequestBody TeamListFilterRequest request
+    ) {
+        Long league = request.getLeague();
+        String keyword = request.getKeyword();
         if(league==null && keyword==null) throw new BadRequestException(ResponseCode.INVALID_REQUEST);
         if(league!=null){
             ActualSeason actualSeason = actualSeasonService.findRecentByLeaguePk(league);
