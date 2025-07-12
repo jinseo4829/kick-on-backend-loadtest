@@ -8,13 +8,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import kr.kickon.api.admin.game.response.GetGamesResponse;
 import kr.kickon.api.admin.report.dto.AdminReportDetailDTO;
 import kr.kickon.api.admin.report.dto.AdminReportItemDTO;
 import kr.kickon.api.admin.report.request.UpdateReportStatusRequest;
+import kr.kickon.api.admin.report.response.GetReportsResponse;
 import kr.kickon.api.admin.report.response.GetTargetReportsResponse;
-import kr.kickon.api.domain.reportBoard.ReportBoardService;
-import kr.kickon.api.domain.reportNews.ReportNewsService;
 import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.enums.ResponseCode;
@@ -32,8 +30,6 @@ import java.util.List;
 @Tag(name = "신고")
 @Slf4j
 public class AdminReportController {
-    private final ReportBoardService reportBoardService;
-    private final ReportNewsService reportNewsService;
     private final AdminReportService adminReportService;
 
     @Operation(summary = "신고 통합 리스트 조회", description = "게시글/뉴스 통합 신고 리스트를 필터 및 정렬 조건에 따라 조회," +
@@ -41,7 +37,7 @@ public class AdminReportController {
             "\n sort는 \"REPORT_COUNT\", \"CREATED_AT\" 중 하나")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공",
-                    content = @Content(schema = @Schema(implementation = GetGamesResponse.class))),
+                    content = @Content(schema = @Schema(implementation = GetReportsResponse.class))),
     })
     @GetMapping
     public ResponseEntity<ResponseDTO<List<AdminReportItemDTO>>> getReports(
