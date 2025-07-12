@@ -9,7 +9,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.kickon.api.domain.actualSeason.ActualSeasonService;
 import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
 import kr.kickon.api.domain.team.dto.TeamDTO;
+import kr.kickon.api.domain.team.request.TeamListFilterRequest;
 import kr.kickon.api.domain.team.response.GetTeamsResponseDTO;
+import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.ActualSeason;
 import kr.kickon.api.global.common.entities.ActualSeasonTeam;
@@ -20,13 +22,14 @@ import kr.kickon.api.global.error.exceptions.BadRequestException;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -45,27 +48,23 @@ public class TeamController {
                     content = @Content(schema = @Schema(implementation = GetTeamsResponseDTO.class)))
     })
     @GetMapping()
-    public ResponseEntity<ResponseDTO<List<TeamDTO>>> getTeams(@RequestParam(required = false) Long league, @RequestParam(required = false) String keyword) {
+    public ResponseEntity<ResponseDTO<List<TeamDTO>>> getTeams(
+        @ModelAttribute TeamListFilterRequest request
+    ) {
+        Long league = request.getLeague();
+        String keyword = request.getKeyword();
         if(league==null && keyword==null) throw new BadRequestException(ResponseCode.INVALID_REQUEST);
-        if(league!=null){
-            ActualSeason actualSeason = actualSeasonService.findRecentByLeaguePk(league);
-            if(actualSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
-            League lg = actualSeason.getLeague();
-            List<ActualSeasonTeam> actualSeasonTeamList = actualSeasonTeamService.findByActualSeason(actualSeason.getPk(), keyword);
-            List<TeamDTO> teamDTOList = actualSeasonTeamList.stream().map(actualSeasonTeam -> (TeamDTO) TeamDTO.builder()
-                    .pk(actualSeasonTeam.getTeam().getPk())
-                    .nameKr(actualSeasonTeam.getTeam().getNameKr())
-                    .nameEn(actualSeasonTeam.getTeam().getNameEn())
-                    .logoUrl(actualSeasonTeam.getTeam().getLogoUrl())
-                    .leaguePk(lg != null ? lg.getPk() : null)
-                    .leagueNameKr(lg != null ? lg.getNameKr() : "")
-                    .leagueNameEn(lg != null ? lg.getNameEn() : "")
-                    .build()).toList();
-            return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, teamDTOList));
-        }else{
-            List<Team> teams = teamService.findByKeyword(keyword);
-            List<TeamDTO> teamDTOList = teams.stream().map(TeamDTO::new).toList();
-            return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, teamDTOList));
-        }
+        Pageable pageable = request.toPageable();
+        Page<TeamDTO> resultPage = teamService.findFilteredTeams(request, pageable);
+
+        return ResponseEntity.ok(ResponseDTO.success(
+            ResponseCode.SUCCESS,
+            resultPage.getContent(),
+            new PagedMetaDTO(
+                resultPage.getNumber() + 1,
+                resultPage.getSize(),
+                resultPage.getTotalElements()
+            )
+        ));
     }
 }
