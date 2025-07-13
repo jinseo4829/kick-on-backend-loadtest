@@ -236,13 +236,12 @@ public class AdminTeamService {
       if (request.getLogoUrl() != null) {
         team.setLogoUrl(request.getLogoUrl());
       }
+      teamRepository.save(team);
       Team updatedTeam = teamRepository.findById(team.getPk())
           .orElseThrow(() -> new NotFoundException(ResponseCode.NOT_FOUND_TEAM));
 
       return getTeamDetail(updatedTeam);
     } catch (Exception e) {
-      log.error("Error during patchTeam, teamPk={}, request={}, error={}", team.getPk(), request,
-          e.toString(), e);
       throw e;
     }
   }
