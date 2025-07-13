@@ -213,7 +213,6 @@ public class AdminTeamService {
   @Transactional
   public TeamDetailDTO patchTeam(
       Team team, PatchTeamRequestDTO request) {
-    try {
       if (request.getNameKr() != null) {
         team.setNameKr(request.getNameKr());
       }
@@ -235,12 +234,7 @@ public class AdminTeamService {
       if (request.getLogoUrl() != null) {
         team.setLogoUrl(request.getLogoUrl());
       }
-      Team updatedTeam = teamRepository.findById(team.getPk())
-          .orElseThrow(() -> new NotFoundException(ResponseCode.NOT_FOUND_TEAM));
 
-      return getTeamDetail(updatedTeam);
-    } catch (Exception e) {
-      throw e;
-    }
+      return getTeamDetail(team);
   }
 }
