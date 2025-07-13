@@ -2,6 +2,7 @@ package kr.kickon.api.admin.team;
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
 import java.util.Optional;
@@ -57,9 +58,9 @@ public class AdminTeamService {
   private final UserFavoriteTeamService userFavoriteTeamService;
 
   public Team findByPk(Long pk) {
-    return teamRepository.findById(pk)
-        .filter(t -> t.getStatus() == DataStatus.ACTIVATED)
-        .orElse(null);
+    BooleanExpression predicate = QTeam.team.pk.eq(pk).and(QTeam.team.status.eq(DataStatus.ACTIVATED));
+    Optional<Team> team = teamRepository.findOne(predicate);
+    return team.orElse(null);
   }
 
   @Transactional
@@ -234,7 +235,10 @@ public class AdminTeamService {
       if (request.getLogoUrl() != null) {
         team.setLogoUrl(request.getLogoUrl());
       }
+      teamRepository.save(team);
+      Team updatedTeam = teamRepository.findById(team.getPk())
+          .orElseThrow(() -> new NotFoundException(ResponseCode.NOT_FOUND_TEAM));
 
-      return getTeamDetail(team);
+      return getTeamDetail(updatedTeam);
   }
 }
