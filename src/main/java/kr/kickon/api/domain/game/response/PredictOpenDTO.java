@@ -8,16 +8,15 @@ import java.time.LocalDate;
 
 @Data
 @AllArgsConstructor
-@Schema(description = "승부예측 오픈 기간 DTO")
-public class PredictOpenResponse {
+@Schema(description = "승부예측 오픈된 기간 DTO")
+public class PredictOpenDTO {
 
-    @Schema(description = "승부예측 시작일 (내 응원팀의 가장 가까운 경기일 기준)", example = "2025-07-06")
+    @Schema(description = "승부예측 시작일 (일요일 기준)", example = "2025-07-06")
     private LocalDate startDate;
 
-    @Schema(description = "승부예측 종료일 (시작일로부터 4주 후)", example = "2025-08-03")
+    @Schema(description = "승부예측 종료일 (4주 후 토요일)", example = "2025-08-02")
     private LocalDate endDate;
 
     @Schema(description = "오픈된 주차 수", example = "4")
     private int weeks;
 }
-

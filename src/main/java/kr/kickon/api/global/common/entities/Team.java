@@ -27,4 +27,10 @@ public class Team extends BaseEntity {
 
     @Column(nullable = false)
     private Long apiId;
+
+    @Column()
+    private String smallLogoUrl;
+
+    @Column()
+    private String teamColor;
 }

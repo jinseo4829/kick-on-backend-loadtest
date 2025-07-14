@@ -9,7 +9,7 @@ import lombok.Data;
 @Builder
 @AllArgsConstructor
 @Schema(description = "내 예측 통계 DTO")
-public class MyPredictionStatsResponse {
+public class MyPredictionStatsDTO {
     @Schema(description = "누적 성공률 (0.75 -> 75%)")
     private double totalSuccessRate;
 
@@ -17,7 +17,7 @@ public class MyPredictionStatsResponse {
     private int totalParticipationCount;
 
     @Schema(description = "내 응원팀 경기 중 예측 참여율 (0.5 -> 50%)")
-    private double totalParticipationRate;
+    private double participationRate;
 
     @Schema(description = "이번 달 성공률 (0.6 -> 60%)")
     private double thisMonthSuccessRate;
@@ -33,11 +33,5 @@ public class MyPredictionStatsResponse {
 
     @Schema(description = "가장 많이 적중한 응원팀 이름")
     private String mostHitTeamName;
-
-    @Schema(description = "가장 많이 적중한 팀 로고 URL")
-    private String mostHitTeamLogoUrl;
-
-    @Schema(description = "가장 많이 적중한 팀 컬러")
-    private String mostHitTeamColor;
 }
 

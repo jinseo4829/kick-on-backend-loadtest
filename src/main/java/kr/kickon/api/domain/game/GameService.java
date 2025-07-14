@@ -1,7 +1,9 @@
 package kr.kickon.api.domain.game;
 
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.transaction.Transactional;
@@ -12,10 +14,14 @@ import kr.kickon.api.admin.game.request.GameUpdateRequest;
 import kr.kickon.api.admin.migration.dto.ApiGamesDTO;
 import kr.kickon.api.domain.game.dto.GambleResultDTO;
 import kr.kickon.api.domain.game.dto.GameDTO;
+import kr.kickon.api.domain.game.response.CalendarDateCountDTO;
 import kr.kickon.api.domain.game.response.MyPredictionStatsResponse;
 import kr.kickon.api.domain.game.response.PredictOpenResponse;
+import kr.kickon.api.domain.league.LeagueService;
 import kr.kickon.api.domain.league.dto.LeagueDTO;
+import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.domain.team.dto.TeamDTO;
+import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.domain.userGameGamble.UserGameGambleService;
 import kr.kickon.api.domain.userGameGamble.dto.UserGameGambleDTO;
 import kr.kickon.api.domain.userPointEvent.UserPointEventService;
@@ -36,9 +42,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.TemporalAdjusters;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -49,10 +53,12 @@ public class GameService implements BaseService<Game> {
     private final GameRepository gameRepository;
     private final UserGameGambleService userGameGambleService;
     private final UserPointEventService userPointEventService;
+    private final TeamService teamService;
     private final JPAQueryFactory queryFactory;
     private final UUIDGenerator uuidGenerator;
     public static String[] ScheduledStatus = {"TBD", "NS"};
     public static String[] FinishedStatus = {"FT", "AET", "PEN"};
+    private final UserFavoriteTeamService userFavoriteTeamService;
 
     @Override
     public Game findById(String uuid) {
@@ -360,47 +366,105 @@ public class GameService implements BaseService<Game> {
         return new PageImpl<>(content, pageable, total);
     }
 
-    public List<LocalDate> getCalendarDates(Long leaguePk, LocalDate monthStart) {
+    public List<CalendarDateCountDTO> getCalendarDatesByMyTeams(Long userPk, LocalDate monthStart) {
+        LocalDate today = LocalDate.now();
         LocalDate monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth());
+        LocalDate fromDate = monthStart.isBefore(today) && monthStart.getMonth() == today.getMonth() ? today : monthStart;
+
+        List<UserFavoriteTeam> favoriteTeams = userFavoriteTeamService.findAllByUserPk(userPk);
+
+        if (favoriteTeams == null || favoriteTeams.isEmpty()) {
+            return List.of();
+        }
+
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(QGame.game.status.eq(DataStatus.ACTIVATED));
+        builder.and(QGame.game.startedAt.between(fromDate.atStartOfDay(), monthEnd.atTime(23,59,59)));
+
+        BooleanBuilder teamCondition = new BooleanBuilder();
+        for (UserFavoriteTeam fav : favoriteTeams) {
+            teamCondition.or(QGame.game.homeTeam.pk.eq(fav.getTeam().getPk()));
+            teamCondition.or(QGame.game.awayTeam.pk.eq(fav.getTeam().getPk()));
+        }
+        builder.and(teamCondition);
 
         List<Game> games = queryFactory.selectFrom(QGame.game)
-                .where(QGame.game.status.eq(DataStatus.ACTIVATED)
-                        .and(QGame.game.actualSeason.league.pk.eq(leaguePk))
-                        .and(QGame.game.startedAt.between(monthStart.atStartOfDay(), monthEnd.atTime(23,59,59))))
+                .where(builder)
                 .fetch();
 
-        return games.stream()
-                .map(game -> game.getStartedAt().toLocalDate())
-                .distinct()
+        // 날짜별 count 집계
+        Map<LocalDate, Long> dateCountMap = games.stream()
+                .collect(Collectors.groupingBy(
+                        g -> g.getStartedAt().toLocalDate(),
+                        Collectors.counting()
+                ));
+
+        return dateCountMap.entrySet().stream()
+                .map(e -> new CalendarDateCountDTO(e.getKey(), e.getValue().intValue()))
+                .sorted(Comparator.comparing(CalendarDateCountDTO::getDate))
                 .toList();
     }
 
-    public LocalDate getNextAvailableGameDate(Long leaguePk, LocalDate today) {
+
+
+    public LocalDate getNextAvailableGameDate(Long userPk, LocalDate today) {
         QGame game = QGame.game;
+
+        List<Long> favoriteTeamPks = userFavoriteTeamService.findAllByUserPk(userPk).stream()
+                .map(uft -> uft.getTeam().getPk())
+                .toList();
+
+        if (favoriteTeamPks.isEmpty()) {
+            return null;
+        }
+
         Game nextGame = queryFactory.selectFrom(game)
                 .where(
                         game.status.eq(DataStatus.ACTIVATED)
-                                .and(game.actualSeason.league.pk.eq(leaguePk))
                                 .and(game.gameStatus.in(GameStatus.PENDING, GameStatus.POSTPONED, GameStatus.PROCEEDING))
                                 .and(game.startedAt.goe(today.atStartOfDay()))
+                                .and(game.homeTeam.pk.in(favoriteTeamPks)
+                                        .or(game.awayTeam.pk.in(favoriteTeamPks)))
                 )
                 .orderBy(game.startedAt.asc())
                 .fetchFirst();
 
-        if (nextGame == null) {
-            return null;
-        }
-        return nextGame.getStartedAt().toLocalDate();
+        return (nextGame != null) ? nextGame.getStartedAt().toLocalDate() : null;
     }
 
-    public PredictOpenResponse getPredictOpenPeriod(LocalDate today) {
-        // 오늘 기준 가장 가까운 지난 일요일 찾기
-        LocalDate startDate = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY));
-        // 그로부터 4주 후 토요일까지
-        LocalDate endDate = startDate.plusWeeks(4).minusDays(1);
+
+    public PredictOpenResponse getPredictOpenPeriod(Long userPk) {
+        // 오늘 이후 내 응원팀의 가장 가까운 경기 날짜 찾기
+        LocalDateTime nearestGameDateTime = queryFactory
+                .select(QGame.game.startedAt.min())
+                .from(QGame.game)
+                .where(
+                        QGame.game.status.eq(DataStatus.ACTIVATED),
+                        QGame.game.gameStatus.in(GameStatus.PENDING, GameStatus.POSTPONED, GameStatus.PROCEEDING),
+                        QGame.game.startedAt.goe(LocalDate.now().atStartOfDay()),
+                        QGame.game.homeTeam.pk.in(
+                                JPAExpressions.select(QUserFavoriteTeam.userFavoriteTeam.team.pk)
+                                        .from(QUserFavoriteTeam.userFavoriteTeam)
+                                        .where(QUserFavoriteTeam.userFavoriteTeam.user.pk.eq(userPk))
+                        ).or(QGame.game.awayTeam.pk.in(
+                                JPAExpressions.select(QUserFavoriteTeam.userFavoriteTeam.team.pk)
+                                        .from(QUserFavoriteTeam.userFavoriteTeam)
+                                        .where(QUserFavoriteTeam.userFavoriteTeam.user.pk.eq(userPk))
+                        ))
+                )
+                .fetchFirst();
+
+        if (nearestGameDateTime == null) {
+            throw new NotFoundException(ResponseCode.NOT_FOUND_GAME);
+        }
+
+        LocalDate startDate = nearestGameDateTime.toLocalDate();
+        LocalDate endDate = startDate.plusDays(28);
 
         return new PredictOpenResponse(startDate, endDate, 4);
+
     }
+
 
     public List<LocalDate> getMyPredictionDates(Long userPk) {
         return userGameGambleService.findByUserPk(userPk).stream()
@@ -478,12 +542,67 @@ public class GameService implements BaseService<Game> {
         int totalPoints = userPointEventService.getPointSumByUser(userPk, null, null);
 
         // 5. 가장 많이 적중한 응원팀
-        String mostHitTeamName = userGameGambleService.getMostHitTeamName(userPk);
+        String mostHitTeamName = null;
+        String mostHitTeamLogoUrl = null;
+        String mostHitTeamColor = null;
+
+        QUserGameGamble gamble = QUserGameGamble.userGameGamble;
+        QGame game = QGame.game;
+
+        // homeTeam, awayTeam 합산
+        List<Tuple> homeCounts = queryFactory
+                .select(game.homeTeam.pk, gamble.count())
+                .from(gamble)
+                .join(gamble.game, game)
+                .where(
+                        gamble.user.pk.eq(userPk),
+                        gamble.gambleStatus.in(GambleStatus.SUCCEED, GambleStatus.PERFECT)
+                )
+                .groupBy(game.homeTeam.pk)
+                .fetch();
+
+        List<Tuple> awayCounts = queryFactory
+                .select(game.awayTeam.pk, gamble.count())
+                .from(gamble)
+                .join(gamble.game, game)
+                .where(
+                        gamble.user.pk.eq(userPk),
+                        gamble.gambleStatus.in(GambleStatus.SUCCEED, GambleStatus.PERFECT)
+                )
+                .groupBy(game.awayTeam.pk)
+                .fetch();
+
+        Map<Long, Long> teamCountMap = new HashMap<>();
+        for (Tuple t : homeCounts) {
+            Long teamPk = t.get(0, Long.class);
+            Long count = t.get(1, Long.class);
+            teamCountMap.put(teamPk, teamCountMap.getOrDefault(teamPk, 0L) + count);
+        }
+        for (Tuple t : awayCounts) {
+            Long teamPk = t.get(0, Long.class);
+            Long count = t.get(1, Long.class);
+            teamCountMap.put(teamPk, teamCountMap.getOrDefault(teamPk, 0L) + count);
+        }
+
+        Long mostHitTeamPk = teamCountMap.entrySet()
+                .stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse(null);
+
+        if (mostHitTeamPk != null) {
+            Team team = teamService.findByPk(mostHitTeamPk);
+            if (team != null) {
+                mostHitTeamName = team.getNameKr();
+                mostHitTeamLogoUrl = team.getSmallLogoUrl();
+                mostHitTeamColor = team.getTeamColor();
+            }
+        }
 
         return MyPredictionStatsResponse.builder()
                 .totalSuccessRate(totalSuccessRate)
                 .totalParticipationCount(totalParticipation)
-                .participationRate(participationRate)
+                .totalParticipationRate(participationRate)
                 .thisMonthSuccessRate(thisMonthSuccessRate)
                 .thisMonthHitSummary(thisMonthHit + "/" + thisMonthParticipation)
                 .thisMonthPoints(thisMonthPoints)

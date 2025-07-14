@@ -171,21 +171,23 @@ public class GameController {
     }
 
     @Operation(
-            summary = "달력에 경기 일정 표시",
-            description = "특정 리그와 월(month) 기준으로, 해당 월에 경기 있는 날짜 리스트를 반환"
+            summary = "달력에 내 응원팀 경기 일정 표시",
+            description = "내 응원팀 기준 오늘 ~ 해당 달 마지막 날까지 경기가 있는 날짜와 경기 수 반환"
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공",
-                    content = @Content(schema = @Schema(implementation = CalendarDateResponse.class))),
+                    content = @Content(schema = @Schema(implementation = CalendarDateCountResponse.class))),
     })
     @GetMapping("/calendar")
-    public ResponseEntity<ResponseDTO<CalendarDateResponse>> getCalendarDates(
-            @RequestParam Long league,
+    public ResponseEntity<ResponseDTO<CalendarDateCountResponse>> getMyCalendarDates(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate month
     ) {
-        List<LocalDate> dates = gameService.getCalendarDates(league, month);
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, new CalendarDateResponse(dates)));
+        User user = jwtTokenProvider.getUserFromSecurityContext();
+        List<CalendarDateCountDTO> dates = gameService.getCalendarDatesByMyTeams(user.getPk(), month);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, new CalendarDateCountResponse(dates)));
     }
+
+
 
     @Operation(
             summary = "가장 가까운 예정 경기 날짜 조회",
@@ -197,16 +199,16 @@ public class GameController {
     })
     @GetMapping("/calendar/next")
     public ResponseEntity<ResponseDTO<NextGameDateResponse>> getNextAvailableGameDate(
-            @RequestParam Long league,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate after
     ) {
-        LocalDate nextDate = gameService.getNextAvailableGameDate(league, after);
+        User user = jwtTokenProvider.getUserFromSecurityContext();
+        LocalDate nextDate = gameService.getNextAvailableGameDate(user.getPk(), after);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, new NextGameDateResponse(nextDate)));
     }
 
     @Operation(
             summary = "현재 승부예측 오픈 기간 조회",
-            description = "오늘 기준으로 승부예측 오픈된 4주 기간(일요일 기준) 반환"
+            description = "오늘 이후 내 응원팀의 가장 가까운 경기 기준으로 4주 승부예측 오픈 기간 반환"
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공",
@@ -214,8 +216,8 @@ public class GameController {
     })
     @GetMapping("/predict/open")
     public ResponseEntity<ResponseDTO<PredictOpenResponse>> getPredictOpenPeriod() {
-        LocalDate today = LocalDate.now();
-        PredictOpenResponse period = gameService.getPredictOpenPeriod(today);
+        User user = jwtTokenProvider.getUserFromSecurityContext();
+        PredictOpenResponse period = gameService.getPredictOpenPeriod(user.getPk());
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, period));
     }
 
