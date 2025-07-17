@@ -10,7 +10,7 @@ import org.hibernate.validator.constraints.Length;
 
 @Data
 @NoArgsConstructor
-public class PatchBoardReplyRequestDTO {
+public class PatchBoardReplyRequest {
 
   @NotNull(message = "댓글 본문은 필수값입니다.")
   @Length(min = 1, max = 1000, message = "댓글은 1000자 이하로 작성해주세요.")

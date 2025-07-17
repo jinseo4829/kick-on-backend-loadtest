@@ -10,7 +10,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class GetBoardRepliesRequestDTO {
+public class GetBoardRepliesRequest {
     @Positive(message = "게시글 PK는 1이상의 정수입니다.")
     @NotNull(message = "게시글 pk 값은 필수입니다.")
     @Schema(description = "게시글 pk 값", example = "1")

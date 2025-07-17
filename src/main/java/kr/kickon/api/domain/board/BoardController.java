@@ -7,24 +7,20 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.board.dto.BoardDetailDTO;
 import kr.kickon.api.domain.board.dto.BoardListDTO;
 import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
-import kr.kickon.api.domain.board.request.CreateBoardRequestDTO;
-import kr.kickon.api.domain.board.request.GetBoardsRequestDTO;
+import kr.kickon.api.domain.board.request.CreateBoardRequest;
+import kr.kickon.api.domain.board.request.GetBoardsRequest;
 import kr.kickon.api.domain.board.response.GetBoardDetailResponse;
 import kr.kickon.api.domain.board.response.GetBoardsResponse;
 import kr.kickon.api.domain.board.response.GetHomeBoardsResponse;
-import kr.kickon.api.domain.boardKick.BoardKickService;
-import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
 import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.global.auth.jwt.user.JwtTokenProvider;
 import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.ResponseCode;
-import kr.kickon.api.global.error.exceptions.BadRequestException;
 import kr.kickon.api.global.error.exceptions.ForbiddenException;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
@@ -54,7 +50,7 @@ public class BoardController {
     @GetMapping("/home")
     public ResponseEntity<ResponseDTO<List<BoardListDTO>>> getHomeBoards() {
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        List<BoardListDTO> boards = boardService.findTop10Boards();
+        List<BoardListDTO> boards = boardService.getTop10BoardList();
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, boards));
     }
 
@@ -64,7 +60,7 @@ public class BoardController {
                     content = @Content(schema = @Schema(implementation = GetBoardDetailResponse.class))),
     })
     @PostMapping()
-    public ResponseEntity<ResponseDTO<BoardDetailDTO>> createBoard(@Valid @RequestBody CreateBoardRequestDTO request){
+    public ResponseEntity<ResponseDTO<BoardDetailDTO>> createBoard(@Valid @RequestBody CreateBoardRequest request){
         User user = jwtTokenProvider.getUserFromSecurityContext();
         String id = uuidGenerator.generateUniqueUUID(boardService::findById);
         Board board = Board.builder()
@@ -83,7 +79,7 @@ public class BoardController {
         }
         Board boardCreated = boardService.createBoardWithImages(board, request.getUsedImageKeys());
 
-        BoardDetailDTO boardDetailDTO = boardService.findOneBoardListDTOByPk(boardCreated.getPk(),user);
+        BoardDetailDTO boardDetailDTO = boardService.getBoardDetailDTOByPk(boardCreated.getPk(),user);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, boardDetailDTO));
     }
 
@@ -93,7 +89,7 @@ public class BoardController {
                     content = @Content(schema = @Schema(implementation = GetBoardsResponse.class))),
     })
     @GetMapping("")
-    public ResponseEntity<ResponseDTO<List<BoardListDTO>>> getBoards(@Valid @ModelAttribute GetBoardsRequestDTO query){
+    public ResponseEntity<ResponseDTO<List<BoardListDTO>>> getBoards(@Valid @ModelAttribute GetBoardsRequest query){
         User user = jwtTokenProvider.getUserFromSecurityContext();
         if(query.getTeam()!=null){
             Team team = teamService.findByPk(query.getTeam());
@@ -101,7 +97,7 @@ public class BoardController {
         }
         // infinite == true → 무한스크롤: hasNext 반환
         // 무한 스크롤 처리
-        PaginatedBoardListDTO board = boardService.findBoardsWithPagination(query.getTeam() != null ? query.getTeam() : null, query.getPage(), query.getSize(),query.getOrder(), query.getInfinite() != null ? query.getInfinite() : null, query.getLastBoard(), query.getLastViewCount());
+        PaginatedBoardListDTO board = boardService.getBoardListWithPagination(query.getTeam() != null ? query.getTeam() : null, query.getPage(), query.getSize(),query.getOrder(), query.getInfinite() != null ? query.getInfinite() : null, query.getLastBoard(), query.getLastViewCount());
         if(board.getHasNext()!=null){
             return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, board.getBoardList(), new PagedMetaDTO(board.getHasNext())));
         }else{
@@ -117,7 +113,7 @@ public class BoardController {
     @GetMapping("/{boardPk}")
     public ResponseEntity<ResponseDTO<BoardDetailDTO>> getBoardDetail(@PathVariable Long boardPk){
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        BoardDetailDTO boardDetailDTO = boardService.findOneBoardListDTOByPk(boardPk,user);
+        BoardDetailDTO boardDetailDTO = boardService.getBoardDetailDTOByPk(boardPk,user);
         if(boardDetailDTO==null) throw new NotFoundException(ResponseCode.NOT_FOUND_BOARD);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, boardDetailDTO));
     }
@@ -144,8 +140,8 @@ public class BoardController {
             content = @Content(schema = @Schema(implementation = GetBoardDetailResponse.class))),
     })
     @PatchMapping("/{boardPk}")
-    public ResponseEntity<ResponseDTO<BoardDetailDTO>> patchBoard(@PathVariable Long boardPk,
-        @Valid @RequestBody CreateBoardRequestDTO request){
+    public ResponseEntity<ResponseDTO<BoardDetailDTO>> updateBoard(@PathVariable Long boardPk,
+        @Valid @RequestBody CreateBoardRequest request){
         User user = jwtTokenProvider.getUserFromSecurityContext();
         Board boardData = boardService.findByPk(boardPk);
         if(boardData == null) throw new NotFoundException(ResponseCode.NOT_FOUND_BOARD);
@@ -164,8 +160,8 @@ public class BoardController {
         }else{
             boardData.setTeam(null);
         }
-        boardService.patchBoard(boardData, request.getUsedImageKeys());
-        BoardDetailDTO boardDetailDTO = boardService.findOneBoardListDTOByPk(boardPk,user);
+        boardService.updateBoard(boardData, request.getUsedImageKeys());
+        BoardDetailDTO boardDetailDTO = boardService.getBoardDetailDTOByPk(boardPk,user);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, boardDetailDTO));
     }
 }

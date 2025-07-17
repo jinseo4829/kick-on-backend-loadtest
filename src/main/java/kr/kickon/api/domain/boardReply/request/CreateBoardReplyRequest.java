@@ -10,7 +10,7 @@ import org.hibernate.validator.constraints.Length;
 
 @Data
 @NoArgsConstructor
-public class CreateBoardReplyRequestDTO {
+public class CreateBoardReplyRequest {
     @Positive(message = "댓글 PK는 1이상의 정수입니다.")
     @NotNull(message = "게시글 pk 값은 필수값입니다.")
     @Schema(description = "게시글 pk 값", example = "2")
