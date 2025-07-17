@@ -43,8 +43,8 @@ public class AdminGameController {
     })
     public ResponseEntity<ResponseDTO<List<GameListDTO>>> getFilteredGames(@Valid @ModelAttribute GameFilterRequest request) {
         Pageable pageable = request.toPageable();
-        Page<Game> gamePage = gameService.findGamesByFilter(request, pageable);
-        List<GameListDTO> dtos = gameService.toGameListResponses(gamePage.getContent());
+        Page<Game> gamePage = gameService.getGameListByFilter(request, pageable);
+        List<GameListDTO> dtos = gameService.fromGameList(gamePage.getContent());
 
         return ResponseEntity.ok(
                 ResponseDTO.success(

@@ -150,7 +150,7 @@ public class MigrationController {
     @GetMapping("/gambles")
     @Scheduled(cron = "0 0 */3 * * *")
     public void fetchGambles() {
-        List<Game> games = gameService.findByToday();
+        List<Game> games = gameService.getGameListByToday();
 
         List<ApiGamesDTO> apiGamesDTOS = migrationService.fetchGamesByApiIds(games);
 
