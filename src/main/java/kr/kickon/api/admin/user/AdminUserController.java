@@ -46,7 +46,7 @@ public class AdminUserController {
     })
     public ResponseEntity<ResponseDTO<List<UserListDTO>>> getFilteredUsers(@Valid @ModelAttribute UserFilterRequest request) {
         Pageable pageable = request.toPageable();
-        Page<User> userPage = userService.findUsersByFilter(request, pageable);
+        Page<User> userPage = userService.getUserListByFilter(request, pageable);
         List<UserListDTO> dtos = userPage.getContent().stream()
                 .map(UserListDTO::fromEntity)
                 .toList();
