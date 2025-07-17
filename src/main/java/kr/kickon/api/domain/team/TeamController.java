@@ -10,16 +10,11 @@ import kr.kickon.api.domain.actualSeason.ActualSeasonService;
 import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
 import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.domain.team.request.TeamListFilterRequest;
-import kr.kickon.api.domain.team.response.GetTeamsResponseDTO;
+import kr.kickon.api.domain.team.response.GetTeamsResponse;
 import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
-import kr.kickon.api.global.common.entities.ActualSeason;
-import kr.kickon.api.global.common.entities.ActualSeasonTeam;
-import kr.kickon.api.global.common.entities.League;
-import kr.kickon.api.global.common.entities.Team;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.BadRequestException;
-import kr.kickon.api.global.error.exceptions.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -45,7 +40,7 @@ public class TeamController {
     @Operation(summary = "팀 리스트 조회", description = "리그 pk 기반으로 팀 리스트 조회 / league만 보내면 리그 기준으로 모든 팀 조회, keyword를 보내면 검색어 기반 팀 검색")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공",
-                    content = @Content(schema = @Schema(implementation = GetTeamsResponseDTO.class)))
+                    content = @Content(schema = @Schema(implementation = GetTeamsResponse.class)))
     })
     @GetMapping()
     public ResponseEntity<ResponseDTO<List<TeamDTO>>> getTeams(
@@ -55,7 +50,7 @@ public class TeamController {
         String keyword = request.getKeyword();
         if(league==null && keyword==null) throw new BadRequestException(ResponseCode.INVALID_REQUEST);
         Pageable pageable = request.toPageable();
-        Page<TeamDTO> resultPage = teamService.findFilteredTeams(request, pageable);
+        Page<TeamDTO> resultPage = teamService.getTeamListByFilter(request, pageable);
 
         return ResponseEntity.ok(ResponseDTO.success(
             ResponseCode.SUCCESS,
