@@ -11,7 +11,7 @@ import jakarta.validation.Valid;
 import kr.kickon.api.domain.actualSeason.ActualSeasonService;
 import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
 import kr.kickon.api.domain.game.dto.*;
-import kr.kickon.api.domain.game.request.GetGamesRequestDTO;
+import kr.kickon.api.domain.game.request.GetGamesRequest;
 import kr.kickon.api.domain.game.response.*;
 import kr.kickon.api.domain.league.dto.LeagueDTO;
 import kr.kickon.api.domain.team.dto.TeamDTO;
@@ -53,13 +53,14 @@ public class GameController {
     private final UserFavoriteTeamService userFavoriteTeamService;
     private final ActualSeasonTeamService actualSeasonTeamService;
 
+    // region {getGames} 매치 리스트 조회 API
     @Operation(summary = "매치 리스트 조회", description = "상태값, 리그 pk 기준으로 매치 리스트 조회 / 유저 참여 여부도 포함하여 전달")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공",
                     content = @Content(schema = @Schema(implementation = GetGamesResponse.class))),
     })
     @GetMapping()
-    public ResponseEntity<ResponseDTO<LeagueWithGamesResponse>> getGames(@Valid GetGamesRequestDTO paramDto) {
+    public ResponseEntity<ResponseDTO<LeagueWithGamesResponse>> getGames(@Valid GetGamesRequest paramDto) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
 
         // LocalDate → LocalDateTime 변환
@@ -169,7 +170,9 @@ public class GameController {
                 .games(gameDTOs)
                 .build()));
     }
+    // endregion
 
+    // region {getMyCalendarDates} 달력에 내 응원팀 경기 일정 표시 API, 오늘 ~ 해당 달 마지막 날까지 응원팀의 경기 날짜 + 수 반환
     @Operation(
             summary = "달력에 내 응원팀 경기 일정 표시",
             description = "내 응원팀 기준 오늘 ~ 해당 달 마지막 날까지 경기가 있는 날짜와 경기 수 반환"
@@ -183,12 +186,12 @@ public class GameController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate month
     ) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        List<CalendarDateCountDTO> dates = gameService.getCalendarDatesByMyTeams(user.getPk(), month);
+        List<CalendarDateCountDTO> dates = gameService.getCalendarDateListByMyTeams(user.getPk(), month);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, new CalendarDateCountResponse(dates)));
     }
+    // endregion
 
-
-
+    // region {getNextAvailableGameDate} 가장 가까운 예정 경기 날짜 조회 API
     @Operation(
             summary = "가장 가까운 예정 경기 날짜 조회",
             description = "아직 끝나지 않은 경기(PENDING, POSTPONED, PROCEEDING) 중에서 가장 가까운 경기 날짜 반환"
@@ -202,10 +205,12 @@ public class GameController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate after
     ) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        LocalDate nextDate = gameService.getNextAvailableGameDate(user.getPk(), after);
+        LocalDate nextDate = gameService.getNextAvailableGameDateDetail(user.getPk(), after);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, new NextGameDateResponse(nextDate)));
     }
+    // endregion
 
+    // region {getPredictOpenPeriod} 현재 승부예측 오픈 기간 조회 API, 오늘 이후 내 응원팀의 가장 가까운 경기 기준으로 4주 기간 반환
     @Operation(
             summary = "현재 승부예측 오픈 기간 조회",
             description = "오늘 이후 내 응원팀의 가장 가까운 경기 기준으로 4주 승부예측 오픈 기간 반환"
@@ -217,10 +222,12 @@ public class GameController {
     @GetMapping("/predict/open")
     public ResponseEntity<ResponseDTO<PredictOpenResponse>> getPredictOpenPeriod() {
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        PredictOpenResponse period = gameService.getPredictOpenPeriod(user.getPk());
+        PredictOpenResponse period = gameService.getPredictOpenPeriodDetail(user.getPk());
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, period));
     }
+    // endregion
 
+    // region {getMyPredictionDates} 내가 참여한 경기 캘린더 조회 API
     @Operation(
             summary = "내가 참여한 경기 캘린더 조회",
             description = "내가 승부예측에 참여한 경기 날짜 리스트를 반환 (캘린더 점찍기 용)"
@@ -232,10 +239,12 @@ public class GameController {
     @GetMapping("/my-calendar")
     public ResponseEntity<ResponseDTO<MyPredictionDatesResponse>> getMyPredictionDates() {
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        List<LocalDate> dates = gameService.getMyPredictionDates(user.getPk());
+        List<LocalDate> dates = gameService.getMyPredictionDateList(user.getPk());
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, new MyPredictionDatesResponse(dates)));
     }
+    // endregion
 
+    // region {getMyPredictions} 내가 참여한 경기 리스트 조회 API
     @Operation(
             summary = "내가 참여한 경기 리스트 조회",
             description = "선택한 날짜에 내가 승부예측에 참여한 경기 리스트 반환"
@@ -250,11 +259,13 @@ public class GameController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
     ) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        List<GameDTO> gameDTOs = gameService.getMyPredictions(user.getPk(), from, to);
+        List<GameDTO> gameDTOs = gameService.getMyPredictionList(user.getPk(), from, to);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS,
                 LeagueWithGamesResponse.builder().games(gameDTOs).build()));
     }
+    // endregion
 
+    // region {getMyPredictionStats} 내 예측 통계 조회 API
     @Operation(
             summary = "내 예측 통계 조회",
             description = "내 누적 성공률, 참여율, 이번 달 성과, 포인트, 가장 많이 적중한 응원팀 반환"
@@ -269,7 +280,6 @@ public class GameController {
         MyPredictionStatsResponse stats = gameService.getMyPredictionStats(user.getPk());
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, stats));
     }
-
-
+    // endregion
 
 }

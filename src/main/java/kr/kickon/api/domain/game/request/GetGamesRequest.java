@@ -11,7 +11,7 @@ import java.time.LocalDate;
 
 @Data
 @NoArgsConstructor
-public class GetGamesRequestDTO {
+public class GetGamesRequest {
     @Positive(message = "리그 pk 값은 양수입니다.")
     @Schema(description = "리그 pk 값, 옵셔널", example = "2")
     private Long league;
