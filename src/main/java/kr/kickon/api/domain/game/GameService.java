@@ -431,28 +431,37 @@ public class GameService implements BaseService<Game> {
      * - 홈팀 또는 어웨이팀으로 포함된 경기만 대상
      */
     public LocalDate getNextAvailableGameDateDetail(Long userPk, LocalDate today) {
+
         QGame game = QGame.game;
 
+        // 사용자의 응원팀 PK 리스트 조회
         List<Long> favoriteTeamPks = userFavoriteTeamService.findAllByUserPk(userPk).stream()
-                .map(uft -> uft.getTeam().getPk())
+                .map(userFavoriteTeam -> userFavoriteTeam.getTeam().getPk())
                 .toList();
 
-        if (favoriteTeamPks.isEmpty()) {
-            return null;
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(game.status.eq(DataStatus.ACTIVATED));
+        builder.and(game.gameStatus.in(GameStatus.PENDING, GameStatus.POSTPONED, GameStatus.PROCEEDING));
+        builder.and(game.startedAt.goe(today.atStartOfDay()));
+
+        if (!favoriteTeamPks.isEmpty()) {
+            // 응원팀이 있는 경우: 홈 또는 어웨이 팀으로 조건 추가
+            builder.and(
+                    game.homeTeam.pk.in(favoriteTeamPks)
+                            .or(game.awayTeam.pk.in(favoriteTeamPks))
+            );
+        } else {
+            // 응원팀이 없는 경우: 프리미어리그 기준 가장 가까운 예정 경기 날짜 반환
+            Long premierLeaguePk = 1L;
+            builder.and(game.actualSeason.league.pk.eq(premierLeaguePk));
         }
 
-        Game nextGame = queryFactory.selectFrom(game)
-                .where(
-                        game.status.eq(DataStatus.ACTIVATED)
-                                .and(game.gameStatus.in(GameStatus.PENDING, GameStatus.POSTPONED, GameStatus.PROCEEDING))
-                                .and(game.startedAt.goe(today.atStartOfDay()))
-                                .and(game.homeTeam.pk.in(favoriteTeamPks)
-                                        .or(game.awayTeam.pk.in(favoriteTeamPks)))
-                )
+        Game nextGameEntity = queryFactory.selectFrom(game)
+                .where(builder)
                 .orderBy(game.startedAt.asc())
                 .fetchFirst();
 
-        return (nextGame != null) ? nextGame.getStartedAt().toLocalDate() : null;
+        return (nextGameEntity != null) ? nextGameEntity.getStartedAt().toLocalDate() : null;
     }
     // endregion
 
