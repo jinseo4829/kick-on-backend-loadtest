@@ -20,4 +20,15 @@ public class ExampleConstants {
     public static final String leagueKrName = "K리그 1";
     public static final String teamKrName = "전남드래곤즈";
     public static final String teamnameEn = "Jeonnam Dragons";
+    public static final String name = "임민서";
+    public static final String startDatetime = "2025-01-01T12:00:00";
+    public static final String endDatetime = "2025-07-30T12:00:00";
+    public static final String contractStatus = "BEFORE_CONTACT";
+    public static final String email = "user@example.com";
+    public static final String snsUrl = "https://www.youtube.com/@user";
+    public static final String etc = "기타 정보";
+    public static final String teamPk = "1647";
+    public static final String userPk = "1";
+    public static final String leaguePk = "12";
+
 }
