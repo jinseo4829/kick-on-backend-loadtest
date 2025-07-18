@@ -91,6 +91,7 @@ public class GameService implements BaseService<Game> {
      * 실제 시즌 PK 및 상태에 따른 게임 리스트 조회
      * - 진행 중이거나 완료된 경기, 예정된 경기 구분
      * - 시간 범위(from~to)가 있으면 해당 기간 필터링
+     * - proceeding 상태일 경우 날짜 기준으로 조회
      * - 최대 6개까지 조회
      */
     public List<Game> findByActualSeason(Long actualSeasonPk, String gameStatus, LocalDateTime from, LocalDateTime to){
@@ -104,7 +105,7 @@ public class GameService implements BaseService<Game> {
                             GameStatus.AWAY, GameStatus.DRAW, GameStatus.PENDING).and(QGame.game.startedAt.lt(now.minusHours(2))))
                     .orderBy(QGame.game.startedAt.desc());
         } else {
-            query.where(QGame.game.gameStatus.in(GameStatus.POSTPONED, GameStatus.PENDING).and(QGame.game.startedAt.goe(now.plusHours(2))))
+            query.where(QGame.game.gameStatus.in(GameStatus.POSTPONED, GameStatus.PENDING))
                     .orderBy(QGame.game.startedAt.asc());
         }
 
@@ -154,7 +155,6 @@ public class GameService implements BaseService<Game> {
                     GameStatus.POSTPONED,
                     GameStatus.PENDING
             ));
-            builder.and(QGame.game.startedAt.goe(now.plusHours(2)));
         }
 
         if (from != null && to != null) {
@@ -502,21 +502,45 @@ public class GameService implements BaseService<Game> {
         return new PredictOpenResponse(startDate, endDate, 4);
 
     }
-    // endregion
-
     // region {getMyPredictionDateList} 유저의 승부예측 날짜 목록 조회
     /**
      * 사용자가 참여한 모든 경기 예측(UserGameGamble) 내역 중,
      * 예측한 게임의 시작일(LocalDate)들을 중복 제거하여 정렬한 리스트를 반환합니다.
+     * - 응원팀이 없을 경우: 프리미어리그 기준 예정 경기 중 가장 가까운 날짜 1개만 반환합니다.
      */
     public List<LocalDate> getMyPredictionDateList(Long userPk) {
+        List<Long> favoriteTeamPks = userFavoriteTeamService.findAllByUserPk(userPk).stream()
+                .map(userFavoriteTeam -> userFavoriteTeam.getTeam().getPk())
+                .toList();
+
+        if (favoriteTeamPks.isEmpty()) {
+            // 응원팀 없을 경우 → 프리미어리그 기준 가장 가까운 예정 경기 날짜 하나만 리스트로 반환
+            Long premierLeaguePk = 1L;
+            QGame game = QGame.game;
+
+            Game nextGame = queryFactory.selectFrom(game)
+                    .where(
+                            game.status.eq(DataStatus.ACTIVATED),
+                            game.actualSeason.league.pk.eq(premierLeaguePk),
+                            game.gameStatus.in(GameStatus.PENDING, GameStatus.POSTPONED, GameStatus.PROCEEDING),
+                            game.startedAt.goe(LocalDate.now().atStartOfDay())
+                    )
+                    .orderBy(game.startedAt.asc())
+                    .fetchFirst();
+
+            return (nextGame != null) ?
+                    List.of(nextGame.getStartedAt().toLocalDate()) :
+                    List.of();
+        }
+
+        // 응원팀이 있는 경우: 예측 내역 기반 날짜 리스트 반환
         return userGameGambleService.findByUserPk(userPk).stream()
                 .map(gamble -> gamble.getGame().getStartedAt().toLocalDate())
                 .distinct()
                 .sorted()
                 .collect(Collectors.toList());
     }
-    // endregion
+// endregion
 
     // region {getMyPredictionList} 유저의 예측한 경기 리스트 조회
     /**
