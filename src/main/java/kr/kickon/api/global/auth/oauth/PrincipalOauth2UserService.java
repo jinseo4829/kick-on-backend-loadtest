@@ -42,7 +42,7 @@ public class PrincipalOauth2UserService extends DefaultOAuth2UserService {
         else throw new OAuth2RegistrationException(ResponseCode.INVALID_PROVIDER);
 
         assert oAuth2UserInfo != null;
-        Optional<User> userEntity = userService.findUserByProviderAndProviderId(oAuth2UserInfo.getProvider(), oAuth2UserInfo.getProviderId());
+        Optional<User> userEntity = userService.findByProviderAndProviderId(oAuth2UserInfo.getProvider(), oAuth2UserInfo.getProviderId());
 
         User user = null;
         String role = "OAUTH_FIRST_JOIN";

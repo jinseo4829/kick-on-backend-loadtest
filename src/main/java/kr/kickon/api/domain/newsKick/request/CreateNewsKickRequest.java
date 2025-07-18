@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class CreateNewsKickRequestDTO {
+public class CreateNewsKickRequest {
     @Positive(message = "뉴스 pk 값은 양수입니다.")
     @NotNull(message = "뉴스 pk 값은 필수값입니다.")
     @Schema(description = "뉴스 pk 값", example = "2")

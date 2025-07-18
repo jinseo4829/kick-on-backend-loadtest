@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class CreateBoardReplyKickRequestDTO {
+public class CreateBoardReplyKickRequest {
     @Positive(message = "댓글 PK는 1이상의 정수입니다.")
     @NotNull(message = "댓글 pk 값은 필수값입니다.")
     @Schema(description = "댓글 pk", example = "10")

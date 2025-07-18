@@ -9,12 +9,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import kr.kickon.api.domain.boardReply.dto.PaginatedReplyListDTO;
 import kr.kickon.api.domain.boardReply.dto.ReplyDTO;
-import kr.kickon.api.domain.boardReply.request.CreateBoardReplyRequestDTO;
+import kr.kickon.api.domain.boardReply.request.CreateBoardReplyRequest;
 import kr.kickon.api.domain.board.BoardService;
-import kr.kickon.api.domain.boardReply.request.GetBoardRepliesRequestDTO;
-import kr.kickon.api.domain.boardReply.request.PatchBoardReplyRequestDTO;
-import kr.kickon.api.domain.boardReply.response.GetBoardRepliesResponseDTO;
-import kr.kickon.api.domain.user.UserService;
+import kr.kickon.api.domain.boardReply.request.GetBoardRepliesRequest;
+import kr.kickon.api.domain.boardReply.request.PatchBoardReplyRequest;
+import kr.kickon.api.domain.boardReply.response.GetBoardRepliesResponse;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.auth.jwt.user.JwtTokenProvider;
 import kr.kickon.api.global.common.PagedMetaDTO;
@@ -45,7 +44,7 @@ public class BoardReplyController {
 
     @Operation(summary = "게시글 댓글 생성", description = "회원가입한 유저만 게시글 댓글 생성 가능")
     @PostMapping()
-    public ResponseEntity<ResponseDTO<Void>> createBoardReply(@Valid @RequestBody CreateBoardReplyRequestDTO request){
+    public ResponseEntity<ResponseDTO<Void>> createBoardReply(@Valid @RequestBody CreateBoardReplyRequest request){
         User user = jwtTokenProvider.getUserFromSecurityContext();
         Board board = boardService.findByPk(request.getBoard());
         if(board == null) throw new NotFoundException(ResponseCode.NOT_FOUND_BOARD);
@@ -81,14 +80,14 @@ public class BoardReplyController {
     @Operation(summary = "게시글 댓글 리스트 조회", description = "게시글 댓글 페이징 처리해서 전달")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공",
-                    content = @Content(schema = @Schema(implementation = GetBoardRepliesResponseDTO.class))),
+                    content = @Content(schema = @Schema(implementation = GetBoardRepliesResponse.class))),
     })
     @GetMapping()
-    public ResponseEntity<ResponseDTO<List<ReplyDTO>>> getBoardReplies(@Valid GetBoardRepliesRequestDTO query){
+    public ResponseEntity<ResponseDTO<List<ReplyDTO>>> getBoardReplies(@Valid GetBoardRepliesRequest query){
         User user = jwtTokenProvider.getUserFromSecurityContext();
         Board boardData = boardService.findByPk(query.getBoard());
         if(boardData == null) throw new NotFoundException(ResponseCode.NOT_FOUND_BOARD);
-        PaginatedReplyListDTO paginatedReplyListDTO = boardReplyService.getRepliesByBoard(query.getBoard(),user!=null ? user.getPk() : null, query.getPage(), query.getSize(), query.getInfinite() != null ? query.getInfinite() : null, query.getLastReply());
+        PaginatedReplyListDTO paginatedReplyListDTO = boardReplyService.getReplyListByBoard(query.getBoard(),user!=null ? user.getPk() : null, query.getPage(), query.getSize(), query.getInfinite() != null ? query.getInfinite() : null, query.getLastReply());
         if(paginatedReplyListDTO.getHasNext()!=null){
             return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS,paginatedReplyListDTO.getReplyList(),
                     new PagedMetaDTO(paginatedReplyListDTO.getHasNext())));
@@ -116,7 +115,7 @@ public class BoardReplyController {
     @Operation(summary = "게시글 댓글 수정", description = "게시글 댓글 PK값으로 댓글 수정")
     @PatchMapping("/{boardReplyPk}")
     public ResponseEntity<ResponseDTO<Void>> patchBoardReply(@PathVariable Long boardReplyPk,
-        @Valid @RequestBody PatchBoardReplyRequestDTO request){
+        @Valid @RequestBody PatchBoardReplyRequest request){
         User user = jwtTokenProvider.getUserFromSecurityContext();
         BoardReply boardReplyData = boardReplyService.findByPk(boardReplyPk);
         if(boardReplyData == null) throw new NotFoundException(ResponseCode.NOT_FOUND_BOARD_REPLY);
@@ -125,7 +124,7 @@ public class BoardReplyController {
         }
         boardReplyData.setContents(request.getContents());
 
-        boardReplyService.patchBoardReply(boardReplyData);
+        boardReplyService.updateBoardReply(boardReplyData);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
 }

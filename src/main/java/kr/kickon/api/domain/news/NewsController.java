@@ -9,8 +9,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import kr.kickon.api.domain.league.LeagueService;
 import kr.kickon.api.domain.news.dto.*;
-import kr.kickon.api.domain.news.request.CreateNewsRequestDTO;
-import kr.kickon.api.domain.news.request.GetNewsRequestDTO;
+import kr.kickon.api.domain.news.request.CreateNewsRequest;
+import kr.kickon.api.domain.news.request.GetNewsRequest;
 import kr.kickon.api.domain.news.response.GetHomeNewsResponse;
 import kr.kickon.api.domain.news.response.GetHotNewsResponse;
 import kr.kickon.api.domain.news.response.GetNewsDetailResponse;
@@ -30,9 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -60,19 +58,19 @@ public class NewsController {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         List<NewsListDTO>news=null;
         if(user==null){
-            news = newsService.findRecent3News();
+            news = newsService.getRecent3NewsList();
         }else{
             List<UserFavoriteTeam> favoriteTeams = userFavoriteTeamService.findTop3ByUserPkOrderByPriorityNumAsc(user.getPk());
 
             if (favoriteTeams == null || favoriteTeams.isEmpty()) {
-                news = newsService.findRecent3News();
+                news = newsService.getRecent3NewsList();
             } else {
                 Set<Long> teamPks = favoriteTeams.stream()
                         .map(fav -> fav.getTeam().getPk())
                         .collect(Collectors.toSet());
 
                 // 중복 제거 포함된 뉴스 3개까지 조회 (최대 3개 팀 기준)
-                news = newsService.findRecent3NewsWithUserTeam(teamPks, 3);
+                news = newsService.getRecent3NewsListWithUserTeam(teamPks, 3);
             }
         }
 
@@ -86,7 +84,7 @@ public class NewsController {
     })
     @GetMapping("/hot")
     public ResponseEntity<ResponseDTO<List<HotNewsListDTO>>> getHotNews() {
-        List<HotNewsListDTO> news = newsService.findTop5HotNews();
+        List<HotNewsListDTO> news = newsService.getTop5HotNewsList();
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, news));
     }
 
@@ -96,7 +94,7 @@ public class NewsController {
                     content = @Content(schema = @Schema(implementation = GetNewsDetailResponse.class))),
     })
     @PostMapping()
-    public ResponseEntity<ResponseDTO<NewsDetailDTO>> createNews(@Valid @RequestBody CreateNewsRequestDTO request){
+    public ResponseEntity<ResponseDTO<NewsDetailDTO>> createNews(@Valid @RequestBody CreateNewsRequest request){
         User user = jwtTokenProvider.getUserFromSecurityContext();
 
         String id = uuidGenerator.generateUniqueUUID(newsService::findById);
@@ -118,7 +116,7 @@ public class NewsController {
 
         News newsCreated = newsService.createNewsWithImages(news, request.getUsedImageKeys());
 
-        NewsDetailDTO newsDetailDTO = newsService.findNewsDetailDTOByPk(newsCreated.getPk(),user);
+        NewsDetailDTO newsDetailDTO = newsService.getNewsDetailDTOByPk(newsCreated.getPk(),user);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS,newsDetailDTO));
     }
 
@@ -128,7 +126,7 @@ public class NewsController {
             @ApiResponse(responseCode = "200", description = "성공",
                     content = @Content(schema = @Schema(implementation = GetNewsResponse.class))),
     })
-    public ResponseEntity<ResponseDTO<List<NewsListDTO>>> getNews(@Valid @ModelAttribute GetNewsRequestDTO query) {
+    public ResponseEntity<ResponseDTO<List<NewsListDTO>>> getNews(@Valid @ModelAttribute GetNewsRequest query) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         if(query.getTeam()!=null){
             Team team = teamService.findByPk(query.getTeam());
@@ -142,7 +140,7 @@ public class NewsController {
 
         // infinite == true → 무한스크롤: hasNext 반환
         // 무한 스크롤 처리
-        PaginatedNewsListDTO news = newsService.findNewsWithPagination(query.getTeam() != null ? query.getTeam() : null, query.getPage(), query.getSize(),query.getOrder(), query.getLeague(), query.getInfinite() != null ? query.getInfinite() : null, query.getLastNews(), query.getLastViewCount());
+        PaginatedNewsListDTO news = newsService.getNewsListWithPagination(query.getTeam() != null ? query.getTeam() : null, query.getPage(), query.getSize(),query.getOrder(), query.getLeague(), query.getInfinite() != null ? query.getInfinite() : null, query.getLastNews(), query.getLastViewCount());
         if(news.getHasNext()!=null){
             return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, news.getNewsList(), new PagedMetaDTO(news.getHasNext())));
         }else{
@@ -158,7 +156,7 @@ public class NewsController {
     @GetMapping("/{newsPk}")
     public ResponseEntity<ResponseDTO<NewsDetailDTO>> getBoardDetail(@PathVariable Long newsPk){
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        NewsDetailDTO newsDetailDTO = newsService.findNewsDetailDTOByPk(newsPk,user);
+        NewsDetailDTO newsDetailDTO = newsService.getNewsDetailDTOByPk(newsPk,user);
         if(newsDetailDTO==null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, newsDetailDTO));
     }
@@ -186,7 +184,7 @@ public class NewsController {
     })
     @PatchMapping("/{newsPk}")
     public ResponseEntity<ResponseDTO<NewsDetailDTO>> patchNews(@PathVariable Long newsPk,
-        @Valid @RequestBody CreateNewsRequestDTO request){
+        @Valid @RequestBody CreateNewsRequest request){
         User user = jwtTokenProvider.getUserFromSecurityContext();
         News newsData = newsService.findByPk(newsPk);
         if(newsData == null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS);
@@ -205,8 +203,8 @@ public class NewsController {
         }else{
             newsData.setTeam(null);
         }
-        newsService.patchNews(newsData, request.getUsedImageKeys());
-        NewsDetailDTO newsDetailDTO = newsService.findNewsDetailDTOByPk(newsPk,user);
+        newsService.updateNews(newsData, request.getUsedImageKeys());
+        NewsDetailDTO newsDetailDTO = newsService.getNewsDetailDTOByPk(newsPk,user);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, newsDetailDTO));
     }
 }

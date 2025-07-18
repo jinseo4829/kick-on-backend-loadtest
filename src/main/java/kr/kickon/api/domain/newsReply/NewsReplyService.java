@@ -41,23 +41,47 @@ public class NewsReplyService implements BaseService<NewsReply> {
     @Value("${spring.config.activate.on-profile}")
     private String env;
 
+    // region {findById} UUID 기준으로 활성화된 뉴스 댓글 조회
+    /**
+     * UUID 기준으로 활성화된 뉴스 댓글 조회
+     *
+     * @param uuid UUID
+     * @return NewsReply 또는 null
+     */
     @Override
     public NewsReply findById(String uuid) {
         BooleanExpression predicate = QNewsReply.newsReply.id.eq(uuid).and(QNewsReply.newsReply.status.eq(DataStatus.ACTIVATED));
-        Optional<NewsReply> newsReply = newsReplyRepository.findOne(predicate);
-        return newsReply.orElse(null);
+        Optional<NewsReply> newsReplyEntity = newsReplyRepository.findOne(predicate);
+        return newsReplyEntity.orElse(null);
     }
+    // endregion
 
+    // region {findByPk} PK 기준으로 활성화된 뉴스 댓글 조회
+    /**
+     * PK 기준으로 활성화된 뉴스 댓글 조회
+     *
+     * @param pk 댓글 PK
+     * @return NewsReply 또는 null
+     */
     @Override
     public NewsReply findByPk(Long pk) {
         BooleanExpression predicate = QNewsReply.newsReply.pk.eq(pk).and(QNewsReply.newsReply.status.eq(DataStatus.ACTIVATED));
-        Optional<NewsReply> newsReply = newsReplyRepository.findOne(predicate);
-        return newsReply.orElse(null);
+        Optional<NewsReply> newsReplyEntity = newsReplyRepository.findOne(predicate);
+        return newsReplyEntity.orElse(null);
     }
+    // endregion
 
+    // region {createNewsReplyWithImages} 댓글 저장 및 이미지 키 사용 처리
+    /**
+     * 댓글 저장 및 이미지 키 사용 처리
+     *
+     * @param newsReply 댓글 엔티티
+     * @param usedImageKeys 사용된 이미지 키 배열
+     * @return 저장된 NewsReply
+     */
     @Transactional
     public NewsReply createNewsReplyWithImages(NewsReply newsReply, String[] usedImageKeys) {
-        NewsReply saved = newsReplyRepository.save(newsReply);
+        NewsReply savedNewsReplyEntity = newsReplyRepository.save(newsReply);
 
         if (usedImageKeys != null) {
             List<String> fullKeys = Arrays.stream(usedImageKeys)
@@ -67,14 +91,28 @@ public class NewsReplyService implements BaseService<NewsReply> {
             awsFileReferenceService.updateFilesAsUsed(
                     fullKeys,
                     UsedInType.NEWS_REPLY,
-                    saved.getPk()
+                    savedNewsReplyEntity.getPk()
             );
         }
 
-        return saved;
+        return savedNewsReplyEntity;
     }
+    // endregion
 
-    public PaginatedNewsReplyListDTO getRepliesByNews(Long newsPk, Long userPk, Integer page, Integer size, Boolean infiniteFlag, Long lastReplyPk) {
+    // region {getReplyListByNews} 뉴스 댓글 목록 조회 (페이징 또는 무한 스크롤)
+    /**
+     * 뉴스 댓글 목록 조회 (페이징 또는 무한 스크롤)
+     *
+     * @param newsPk 뉴스 PK
+     * @param userPk 현재 사용자 PK (좋아요 여부 판단 등)
+     * @param page 페이지 번호 (1부터 시작)
+     * @param size 페이지당 개수
+     * @param infiniteFlag 무한 스크롤 여부
+     * @param lastReplyPk 마지막 댓글 PK (무한 스크롤 커서)
+     * @return PaginatedNewsReplyListDTO
+     */
+
+    public PaginatedNewsReplyListDTO getReplyListByNews(Long newsPk, Long userPk, Integer page, Integer size, Boolean infiniteFlag, Long lastReplyPk) {
         QNewsReply reply = QNewsReply.newsReply;
         QUser user = QUser.user;
         Integer offset = (page - 1) * size;
@@ -113,7 +151,7 @@ public class NewsReplyService implements BaseService<NewsReply> {
                 results = results.subList(0, size); // 초과분 잘라내기
             }
             // ✅ DTO 변환
-            List<ReplyDTO> boardList = results.stream().map(tuple -> mapToReplyDTO(tuple, userPk)).toList();
+            List<ReplyDTO> boardList = results.stream().map(tuple -> fromTupleAndUserPkToReplyDTO(tuple, userPk)).toList();
 
             // ✅ 메타데이터 포함한 결과 반환
             return new PaginatedNewsReplyListDTO(boardList, hasNext);
@@ -123,40 +161,58 @@ public class NewsReplyService implements BaseService<NewsReply> {
                     .limit(size);
             results = dataQuery.fetch();
             // ✅ DTO 변환
-            List<ReplyDTO> boardList = results.stream().map(tuple -> mapToReplyDTO(tuple, userPk)).toList();
+            List<ReplyDTO> boardList = results.stream().map(tuple -> fromTupleAndUserPkToReplyDTO(tuple, userPk)).toList();
 
             // ✅ 메타데이터 포함한 결과 반환
             return new PaginatedNewsReplyListDTO(page, size, total, boardList);
         }
     }
+    // endregion
 
-    private ReplyDTO mapToReplyDTO(Tuple tuple, Long userPk) {
+    // region {fromTupleAndUserPkToReplyDTO} Tuple과 사용자 PK를 기반으로 ReplyDTO 변환
+    /**
+     * Tuple과 사용자 PK를 기반으로 ReplyDTO 변환
+     *
+     * @param tuple QueryDSL Tuple
+     * @param userPk 현재 사용자 PK
+     * @return ReplyDTO
+     */
+    private ReplyDTO fromTupleAndUserPkToReplyDTO(Tuple tuple, Long userPk) {
         QNewsReply reply = QNewsReply.newsReply;
         QUser user = QUser.user;
 
-        NewsReply parentReply = tuple.get(reply);
-        User replyUser = tuple.get(user);
-        NewsReplyKick myNewsReplyKick = null;
+        NewsReply parentNewsReplyEntity = tuple.get(reply);
+        User replyUserEntity = tuple.get(user);
+        NewsReplyKick myNewsReplyKickEntity = null;
         if(userPk != null) {
-            myNewsReplyKick = newsReplyKickService.findByNewsReplyAndUser(parentReply.getPk(), userPk);
+            myNewsReplyKickEntity = newsReplyKickService.findByNewsReplyAndUser(parentNewsReplyEntity.getPk(), userPk);
         }
-        Long kickCount = newsReplyKickService.countKicks(parentReply.getPk());
+        Long kickCount = newsReplyKickService.getNewsReplyKickCount(parentNewsReplyEntity.getPk());
         return ReplyDTO.builder()
-                .pk(parentReply.getPk())
-                .contents(parentReply.getContents())
-                .createdAt(parentReply.getCreatedAt())
+                .pk(parentNewsReplyEntity.getPk())
+                .contents(parentNewsReplyEntity.getContents())
+                .createdAt(parentNewsReplyEntity.getCreatedAt())
                 .user(BaseUserDTO.builder()
-                        .id(replyUser.getId())
-                        .nickname(replyUser.getNickname())
-                        .profileImageUrl(replyUser.getProfileImageUrl())
+                        .id(replyUserEntity.getId())
+                        .nickname(replyUserEntity.getNickname())
+                        .profileImageUrl(replyUserEntity.getProfileImageUrl())
                         .build())
-                .replies(parentReply.getParentNewsReply() != null ? null : getChildReplies(parentReply.getPk(), userPk))
-                .isKicked(myNewsReplyKick!=null)
+                .replies(parentNewsReplyEntity.getParentNewsReply() != null ? null : getChildReplyList(parentNewsReplyEntity.getPk(), userPk))
+                .isKicked(myNewsReplyKickEntity!=null)
                 .kickCount(kickCount)
                 .build();
     }
+    // endregion
 
-    private List<ReplyDTO> getChildReplies(Long parentPk, Long userPk) {
+    // region {getChildReplyList} 부모 댓글에 대한 자식 댓글 목록 조회
+    /**
+     * 부모 댓글에 대한 자식 댓글 목록 조회
+     *
+     * @param parentPk 부모 댓글 PK
+     * @param userPk 현재 사용자 PK
+     * @return List of ReplyDTO
+     */
+    private List<ReplyDTO> getChildReplyList(Long parentPk, Long userPk) {
         QNewsReply reply = QNewsReply.newsReply;
         QUser user = QUser.user;
 
@@ -169,14 +225,28 @@ public class NewsReplyService implements BaseService<NewsReply> {
                 .fetch();
 
         return results.stream()
-                .map(tuple -> mapToReplyDTO(tuple, userPk))
+                .map(tuple -> fromTupleAndUserPkToReplyDTO(tuple, userPk))
                 .collect(Collectors.toList());
     }
+    // endregion
 
+    // region {saveNewsReply} 댓글 저장
+    /**
+     * 댓글 저장
+     *
+     * @param newsReply 댓글 엔티티
+     */
     public void save(NewsReply newsReply) {
         newsReplyRepository.save(newsReply);
     }
+    // endregion
 
+    // region {deleteNewsReply} 댓글 삭제 (상태만 비활성화 처리)
+    /**
+     * 댓글 삭제 (상태만 비활성화 처리)
+     *
+     * @param newsReply 삭제할 댓글
+     */
     @Transactional
     public void deleteNewsReply(NewsReply newsReply) {
         newsReply.setStatus(DataStatus.DEACTIVATED);
@@ -190,12 +260,21 @@ public class NewsReplyService implements BaseService<NewsReply> {
             }
         }
     }
+    // endregion
 
+    // region {updateNewsReply} 댓글 내용 수정
+    /**
+     * 댓글 내용 수정
+     *
+     * @param newsReply 수정된 댓글
+     * @return 저장된 댓글 엔티티
+     */
     @Transactional
-    public NewsReply patchNewsReply(NewsReply newsReply) {
-        NewsReply saved = newsReplyRepository.save(newsReply);
+    public NewsReply updateNewsReply(NewsReply newsReply) {
+        NewsReply savedNewsReplyEntity = newsReplyRepository.save(newsReply);
 
-        return saved;
+        return savedNewsReplyEntity;
     }
+    // endregion
 }
 

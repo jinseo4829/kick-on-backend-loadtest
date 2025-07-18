@@ -10,7 +10,7 @@ import org.hibernate.validator.constraints.Length;
 
 @Data
 @NoArgsConstructor
-public class CreateBoardRequestDTO {
+public class CreateBoardRequest {
     @Positive(message = "팀 PK는 1이상의 정수입니다.")
     @Schema(description = "팀 pk 값, nullable", example = "2")
     private Long team;

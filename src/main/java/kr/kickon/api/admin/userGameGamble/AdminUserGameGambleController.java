@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.kickon.api.admin.userGameGamble.dto.UserGameGambleDTO;
 import kr.kickon.api.admin.userGameGamble.response.GetUserGameGamblesResponse;
-import kr.kickon.api.domain.team.response.GetTeamsResponseDTO;
 import kr.kickon.api.domain.userGameGamble.UserGameGambleService;
 import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;

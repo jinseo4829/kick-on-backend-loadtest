@@ -54,23 +54,37 @@ public class BoardService implements BaseService<Board> {
     @Value("${spring.config.activate.on-profile}")
     private String env;
 
+    // region {findById} uuid 기준으로 게시글 조회
+    /**
+     * UUID를 기반으로 활성화된 게시글을 조회합니다.
+     */
     @Override
     public Board findById(String uuid) {
         BooleanExpression predicate = QBoard.board.id.eq(uuid).and(QBoard.board.status.eq(DataStatus.ACTIVATED));
         Optional<Board> board = boardRepository.findOne(predicate);
         return board.orElse(null);
     }
+    // endregion
 
+    // region {findByPk} PK 기준으로 게시글 조회
+    /**
+     * PK를 기반으로 활성화된 게시글을 조회합니다.
+     */
     @Override
     public Board findByPk(Long pk) {
         BooleanExpression predicate = QBoard.board.pk.eq(pk).and(QBoard.board.status.eq(DataStatus.ACTIVATED));
         Optional<Board> board = boardRepository.findOne(predicate);
         return board.orElse(null);
     }
+    //#endregion
 
+    // region {createBoardWithImages} 게시글 생성 및 이미지 연동 처리
+    /**
+     * 게시글을 생성하고, 해당 게시글에 사용된 이미지 파일들을 연동 처리합니다.
+     */
     @Transactional
     public Board createBoardWithImages(Board board, String[] usedImageKeys) {
-        Board saved = boardRepository.save(board);
+        Board boardEntity = boardRepository.save(board);
 
         if (usedImageKeys != null) {
             List<String> fullKeys = Arrays.stream(usedImageKeys)
@@ -80,13 +94,19 @@ public class BoardService implements BaseService<Board> {
             awsFileReferenceService.updateFilesAsUsed(
                     fullKeys,
                     UsedInType.BOARD,
-                    saved.getPk()
+                    boardEntity.getPk()
             );
         }
 
-        return saved;
+        return boardEntity;
     }
+    //#endregion
 
+    // region {createBoardListDTOQuery} 게시글 리스트 조회용 Query 생성
+    /**
+     * 게시글 리스트 조회에 사용되는 JPAQuery 객체를 생성합니다.
+     * 유저, 팀 정보와 함께 킥 수, 조회 수, 댓글 수를 집계합니다.
+     */
     public JPAQuery<Tuple> createBoardListDTOQuery() {
         QBoard board = QBoard.board;
         QBoardKick boardKick = QBoardKick.boardKick;
@@ -107,6 +127,13 @@ public class BoardService implements BaseService<Board> {
                 .where(board.status.eq(DataStatus.ACTIVATED)
                         .and(user.status.eq(DataStatus.ACTIVATED)));
     }
+    //#endregion
+
+    // region {tupleToBoardListDTO} 게시글 Tuple → BoardListDTO 변환
+    /**
+     * 게시글 Tuple 데이터를 BoardListDTO 객체로 변환합니다.
+     * Board, User, Team 엔티티를 기반으로 기본 정보와 통계 수치를 포함합니다.
+     */
     public BoardListDTO tupleToBoardListDTO(Tuple tuple) {
         QBoard board = QBoard.board;
         QUser user = QUser.user;
@@ -142,8 +169,13 @@ public class BoardService implements BaseService<Board> {
         }
         return boardListDTO;
     }
+    //#endregion
 
-    public List<BoardListDTO> findTop10Boards() {
+    // region {getTop10BoardList} 최근 게시글 10개 조회
+    /**
+     * 최신 게시글 10개를 조회합니다.
+     */
+    public List<BoardListDTO> getTop10BoardList() {
         QBoard board = QBoard.board;
         QUser user = QUser.user;
         List<Tuple> results = createBoardListDTOQuery()
@@ -152,8 +184,14 @@ public class BoardService implements BaseService<Board> {
                 .limit(10).fetch();
         return results.stream().map(this::tupleToBoardListDTO).toList();
     }
+    //#endregion
 
-    public BoardDetailDTO findOneBoardListDTOByPk(Long boardPk,User userData) {
+    // region {getBoardDetailDTOByPk} 게시글 상세 조회
+    /**
+     * 특정 게시글의 상세 정보를 조회합니다.
+     * @return BoardDetailDTO
+     */
+    public BoardDetailDTO getBoardDetailDTOByPk(Long boardPk,User userData) {
         QBoard board = QBoard.board;
         QUser user = QUser.user;
         QTeam team = QTeam.team;
@@ -211,8 +249,23 @@ public class BoardService implements BaseService<Board> {
         boardDetailDTO.setIsInfluencer(isInfluencer);
         return boardDetailDTO;
     }
+    //#endregion
 
-    public PaginatedBoardListDTO findBoardsWithPagination(Long teamPk, Integer page, Integer size, String sortBy,Boolean infiniteFlag, Long lastBoardPk, Long lastViewCount) {
+    // region {getBoardListWithPagination} 게시글 리스트 조회 (무한스크롤/페이지네이션 모두 지원)
+    /**
+     * 게시글 목록을 정렬 조건 및 팀 필터링에 따라 조회합니다.
+     * 무한스크롤 방식과 페이지네이션 방식 모두 지원합니다.
+     *
+     * @param teamPk        필터링할 팀 PK (null 가능)
+     * @param page          페이지 번호 (1부터 시작)
+     * @param size          페이지 당 항목 수
+     * @param sortBy        정렬 기준 ("hot", "latest" 등)
+     * @param infiniteFlag  무한스크롤 여부
+     * @param lastBoardPk   커서 기반 페이징을 위한 마지막 게시글 PK
+     * @param lastViewCount 커서 기반 페이징을 위한 마지막 게시글 조회수
+     * @return PaginatedBoardListDTO
+     */
+    public PaginatedBoardListDTO getBoardListWithPagination(Long teamPk, Integer page, Integer size, String sortBy,Boolean infiniteFlag, Long lastBoardPk, Long lastViewCount) {
         QBoard board = QBoard.board;
         QBoardViewHistory boardViewHistory = QBoardViewHistory.boardViewHistory;
         QUser user = QUser.user;
@@ -290,27 +343,36 @@ public class BoardService implements BaseService<Board> {
             return new PaginatedBoardListDTO(page, size, totalCount, boardList);
         }
     }
+    // endregion
 
+    // region {save} 게시물 저장
     public Board save(Board board) {
         return boardRepository.save(board);
     }
+    // endregion
 
+    // region {deleteBoard} 게시물 삭제
     @Transactional
-    public void deleteBoard(Board board) {
-        board.setStatus(DataStatus.DEACTIVATED);
-        boardRepository.save(board);
+    public void deleteBoard(Board boardEntity) {
+        boardEntity.setStatus(DataStatus.DEACTIVATED);
+        boardRepository.save(boardEntity);
 
         //이미지 삭제
-            List<AwsFileReference> references = awsFileReferenceService.findbyBoardPk(board.getPk());
+            List<AwsFileReference> references = awsFileReferenceService.findbyBoardPk(boardEntity.getPk());
             try (S3Client s3 = S3Client.builder().build()) {
                 for (AwsFileReference file : references) {
                     awsService.deleteFileFromS3AndDb(s3, file);
                 }
             }
     }
+    // endregion
 
+    // region {updateBoard} 게시글 수정 시 이미지 키 등록/삭제 처리
+    /**
+     * 게시글을 수정하고, 수정된 이미지 키에 따라 기존 S3 이미지 참조를 갱신합니다.
+     */
     @Transactional
-    public Board patchBoard(Board board, String[] usedImageKeys) {
+    public Board updateBoard(Board board, String[] usedImageKeys) {
         Board saved = boardRepository.save(board);
         // 1. 기존 이미지 키 전체 조회
         List<AwsFileReference> references = awsFileReferenceService.findbyBoardPk(saved.getPk());
@@ -347,4 +409,5 @@ public class BoardService implements BaseService<Board> {
         }
         return saved;
     }
+    // endregion
 }

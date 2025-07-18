@@ -46,28 +46,147 @@ public class UserService implements BaseService<User> {
     private final AwsFileReferenceService awsFileReferenceService;
     private final AwsService awsService;
 
-    public List<User> findUsersByStatus(DataStatus status){
+    // region {findByPk} 사용자 PK 기준으로 유저를 조회합니다.
+    /**
+     * 사용자 PK 기준으로 유저를 조회합니다.
+     * - status는 ACTIVATED인 사용자만 조회합니다.
+     */
+    public User findByPk(Long pk){
+        BooleanExpression predicate = QUser.user.pk.eq(pk).and(QUser.user.status.eq(DataStatus.ACTIVATED));
+        Optional<User> userEntity = userRepository.findOne(predicate);
+        return userEntity.orElse(null);
+    }
+    // endregion
+
+    // region {findById} 사용자 UUID 기준으로 유저를 조회합니다.
+    /**
+     * 사용자 UUID 기준으로 유저를 조회합니다.
+     * - status는 ACTIVATED인 사용자만 조회합니다.
+     */
+    @Override
+    public User findById(String uuid) {
+        BooleanExpression predicate = QUser.user.id.eq(uuid).and(QUser.user.status.eq(DataStatus.ACTIVATED));
+        Optional<User> userEntity = userRepository.findOne(predicate);
+        return userEntity.orElse(null);
+    }
+    // endregion
+
+    // region {findByEmail} 이메일을 기준으로 유저를 조회합니다.
+    /**
+     * 이메일을 기준으로 유저를 조회합니다.
+     * - 상태는 ACTIVATED인 사용자만 조회합니다.
+     */
+    public  Optional<User> findByEmail(String email){
+        BooleanExpression predicate = QUser.user.email.eq(email).and(QUser.user.status.eq(DataStatus.ACTIVATED));
+        return userRepository.findOne(predicate);
+    }
+    // endregion
+
+    // region {findByProviderAndProviderId} 소셜 로그인 정보를 기반으로 유저를 조회합니다.
+    /**
+     * 소셜 로그인 정보를 기반으로 유저를 조회합니다.
+     * - provider와 providerId가 일치하는 가장 최근 유저 1명을 조회합니다.
+     */
+    public Optional<User> findByProviderAndProviderId(ProviderType provider, String providerId){
+        QUser user = QUser.user;
+
+        BooleanExpression predicate = user.provider.eq(provider)
+                .and(user.providerId.eq(providerId));
+
+        return Optional.ofNullable(
+                queryFactory.selectFrom(user)
+                        .where(predicate)
+                        .orderBy(user.createdAt.desc()) // 최신순 정렬
+                        .fetchFirst() // 하나만!
+        );
+    }
+    // endregion
+
+    // region {getUserListByStatus} 상태값(DataStatus)에 해당하는 유저 목록을 조회합니다.
+    /**
+     * 상태값(DataStatus)에 해당하는 유저 목록을 조회합니다.
+     */
+    public List<User> getUserListByStatus(DataStatus status){
         // QueryDSL Predicate 생성
         BooleanExpression predicate = QUser.user.status.eq(status);
         return (List<User>) userRepository.findAll(predicate);
     }
+    // endregion
 
-//    public List<User> findUserByEmail(String email){
+    // region {getUserListByEmail} 이메일이 일치하는 유저 목록을 조회합니다.
+    /**
+     * 이메일이 일치하는 유저 목록을 조회합니다.
+     */
+//    public List<User> getUserListByEmail(String email){
 //        // JPAQueryFactory
 //        return queryFactory.selectFrom(QUser.user)
 //                .where(QUser.user.email.eq(email))
 //                .fetch();
 //    }
+    // endregion
 
+    // region {getUserListByFilter} 이메일, 닉네임 조건으로 사용자 목록을 필터링하여 페이징 조회합니다.
+    /**
+     * 이메일, 닉네임 조건으로 사용자 목록을 필터링하여 페이징 조회합니다.
+     * - 상태는 ACTIVATED인 사용자만 조회합니다.
+     */
+    public Page<User> getUserListByFilter(UserFilterRequest request, Pageable pageable) {
+        QUser user = QUser.user;
+        BooleanBuilder builder = new BooleanBuilder();
+
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            builder.and(user.email.containsIgnoreCase(request.getEmail()));
+        }
+
+        if (request.getNickname() != null && !request.getNickname().isBlank()) {
+            builder.and(user.nickname.containsIgnoreCase(request.getNickname()));
+        }
+
+        builder.and(user.status.eq(DataStatus.ACTIVATED));
+
+        // total count
+        long total = queryFactory
+                .select(user.count())
+                .from(user)
+                .where(builder)
+                .fetchOne();
+
+        // content
+        List<User> content = queryFactory
+                .selectFrom(user)
+                .where(builder)
+                .orderBy(user.createdAt.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        return new PageImpl<>(content, pageable, total);
+    }
+    // endregion
+
+    // region {existsByEmailAndProvider} 이메일 및 소셜 제공자 기준 존재 여부 확인
+    /**
+     * 특정 이메일과 소셜 로그인 제공자(Provider)에 해당하는 사용자가 존재하는지 확인합니다.
+     */
     public boolean existsByEmailAndProvider(String email, ProviderType providerType) {
         return userRepository.existsByEmailAndProvider(email, providerType);
     }
+    // endregion
 
+    // region {deleteUser} 유저 삭제
     public void deleteUser(User user){
         user.setStatus(DataStatus.DEACTIVATED);
         saveUser(user);
     }
+    // endregion
 
+    // region {updateUser} 사용자 정보 업데이트 (닉네임, 응원팀, 프로필 이미지)
+    /**
+     * 사용자 정보를 업데이트합니다.
+     * - 닉네임 변경 (중복 체크 포함)
+     * - 응원팀 우선순위 변경 (6개월 제한 조건 포함)
+     * - 프로필 이미지 변경 (기존 이미지 삭제 및 새로운 이미지 등록)
+     */
     @Transactional
     public void updateUser(User user, PatchUserRequest request) {
         if ( request.getNickname()!=null) {
@@ -167,43 +286,25 @@ public class UserService implements BaseService<User> {
 
         saveUser(user); // nickname이 변경됐을 수도 있으니까
     }
+    // endregion
 
-    public  Optional<User> findUserByEmail(String email){
-        BooleanExpression predicate = QUser.user.email.eq(email).and(QUser.user.status.eq(DataStatus.ACTIVATED));
-        return userRepository.findOne(predicate);
-    }
-
+    // region {existsByNickname} 닉네임 중복 여부 확인
     public boolean existsByNickname(String nickname){
         return userRepository.existsByNicknameAndStatus(nickname, DataStatus.ACTIVATED);
     }
+    //#endregion
 
-    public Optional<User> findUserByProviderAndProviderId(ProviderType provider, String providerId){
-        QUser user = QUser.user;
-
-        BooleanExpression predicate = user.provider.eq(provider)
-                .and(user.providerId.eq(providerId));
-
-        return Optional.ofNullable(
-                queryFactory.selectFrom(user)
-                        .where(predicate)
-                        .orderBy(user.createdAt.desc()) // 최신순 정렬
-                        .fetchFirst() // 하나만!
-        );
-    }
-
+    // region {save} 유저 저장
     public void saveUser(User user){
         userRepository.save(user);
     }
-    public User findByPk(Long pk){
-        BooleanExpression predicate = QUser.user.pk.eq(pk).and(QUser.user.status.eq(DataStatus.ACTIVATED));
-        Optional<User> user = userRepository.findOne(predicate);
-        return user.orElse(null);
-    }
+    // endregion
 
+    // region {saveSocialUser} 소셜 로그인 유저 저장
     @Transactional
     public User saveSocialUser(OAuth2UserInfo oAuth2UserInfo){
         String id = uuidGenerator.generateUniqueUUID(this::findById);
-        User saveUser = User.builder()
+        User UserEntity = User.builder()
                 .id(id)
                 .provider(oAuth2UserInfo.getProvider())
                 .providerId(oAuth2UserInfo.getProviderId())
@@ -212,53 +313,16 @@ public class UserService implements BaseService<User> {
                 .nickname(oAuth2UserInfo.getNickname())
                 .userStatus(UserAccountStatus.DEFAULT)
                 .build();
-        return userRepository.save(saveUser);
+        return userRepository.save(UserEntity);
     }
+    // endregion
 
-    @Override
-    public User findById(String uuid) {
-        BooleanExpression predicate = QUser.user.id.eq(uuid).and(QUser.user.status.eq(DataStatus.ACTIVATED));
-        Optional<User> user = userRepository.findOne(predicate);
-        return user.orElse(null);
-    }
-
-    public Page<User> findUsersByFilter(UserFilterRequest request, Pageable pageable) {
-        QUser user = QUser.user;
-        BooleanBuilder builder = new BooleanBuilder();
-
-        if (request.getEmail() != null && !request.getEmail().isBlank()) {
-            builder.and(user.email.containsIgnoreCase(request.getEmail()));
-        }
-
-        if (request.getNickname() != null && !request.getNickname().isBlank()) {
-            builder.and(user.nickname.containsIgnoreCase(request.getNickname()));
-        }
-
-        builder.and(user.status.eq(DataStatus.ACTIVATED));
-
-        // total count
-        long total = queryFactory
-                .select(user.count())
-                .from(user)
-                .where(builder)
-                .fetchOne();
-
-        // content
-        List<User> content = queryFactory
-                .selectFrom(user)
-                .where(builder)
-                .orderBy(user.createdAt.desc())
-                .offset(pageable.getOffset())
-                .limit(pageable.getPageSize())
-                .fetch();
-
-        return new PageImpl<>(content, pageable, total);
-    }
-
+    // region {updatePrivacy} Privacy 업데이트
     public void updatePrivacy(User user, PrivacyUpdateRequest request) {
         user.setPrivacyAgreedAt(request.getPrivacyAgreedAt());
         user.setMarketingAgreedAt(request.getMarketingAgreedAt());
 
         userRepository.save(user);
     }
+    // endregion
 }

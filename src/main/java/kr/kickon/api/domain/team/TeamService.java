@@ -40,30 +40,56 @@ public class TeamService implements BaseService<Team> {
 //                .where(QUser.user.email.eq(email))
 //                .fetch();
 //    }
+
+    // region {findById} 팀 UUID를 기반으로 활성화된 팀 엔티티를 조회합니다.
+    /**
+     * 팀 UUID를 기반으로 활성화된 팀 엔티티를 조회합니다.
+     */
     @Override
     public Team findById(String uuid) {
-        BooleanExpression predicate = QTeam.team.id.eq(uuid).and(QTeam.team.status.eq(DataStatus.ACTIVATED));
+        BooleanExpression predicate = QTeam.team.id.eq(uuid)
+                .and(QTeam.team.status.eq(DataStatus.ACTIVATED));
         Optional<Team> team = teamRepository.findOne(predicate);
         return team.orElse(null);
     }
+    // endregion
 
+    // region {findByPk} 팀 PK를 기반으로 활성화된 팀 엔티티를 조회합니다.
+    /**
+     * 팀 PK를 기반으로 활성화된 팀 엔티티를 조회합니다.
+     */
     @Override
     public Team findByPk(Long pk) {
         BooleanExpression predicate = QTeam.team.pk.eq(pk).and(QTeam.team.status.eq(DataStatus.ACTIVATED));
         Optional<Team> team = teamRepository.findOne(predicate);
         return team.orElse(null);
     }
+    // endregion
 
+    // region {findAll} 전체 활성화된 팀 목록을 조회합니다.
+    /**
+     * 전체 활성화된 팀 목록을 조회합니다.
+     */
     public List<Team> findAll(){
         return queryFactory.selectFrom(QTeam.team).where(QTeam.team.status.eq(DataStatus.ACTIVATED)).fetch();
     }
+    // endregion
 
+    // region {findByApiId} API ID를 기반으로 활성화된 팀 엔티티를 조회합니다.
+    /**
+     * API ID를 기반으로 활성화된 팀 엔티티를 조회합니다.
+     */
     public Team findByApiId(Long apiId) {
         BooleanExpression predicate = QTeam.team.apiId.eq(apiId).and(QTeam.team.status.eq(DataStatus.ACTIVATED));
         Optional<Team> team = teamRepository.findOne(predicate);
         return team.orElse(null);
     }
+    // endregion
 
+    // region {findByKeyword} 한글 또는 영어 이름에 키워드를 포함하는 활성화된 팀 목록을 조회합니다.
+    /**
+     * 한글 또는 영어 이름에 키워드를 포함하는 활성화된 팀 목록을 조회합니다.
+     */
     public List<Team> findByKeyword(String keyword) {
         QTeam team = QTeam.team;
         return queryFactory.selectFrom(team)
@@ -72,14 +98,26 @@ public class TeamService implements BaseService<Team> {
                 .where(team.status.eq(DataStatus.ACTIVATED))
                 .fetch();
     }
+    // endregion
 
+    // region {save} 팀 엔티티를 저장합니다.
+    /**
+     * 팀 엔티티를 저장합니다.
+     */
     @Transactional
     public Team save(Team team) {
         return teamRepository.save(team);
     }
+    // endregion
 
+    // region {getTeamListByFilter} 필터 조건과 페이징 정보를 기반으로 팀 목록을 조회합니다.
+    /**
+     * 필터 조건과 페이징 정보를 기반으로 팀 목록을 조회합니다.
+     * - 실제 시즌, 리그와 연결된 팀만 조회
+     * - 키워드 검색 지원 (팀 이름 한글/영문)
+     */
     @Transactional
-    public Page<TeamDTO> findFilteredTeams(TeamListFilterRequest request, Pageable pageable) {
+    public Page<TeamDTO> getTeamListByFilter(TeamListFilterRequest request, Pageable pageable) {
         QTeam team = QTeam.team;
         QActualSeasonTeam ast = QActualSeasonTeam.actualSeasonTeam;
         QActualSeason actualSeason = QActualSeason.actualSeason;
@@ -143,5 +181,6 @@ public class TeamService implements BaseService<Team> {
 
         return new PageImpl<>(teamDTOs, pageable, total);
     }
+    // endregion
 
 }

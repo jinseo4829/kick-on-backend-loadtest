@@ -61,7 +61,7 @@ public class AuthController {
         if (!"kickon2025!".equals(request.getPassword())) throw new UnauthorizedException(ResponseCode.INVALID_TOKEN, "비밀번호가 일치하지 않습니다.");
 
 
-        Optional<User> user = userService.findUserByEmail(email);
+        Optional<User> user = userService.findByEmail(email);
         if (user.isEmpty()) throw new UnauthorizedException(ResponseCode.NOT_FOUND_USER, "해당 이메일의 AI 유저가 존재하지 않습니다.");
 
 

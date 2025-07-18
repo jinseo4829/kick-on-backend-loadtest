@@ -1,7 +1,6 @@
 package kr.kickon.api.domain.news.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
@@ -10,7 +9,7 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class GetNewsRequestDTO {
+public class GetNewsRequest {
     @Schema(description = "team PK, 옵셔널임, 넣으면 팀별 뉴스 조회", example = "1")
     @Positive(message = "팀 pk는 양수로 입력해주세요.")
     private Long team;

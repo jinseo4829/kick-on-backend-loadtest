@@ -8,7 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
-public class GetBoardsRequestDTO {
+public class GetBoardsRequest {
     @Positive(message = "팀 pk 값은 양수로 입력해주세요.")
     @Schema(description = "팀 pk 값, nullable", example = "2")
     private Long team;
