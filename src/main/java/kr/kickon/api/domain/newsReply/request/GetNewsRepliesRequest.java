@@ -10,7 +10,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class GetNewsRepliesRequestDTO {
+public class GetNewsRepliesRequest {
     @Positive(message = "뉴스 pk 값은 양수로 입력해주세요.")
     @NotNull(message = "뉴스 pk 값은 필수입니다.")
     private Long news;

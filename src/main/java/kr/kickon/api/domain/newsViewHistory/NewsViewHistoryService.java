@@ -21,21 +21,44 @@ public class NewsViewHistoryService implements BaseService<NewsViewHistory> {
     private final JPAQueryFactory queryFactory;
     private final UUIDGenerator uuidGenerator;
 
+    // region {findById} UUID로 조회 이력 조회 (활성 상태만)
+    /**
+     * UUID로 조회 이력 조회 (활성 상태만)
+     *
+     * @param uuid 조회 이력 UUID
+     * @return NewsViewHistory 또는 null
+     */
     @Override
     public NewsViewHistory findById(String uuid) {
         BooleanExpression predicate = QNewsViewHistory.newsViewHistory.id.eq(uuid).and(QNewsViewHistory.newsViewHistory.status.eq(DataStatus.ACTIVATED));
         Optional<NewsViewHistory> newsViewHistory = newsViewHistoryRepository.findOne(predicate);
         return newsViewHistory.orElse(null);
     }
+    // endregion
 
+    // region {findByPk} PK로 조회 이력 조회 (활성 상태만)
+    /**
+     * PK로 조회 이력 조회 (활성 상태만)
+     *
+     * @param pk 조회 이력 PK
+     * @return NewsViewHistory 또는 null
+     */
     @Override
     public NewsViewHistory findByPk(Long pk) {
         BooleanExpression predicate = QNewsViewHistory.newsViewHistory.pk.eq(pk).and(QNewsViewHistory.newsViewHistory.status.eq(DataStatus.ACTIVATED));
         Optional<NewsViewHistory> newsViewHistory = newsViewHistoryRepository.findOne(predicate);
         return newsViewHistory.orElse(null);
     }
+    // endregion
 
+    // region {save} 뉴스 조회 이력 저장
+    /**
+     * 뉴스 조회 이력 저장
+     *
+     * @param newsViewHistory 저장할 조회 이력 엔티티
+     */
     public void save(NewsViewHistory newsViewHistory) {
         newsViewHistoryRepository.save(newsViewHistory);
     }
+    // endregion
 }

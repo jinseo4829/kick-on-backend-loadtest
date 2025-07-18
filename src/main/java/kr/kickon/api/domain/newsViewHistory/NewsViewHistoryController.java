@@ -3,7 +3,7 @@ package kr.kickon.api.domain.newsViewHistory;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.kickon.api.domain.news.NewsService;
-import kr.kickon.api.domain.newsViewHistory.request.CreateNewsViewHistory;
+import kr.kickon.api.domain.newsViewHistory.request.CreateNewsViewHistoryRequest;
 import kr.kickon.api.global.auth.jwt.user.JwtTokenProvider;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.News;
@@ -33,7 +33,7 @@ public class NewsViewHistoryController {
 
     @Operation(summary = "뉴스 뷰 생성", description = "비회원도 생성 가능")
     @PostMapping()
-    public ResponseEntity<ResponseDTO<Void>> createNewsView(@RequestBody CreateNewsViewHistory body){
+    public ResponseEntity<ResponseDTO<Void>> createNewsView(@RequestBody CreateNewsViewHistoryRequest body){
         User user = jwtTokenProvider.getUserFromSecurityContext();
 
         News news = newsService.findByPk(body.getNews());

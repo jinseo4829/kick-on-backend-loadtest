@@ -1,6 +1,5 @@
 package kr.kickon.api.domain.news;
 
-import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
@@ -45,23 +44,28 @@ public class NewsService implements BaseService<News> {
     @Value("${spring.config.activate.on-profile}")
     private String env;
 
+    // region {findById} UUID 기반 단건 조회
     @Override
     public News findById(String uuid) {
         BooleanExpression predicate = QNews.news.id.eq(uuid).and(QNews.news.status.eq(DataStatus.ACTIVATED));
-        Optional<News> news = newsRepository.findOne(predicate);
-        return news.orElse(null);
+        Optional<News> newsEntity = newsRepository.findOne(predicate);
+        return newsEntity.orElse(null);
     }
+    // endregion
 
+    // region {findByPk} PK 기반 단건 조회
     @Override
     public News findByPk(Long pk) {
         BooleanExpression predicate = QNews.news.pk.eq(pk).and(QNews.news.status.eq(DataStatus.ACTIVATED));
-        Optional<News> news = newsRepository.findOne(predicate);
-        return news.orElse(null);
+        Optional<News> newsEntity = newsRepository.findOne(predicate);
+        return newsEntity.orElse(null);
     }
+    // endregion
 
+    // region {createNewsWithImages} 뉴스 생성 + 이미지 사용 처리
     @Transactional
     public News createNewsWithImages(News news, String[] usedImageKeys) {
-        News saved = newsRepository.save(news);
+        News savedNewsEntity = newsRepository.save(news);
 //        System.out.println(env);
         if (usedImageKeys != null) {
             List<String> fullKeys = Arrays.stream(usedImageKeys)
@@ -70,13 +74,15 @@ public class NewsService implements BaseService<News> {
             awsFileReferenceService.updateFilesAsUsed(
                     fullKeys,
                     UsedInType.NEWS,
-                    saved.getPk()
+                    savedNewsEntity.getPk()
             );
         }
 
-        return saved;
+        return savedNewsEntity;
     }
+    // endregion
 
+    // region {createNewsListDTOQuery} 뉴스 목록 쿼리 생성
     public JPAQuery<Tuple> createNewsListDTOQuery(){
         QNews news = QNews.news;
         QNewsKick newsKick = QNewsKick.newsKick;
@@ -97,8 +103,10 @@ public class NewsService implements BaseService<News> {
                 .where(news.status.eq(DataStatus.ACTIVATED)
                         .and(user.status.eq(DataStatus.ACTIVATED)));
     }
+    // endregion
 
-    public NewsListDTO tupleToNewsListDTO(Tuple tuple){
+    // region {fromTupleToNewsListDTO} 튜플 → DTO 변환
+    public NewsListDTO fromTupleToNewsListDTO(Tuple tuple){
         QNews news = QNews.news;
         QUser user = QUser.user;
         QTeam team = QTeam.team;
@@ -135,8 +143,14 @@ public class NewsService implements BaseService<News> {
 
         return newsListDTO;
     }
+    // endregion
 
-    public NewsDetailDTO findNewsDetailDTOByPk(Long newsPk, User userData) {
+    // region {getNewsDetailDTOByPk} 뉴스 상세 조회
+    /**
+     * 뉴스 PK와 사용자 정보로 뉴스 상세 정보를 조회합니다.
+     * - 좋아요 여부(Kick 여부), 이미지 키 배열, 팀 정보 등을 포함한 DTO 반환
+     */
+    public NewsDetailDTO getNewsDetailDTOByPk(Long newsPk, User userData) {
         QNews news = QNews.news;
         QUser user = QUser.user;
         QTeam team = QTeam.team;
@@ -175,8 +189,13 @@ public class NewsService implements BaseService<News> {
         newsDetailDTO.setUsedImageKeys(usedImageKeys);
         return newsDetailDTO;
     }
+    // endregion
 
-    public List<NewsListDTO> findRecent3News() {
+    // region {getRecent3NewsList} 최근 뉴스 3건 조회
+    /**
+     * 전체 뉴스 중 최근 작성된 3개 뉴스를 조회합니다.
+     */
+    public List<NewsListDTO> getRecent3NewsList() {
         QNews news = QNews.news;
         QUser user = QUser.user;
         List<Tuple> results = createNewsListDTOQuery()
@@ -184,10 +203,16 @@ public class NewsService implements BaseService<News> {
                 .orderBy(news.createdAt.desc())
                 .limit(3)
                 .fetch();
-        return results.stream().map(this::tupleToNewsListDTO).toList();
+        return results.stream().map(this::fromTupleToNewsListDTO).toList();
     }
+    // endregion
 
-    public List<NewsListDTO> findRecent3NewsWithUserTeam(Set<Long> teamPks, int limit) {
+    // region {getRecent3NewsListWithUserTeam} 사용자의 응원 팀 기준 뉴스 조회
+    /**
+     * 사용자의 응원 팀 목록(teamPks)에 해당하는 뉴스 중 최근 작성된 뉴스 최대 limit 개 조회
+     * - 중복 제거 포함
+     */
+    public List<NewsListDTO> getRecent3NewsListWithUserTeam(Set<Long> teamPks, int limit) {
         QNews news = QNews.news;
         QUser user = QUser.user;
 
@@ -200,13 +225,20 @@ public class NewsService implements BaseService<News> {
 
         // 중복 제거를 위한 LinkedHashSet (정렬 유지 + 중복 제거)
         LinkedHashSet<NewsListDTO> uniqueNews = results.stream()
-                .map(this::tupleToNewsListDTO)
+                .map(this::fromTupleToNewsListDTO)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
         return new ArrayList<>(uniqueNews).stream().limit(limit).toList();
     }
+    // endregion
 
-    public List<HotNewsListDTO> findTop5HotNews() {
+    // region {getTop5HotNewsList} 최근 24시간 이내 작성된 뉴스 중 조회수 기준으로 상위 5개를 반환합니다.
+    /**
+     * 최근 24시간 이내 작성된 뉴스 중 조회수 기준으로 상위 5개를 반환합니다.
+     * - 조회수는 NewsViewHistory 기준
+     * - 팀 정보와 리그명 포함
+     */
+    public List<HotNewsListDTO> getTop5HotNewsList() {
         QNews news = QNews.news;
         QTeam team = QTeam.team;
         QNewsViewHistory newsViewHistory = QNewsViewHistory.newsViewHistory;
@@ -258,12 +290,29 @@ public class NewsService implements BaseService<News> {
             return builder.build();
         }).toList();
     }
+    // endregion
 
+    // region {save} 뉴스 저장
     public News save(News news){
         return newsRepository.save(news);
     }
+    // endregion
 
-    public PaginatedNewsListDTO findNewsWithPagination(Long teamPk, int page, int size, String sortBy, Long leaguePk, Boolean infiniteFlag, Long lastNewsPk, Long lastViewCount) {
+    // region {getNewsListWithPagination} 뉴스 리스트 조회 (페이징 또는 무한 스크롤 방식)
+    /**
+     * 뉴스 리스트 조회 (페이징 또는 무한 스크롤 방식)
+     *
+     * @param teamPk     팀 PK (선택)
+     * @param page       페이지 번호 (1부터 시작)
+     * @param size       페이지당 게시글 수
+     * @param sortBy     정렬 기준 ("hot" 또는 "recent")
+     * @param leaguePk   리그 PK (선택)
+     * @param infiniteFlag 무한스크롤 여부
+     * @param lastNewsPk 마지막으로 받은 뉴스 PK (커서 기반)
+     * @param lastViewCount 마지막으로 받은 뉴스 조회수 (커서 기반)
+     * @return 페이지네이션 또는 무한스크롤 응답 DTO
+     */
+    public PaginatedNewsListDTO getNewsListWithPagination(Long teamPk, int page, int size, String sortBy, Long leaguePk, Boolean infiniteFlag, Long lastNewsPk, Long lastViewCount) {
         QNews news = QNews.news;
         QNewsViewHistory newsViewHistory = QNewsViewHistory.newsViewHistory;
         QUser user = QUser.user;
@@ -340,7 +389,7 @@ public class NewsService implements BaseService<News> {
                 results = results.subList(0, size); // 초과분 잘라내기
             }
             // ✅ DTO 변환
-            List<NewsListDTO> newsList = results.stream().map(this::tupleToNewsListDTO).toList();
+            List<NewsListDTO> newsList = results.stream().map(this::fromTupleToNewsListDTO).toList();
 
             // ✅ 메타데이터 포함한 결과 반환
             return new PaginatedNewsListDTO(newsList, hasNext);
@@ -350,13 +399,18 @@ public class NewsService implements BaseService<News> {
                     .limit(size);
             results = dataQuery.fetch();
             // ✅ DTO 변환
-            List<NewsListDTO> newsList = results.stream().map(this::tupleToNewsListDTO).toList();
+            List<NewsListDTO> newsList = results.stream().map(this::fromTupleToNewsListDTO).toList();
 
             // ✅ 메타데이터 포함한 결과 반환
             return new PaginatedNewsListDTO(page, size, totalCount, newsList);
         }
     }
+    // endregion
 
+    // region {deleteNews} 뉴스 삭제 처리 (소프트 삭제 및 관련 이미지 삭제)
+    /**
+     * 뉴스 삭제 처리 (소프트 삭제 및 관련 이미지 삭제)
+     */
     @Transactional
     public void deleteNews(News news) {
         news.setStatus(DataStatus.DEACTIVATED);
@@ -370,9 +424,18 @@ public class NewsService implements BaseService<News> {
             }
         }
     }
+    // endregion
 
+    // region {updateNews} 뉴스 수정 처리 + 이미지 키 정리
+    /**
+     * 뉴스 수정 처리 + 이미지 키 정리
+     *
+     * @param news 수정할 뉴스 엔티티
+     * @param usedImageKeys 사용된 이미지 키 목록
+     * @return 저장된 뉴스 엔티티
+     */
     @Transactional
-    public News patchNews(News news, String[] usedImageKeys) {
+    public News updateNews(News news, String[] usedImageKeys) {
         News saved = newsRepository.save(news);
         // 1. 기존 이미지 키 전체 조회
         List<AwsFileReference> references = awsFileReferenceService.findbyNewsPk(saved.getPk());
@@ -409,4 +472,5 @@ public class NewsService implements BaseService<News> {
         }
         return saved;
     }
+    // endregion
 }

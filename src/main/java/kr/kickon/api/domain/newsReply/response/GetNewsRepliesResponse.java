@@ -7,5 +7,5 @@ import kr.kickon.api.global.common.ResponseDTO;
 import java.util.List;
 
 @Schema(description = "댓글 리스트 조회 응답")
-public class GetNewsRepliesResponseDTO extends ResponseDTO<List<ReplyDTO>> {
+public class GetNewsRepliesResponse extends ResponseDTO<List<ReplyDTO>> {
 }

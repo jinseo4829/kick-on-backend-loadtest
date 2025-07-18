@@ -12,7 +12,7 @@ import org.hibernate.validator.constraints.Length;
 
 @Data
 @NoArgsConstructor
-public class CreateNewsRequestDTO {
+public class CreateNewsRequest {
     @Positive(message = "팀 pk값은 양수입니다.")
     @Schema(description = "팀 pk 값입니다. nullable", example = "1")
     private Long team;

@@ -10,10 +10,10 @@ import jakarta.validation.Valid;
 import kr.kickon.api.domain.news.NewsService;
 import kr.kickon.api.domain.newsReply.dto.PaginatedNewsReplyListDTO;
 import kr.kickon.api.domain.newsReply.dto.ReplyDTO;
-import kr.kickon.api.domain.newsReply.request.CreateNewsReplyRequestDTO;
-import kr.kickon.api.domain.newsReply.request.GetNewsRepliesRequestDTO;
-import kr.kickon.api.domain.newsReply.request.PatchNewsReplyRequestDTO;
-import kr.kickon.api.domain.newsReply.response.GetNewsRepliesResponseDTO;
+import kr.kickon.api.domain.newsReply.request.CreateNewsReplyRequest;
+import kr.kickon.api.domain.newsReply.request.GetNewsRepliesRequest;
+import kr.kickon.api.domain.newsReply.request.PatchNewsReplyRequest;
+import kr.kickon.api.domain.newsReply.response.GetNewsRepliesResponse;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.auth.jwt.user.JwtTokenProvider;
 import kr.kickon.api.global.common.PagedMetaDTO;
@@ -44,7 +44,7 @@ public class NewsReplyController {
 
     @Operation(summary = "뉴스 댓글 생성", description = "회원가입한 유저만 뉴스 댓글 생성 가능")
     @PostMapping()
-    public ResponseEntity<ResponseDTO<Void>> createNewsReply(@Valid @RequestBody CreateNewsReplyRequestDTO request){
+    public ResponseEntity<ResponseDTO<Void>> createNewsReply(@Valid @RequestBody CreateNewsReplyRequest request){
         User user = jwtTokenProvider.getUserFromSecurityContext();
         News news = newsService.findByPk(request.getNews());
         if(news == null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS);
@@ -80,14 +80,14 @@ public class NewsReplyController {
     @Operation(summary = "뉴스 댓글 리스트 조회", description = "뉴스 댓글 페이징 처리해서 전달")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공",
-                    content = @Content(schema = @Schema(implementation = GetNewsRepliesResponseDTO.class))),
+                    content = @Content(schema = @Schema(implementation = GetNewsRepliesResponse.class))),
     })
     @GetMapping()
-    public ResponseEntity<ResponseDTO<List<ReplyDTO>>> getNewsReplies(@Valid GetNewsRepliesRequestDTO query){
+    public ResponseEntity<ResponseDTO<List<ReplyDTO>>> getNewsReplies(@Valid GetNewsRepliesRequest query){
         User user = jwtTokenProvider.getUserFromSecurityContext();
         News newsData = newsService.findByPk(query.getNews());
         if(newsData == null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS);
-        PaginatedNewsReplyListDTO paginatedReplyListDTO = newsReplyService.getRepliesByNews(query.getNews(),user!=null ? user.getPk() : null, query.getPage(), query.getSize(), query.getInfinite() != null ? query.getInfinite() : null, query.getLastReply());
+        PaginatedNewsReplyListDTO paginatedReplyListDTO = newsReplyService.getReplyListByNews(query.getNews(),user!=null ? user.getPk() : null, query.getPage(), query.getSize(), query.getInfinite() != null ? query.getInfinite() : null, query.getLastReply());
         if(paginatedReplyListDTO.getHasNext()!=null){
             return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS,paginatedReplyListDTO.getReplyList(),
                     new PagedMetaDTO(paginatedReplyListDTO.getHasNext())));
@@ -115,7 +115,7 @@ public class NewsReplyController {
     @Operation(summary = "뉴스 댓글 수정", description = "뉴스 댓글 PK값으로 댓글 수정")
     @PatchMapping("/{newsReplyPk}")
     public ResponseEntity<ResponseDTO<Void>> patchNewsReply(@PathVariable Long newsReplyPk,
-        @Valid @RequestBody PatchNewsReplyRequestDTO request){
+        @Valid @RequestBody PatchNewsReplyRequest request){
         User user = jwtTokenProvider.getUserFromSecurityContext();
         NewsReply newsReplyData = newsReplyService.findByPk(newsReplyPk);
         if(newsReplyData == null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS_REPLY);
@@ -124,7 +124,7 @@ public class NewsReplyController {
         }
         newsReplyData.setContents(request.getContents());
 
-        newsReplyService.patchNewsReply(newsReplyData);
+        newsReplyService.updateNewsReply(newsReplyData);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
 }

@@ -1,4 +1,4 @@
-package kr.kickon.api.domain.newsViewHistory.request;
+package kr.kickon.api.domain.newsReplyKick.request;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -7,8 +7,8 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class CreateNewsViewHistory {
+public class CreateNewsReplyKickRequest {
     @Positive
-    @NotNull(message = "뉴스 pk 값은 필수값입니다.")
-    private Long news;
+    @NotNull(message = "댓글 pk 값은 필수값입니다.")
+    private Long reply;
 }
