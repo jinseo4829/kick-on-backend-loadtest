@@ -80,7 +80,7 @@ public class ActualSeasonTeamService implements BaseService<ActualSeasonTeam> {
                         actualSeasonTeam.team.pk.eq(teamPk),
                         actualSeasonTeam.status.eq(DataStatus.ACTIVATED),
                         actualSeasonTeam.team.status.eq(DataStatus.ACTIVATED),
-                        actualSeasonTeam.actualSeason.operatingStatus.eq(OperatingStatus.PROCEEDING),
+                        actualSeasonTeam.actualSeason.operatingStatus.in(OperatingStatus.PROCEEDING, OperatingStatus.PENDING),
                         actualSeasonTeam.actualSeason.status.eq(DataStatus.ACTIVATED),
                         actualSeasonTeam.actualSeason.league.status.eq(DataStatus.ACTIVATED)
 

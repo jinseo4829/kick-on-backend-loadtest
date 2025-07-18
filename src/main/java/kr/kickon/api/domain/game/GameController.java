@@ -170,7 +170,7 @@ public class GameController {
                 .games(gameDTOs)
                 .build()));
     }
-    // endregion
+    // endregionㅣ
 
     // region {getMyCalendarDates} 달력에 내 응원팀 경기 일정 표시 API, 오늘 ~ 해당 달 마지막 날까지 응원팀의 경기 날짜 + 수 반환
     @Operation(
