@@ -502,45 +502,26 @@ public class GameService implements BaseService<Game> {
         return new PredictOpenResponse(startDate, endDate, 4);
 
     }
+    // endregion
+
     // region {getMyPredictionDateList} 유저의 승부예측 날짜 목록 조회
     /**
      * 사용자가 참여한 모든 경기 예측(UserGameGamble) 내역 중,
-     * 예측한 게임의 시작일(LocalDate)들을 중복 제거하여 정렬한 리스트를 반환합니다.
-     * - 응원팀이 없을 경우: 프리미어리그 기준 예정 경기 중 가장 가까운 날짜 1개만 반환합니다.
+     * 예측한 게임의 시작일(LocalDate)을 기준으로 날짜별 개수를 집계하여 정렬된 리스트로 반환합니다.
      */
-    public List<LocalDate> getMyPredictionDateList(Long userPk) {
-        List<Long> favoriteTeamPks = userFavoriteTeamService.findAllByUserPk(userPk).stream()
-                .map(userFavoriteTeam -> userFavoriteTeam.getTeam().getPk())
-                .toList();
-
-        if (favoriteTeamPks.isEmpty()) {
-            // 응원팀 없을 경우 → 프리미어리그 기준 가장 가까운 예정 경기 날짜 하나만 리스트로 반환
-            Long premierLeaguePk = 1L;
-            QGame game = QGame.game;
-
-            Game nextGame = queryFactory.selectFrom(game)
-                    .where(
-                            game.status.eq(DataStatus.ACTIVATED),
-                            game.actualSeason.league.pk.eq(premierLeaguePk),
-                            game.gameStatus.in(GameStatus.PENDING, GameStatus.POSTPONED, GameStatus.PROCEEDING),
-                            game.startedAt.goe(LocalDate.now().atStartOfDay())
-                    )
-                    .orderBy(game.startedAt.asc())
-                    .fetchFirst();
-
-            return (nextGame != null) ?
-                    List.of(nextGame.getStartedAt().toLocalDate()) :
-                    List.of();
-        }
-
-        // 응원팀이 있는 경우: 예측 내역 기반 날짜 리스트 반환
+    public List<CalendarDateCountDTO> getMyPredictionDateList(Long userPk) {
         return userGameGambleService.findByUserPk(userPk).stream()
-                .map(gamble -> gamble.getGame().getStartedAt().toLocalDate())
-                .distinct()
-                .sorted()
-                .collect(Collectors.toList());
+                .collect(Collectors.groupingBy(
+                        g -> g.getGame().getStartedAt().toLocalDate(),
+                        Collectors.counting()
+                ))
+                .entrySet()
+                .stream()
+                .map(entry -> new CalendarDateCountDTO(entry.getKey(), entry.getValue().intValue()))
+                .sorted(Comparator.comparing(CalendarDateCountDTO::getDate))
+                .toList();
     }
-// endregion
+    // endregion
 
     // region {getMyPredictionList} 유저의 예측한 경기 리스트 조회
     /**

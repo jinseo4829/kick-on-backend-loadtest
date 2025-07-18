@@ -239,7 +239,7 @@ public class GameController {
     @GetMapping("/my-calendar")
     public ResponseEntity<ResponseDTO<MyPredictionDatesResponse>> getMyPredictionDates() {
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        List<LocalDate> dates = gameService.getMyPredictionDateList(user.getPk());
+        List<CalendarDateCountDTO> dates = gameService.getMyPredictionDateList(user.getPk());
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, new MyPredictionDatesResponse(dates)));
     }
     // endregion

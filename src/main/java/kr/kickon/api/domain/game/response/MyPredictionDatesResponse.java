@@ -9,8 +9,9 @@ import java.util.List;
 
 @Data
 @AllArgsConstructor
-@Schema(description = "내가 참여한 경기 날짜 리스트")
+@Schema(description = "내가 참여한 경기 날짜 리스트 + 경기 수 응답 DTO")
 public class MyPredictionDatesResponse {
-    @Schema(description = "내가 참여한 경기 날짜 리스트", example = "[2025-07-03, 2025-07-08]")
-    private List<LocalDate> dates;
+
+    @Schema(description = "날짜별 경기 리스트")
+    private List<CalendarDateCountDTO> dates;
 }
