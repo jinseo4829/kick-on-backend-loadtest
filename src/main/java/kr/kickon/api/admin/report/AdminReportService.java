@@ -40,7 +40,7 @@ public class AdminReportService {
         // 1. 게시글 신고 목록 조회
         List<AdminReportItemDTO> boardReports = queryFactory
                 .select(Projections.constructor(AdminReportItemDTO.class,
-                        reportBoard.pk,
+                        reportBoard.reportedBoard.pk,
                         Expressions.constant("BOARD"),
                         user.pk,
                         user.nickname,
@@ -60,7 +60,7 @@ public class AdminReportService {
         // 2. 뉴스 신고 목록 조회
         List<AdminReportItemDTO> newsReports = queryFactory
                 .select(Projections.constructor(AdminReportItemDTO.class,
-                        reportNews.pk,
+                        reportNews.reportedNews.pk,
                         Expressions.constant("NEWS"),
                         user.pk,
                         user.nickname,
