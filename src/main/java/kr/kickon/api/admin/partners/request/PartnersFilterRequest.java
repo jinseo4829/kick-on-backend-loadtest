@@ -1,6 +1,7 @@
 package kr.kickon.api.admin.partners.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import kr.kickon.api.global.common.ExampleConstants;
 import lombok.Data;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -9,16 +10,16 @@ import org.springframework.data.domain.Pageable;
 @Schema(description = "파트너스 리스트 조회를 위한 필터링 요청 객체")
 public class PartnersFilterRequest {
 
-  @Schema(description = "이름", example = "임민서")
+  @Schema(description = "이름", example = ExampleConstants.name)
   private String name;
 
-  @Schema(description = "닉네임", example = "축잘알유저")
+  @Schema(description = "닉네임", example = ExampleConstants.nickname)
   private String nickname;
 
-  @Schema(description = "리그pk", example = "1")
+  @Schema(description = "리그pk", example = ExampleConstants.leaguePk)
   private Long leaguePk;
 
-  @Schema(description = "팀pk", example = "1647")
+  @Schema(description = "팀pk", example = ExampleConstants.teamPk)
   private Long teamPk;
 
   @Schema(description = "페이지 번호 (1부터 시작)", example = "1")

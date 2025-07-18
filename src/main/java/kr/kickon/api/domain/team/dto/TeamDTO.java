@@ -2,8 +2,8 @@ package kr.kickon.api.domain.team.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import kr.kickon.api.global.common.ExampleConstants;
+import kr.kickon.api.global.common.entities.League;
 import kr.kickon.api.global.common.entities.Team;
-import kr.kickon.api.global.common.entities.UserFavoriteTeam;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -13,6 +13,7 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @NoArgsConstructor
 public class TeamDTO {
+
     @Schema(description = "사용자 고유 pk", example = "1")
     private Long pk;
 
@@ -42,5 +43,20 @@ public class TeamDTO {
         this.nameKr = team.getNameKr();
         this.nameEn = team.getNameEn();
         this.logoUrl = team.getLogoUrl();
+    }
+
+    public static TeamDTO fromTeamAndLeague(Team team, League league) {
+        TeamDTO.TeamDTOBuilder<?,?> builder = TeamDTO.builder()
+            .pk(team.getPk())
+            .nameKr(team.getNameKr())
+            .nameEn(team.getNameEn())
+            .logoUrl(team.getLogoUrl());
+
+        if (league != null) {
+            builder.leaguePk(league.getPk())
+                .leagueNameKr(league.getNameKr())
+                .leagueNameEn(league.getNameEn());
+        }
+        return builder.build();
     }
 }

@@ -10,11 +10,11 @@ import jakarta.validation.Valid;
 import java.util.List;
 import kr.kickon.api.admin.partners.dto.PartnersDetailDTO;
 import kr.kickon.api.admin.partners.dto.PartnersListDTO;
-import kr.kickon.api.admin.partners.request.CreatePartnersRequestDTO;
+import kr.kickon.api.admin.partners.request.CreatePartnersRequest;
 import kr.kickon.api.admin.partners.request.PartnersFilterRequest;
-import kr.kickon.api.admin.partners.request.PatchPartnersRequestDTO;
+import kr.kickon.api.admin.partners.request.UpdatePartnersRequest;
 import kr.kickon.api.admin.partners.response.GetPartnersDetailResponse;
-import kr.kickon.api.admin.partners.response.GetPartnersResponse;
+import kr.kickon.api.admin.partners.response.GetPartnersListResponse;
 import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.Partners;
@@ -47,11 +47,11 @@ public class AdminPartnersController {
   @Operation(summary = "파트너스 리스트 조회", description = "파트너스 리스트를 조회합니다. 각 filter 조건은 옵셔널 입니다.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "성공",
-          content = @Content(schema = @Schema(implementation = GetPartnersResponse.class))),
+          content = @Content(schema = @Schema(implementation = GetPartnersListResponse.class))),
   })
   public ResponseEntity<ResponseDTO<List<PartnersListDTO>>> getFilteredPartners(@Valid @ModelAttribute PartnersFilterRequest request) {
     Pageable pageable = request.toPageable();
-    Page<PartnersListDTO> partnersPage = adminpartnersService.findPartnersByFilter(request, pageable);
+    Page<PartnersListDTO> partnersPage = adminpartnersService.getPartnersListByFilter(request, pageable);
 
     return ResponseEntity.ok(
         ResponseDTO.success(
@@ -86,7 +86,7 @@ public class AdminPartnersController {
       @ApiResponse(responseCode = "200", description = "성공",
           content = @Content(schema = @Schema(implementation = GetPartnersDetailResponse.class))),
   })
-  public ResponseEntity<ResponseDTO<PartnersDetailDTO>> createPartners(@RequestBody CreatePartnersRequestDTO request) {
+  public ResponseEntity<ResponseDTO<PartnersDetailDTO>> createPartners(@RequestBody CreatePartnersRequest request) {
     PartnersDetailDTO responseDto = adminpartnersService.createPartners(request);
     return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, responseDto));
   }
@@ -110,10 +110,10 @@ public class AdminPartnersController {
           content = @Content(schema = @Schema(implementation = GetPartnersDetailResponse.class))),
   })
   public ResponseEntity<ResponseDTO<PartnersDetailDTO>> patchPartners(@PathVariable Long pk,
-      @RequestBody PatchPartnersRequestDTO request) {
+      @RequestBody UpdatePartnersRequest request) {
     Partners partners = adminpartnersService.findByPk(pk);
     if (partners == null) throw new NotFoundException(ResponseCode.NOT_FOUND_PARTNERS);
-    PartnersDetailDTO responseDto = adminpartnersService.patchPartners(partners, request);
+    PartnersDetailDTO responseDto = adminpartnersService.updatePartners(partners, request);
     return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, responseDto));
   }
 }
