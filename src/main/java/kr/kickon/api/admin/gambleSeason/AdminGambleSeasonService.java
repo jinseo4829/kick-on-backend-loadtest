@@ -9,9 +9,9 @@ import java.util.Optional;
 import java.util.UUID;
 import kr.kickon.api.admin.gambleSeason.dto.GambleSeasonDetailDTO;
 import kr.kickon.api.admin.gambleSeason.dto.GambleSeasonListDTO;
-import kr.kickon.api.admin.gambleSeason.request.CreateGambleSeasonRequestDTO;
+import kr.kickon.api.admin.gambleSeason.request.CreateGambleSeasonRequest;
 import kr.kickon.api.admin.gambleSeason.request.GambleSeasonFilterRequest;
-import kr.kickon.api.admin.gambleSeason.request.PatchGambleSeasonRequestDTO;
+import kr.kickon.api.admin.gambleSeason.request.UpdateGambleSeasonRequest;
 import kr.kickon.api.domain.actualSeason.ActualSeasonService;
 import kr.kickon.api.domain.gambleSeason.GambleSeasonRepository;
 import kr.kickon.api.domain.gambleSeasonRanking.GambleSeasonRankingService;
@@ -29,6 +29,7 @@ import kr.kickon.api.global.common.entities.QLeague;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.OperatingStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.error.exceptions.BadRequestException;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,17 +51,26 @@ public class AdminGambleSeasonService {
   private final LeagueService leagueService;
   private final ActualSeasonService actualSeasonService;
 
+  //region 승부 예측 시즌 단건 조회
+  /**
+   * pk로 GambleSeason 단건 조회
+   */
   public GambleSeason findByPk(Long pk){
     BooleanExpression predicate = QGambleSeason.gambleSeason.pk.eq(pk).and(QGambleSeason.gambleSeason.status.eq(DataStatus.ACTIVATED));
     Optional<GambleSeason> gambleSeason = gambleSeasonRepository.findOne(predicate);
     return gambleSeason.orElse(null);
   }
+  //endregion
 
+  //region 승부 예측 시즌 리스트 조회 (필터 optional)
+  /**
+   * 필터 조건에 따라 승부 예측 시즌 목록 조회
+   */
   @Transactional
-  public Page<GambleSeasonListDTO> findGambleSeasonByFilter(GambleSeasonFilterRequest request,
+  public Page<GambleSeasonListDTO> getGambleSeasonListByFilter(GambleSeasonFilterRequest request,
       Pageable pageable) {
     QGambleSeason season = QGambleSeason.gambleSeason;
-    QActualSeason   actualSeason   = QActualSeason.actualSeason;
+    QActualSeason actualSeason = QActualSeason.actualSeason;
     QLeague league = QLeague.league;
 
     BooleanBuilder builder = new BooleanBuilder()
@@ -74,20 +84,20 @@ public class AdminGambleSeasonService {
 
     // 시작일 ≥ requested.startedAt
     if (request.getStartedAt() != null && !request.getStartedAt().isBlank()) {
-      LocalDateTime start = LocalDateTime.parse(request.getStartedAt());
-      builder.and(season.startedAt.goe(start));
+      LocalDateTime startedAtEntity = LocalDateTime.parse(request.getStartedAt());
+      builder.and(season.startedAt.goe(startedAtEntity));
     }
 
     // 마감일 ≤ requested.finishedAt
     if (request.getFinishedAt() != null && !request.getFinishedAt().isBlank()) {
-      LocalDateTime end = LocalDateTime.parse(request.getFinishedAt());
-      builder.and(season.finishedAt.loe(end));
+      LocalDateTime finishedAtEntity = LocalDateTime.parse(request.getFinishedAt());
+      builder.and(season.finishedAt.loe(finishedAtEntity));
     }
 
     // 운영 상태 ENUM
     if (request.getOperatingStatus() != null && !request.getOperatingStatus().isBlank()) {
-      OperatingStatus os = OperatingStatus.valueOf(request.getOperatingStatus());
-      builder.and(season.operatingStatus.eq(os));
+      OperatingStatus operatingStatusEntity = OperatingStatus.valueOf(request.getOperatingStatus());
+      builder.and(season.operatingStatus.eq(operatingStatusEntity));
     }
 
     // total count
@@ -117,34 +127,44 @@ public class AdminGambleSeasonService {
 
     return new PageImpl<>(dtos, pageable, total);
   }
+  //endregion
 
+  //region 승부 예측 시즌 상세 조회
+  /**
+   * 시즌 단건 조회 후 상세 DTO 변환
+   */
   @Transactional
-  public GambleSeasonDetailDTO getGambleSeasonDetail(GambleSeason season) {
+  public GambleSeasonDetailDTO getGambleSeasonDetail(GambleSeason gambleSeason) {
     List<SeasonTeamDTO> teamList =
-        gambleSeasonTeamService.findAllByGambleSeasonPk(season.getPk());
+        gambleSeasonTeamService.getgambleSeasonTeamListByGambleSeasonPk(gambleSeason.getPk());
 
     List<GetGambleSeasonRankingDTO> rankingList =
-        gambleSeasonRankingService.getRankingDtoBySeasonPk(season.getPk());
+        gambleSeasonRankingService.getRankingDtoBySeasonPk(gambleSeason.getPk());
 
-    return GambleSeasonDetailDTO.fromEntity(season, teamList, rankingList);
+    return GambleSeasonDetailDTO.fromEntity(gambleSeason, teamList, rankingList);
   }
+  //endregion
 
+  //region 승부 예측 시즌 생성
+  /**
+   * 새로운 승부 예측 시즌 생성
+   */
   @Transactional
-  public GambleSeasonDetailDTO createGambleSeason(CreateGambleSeasonRequestDTO request) {
+  public GambleSeasonDetailDTO createGambleSeason(CreateGambleSeasonRequest request) {
 
-    League league = leagueService.findByPk(request.getLeaguePk());
-    if (league == null) throw new NotFoundException(ResponseCode.NOT_FOUND_LEAGUE);
+    League leagueEntity = leagueService.findByPk(request.getLeaguePk());
+    if (leagueEntity == null) throw new NotFoundException(ResponseCode.NOT_FOUND_LEAGUE);
 
     // 리그에 연결된 최신 ActualSeason 가져오기
-    ActualSeason actualSeason =
-        actualSeasonService.findRecentByLeaguePk(league.getPk());
-    if (actualSeason == null) {
+    ActualSeason actualSeasonEntity =
+        actualSeasonService.findRecentByLeaguePk(leagueEntity.getPk());
+    if (actualSeasonEntity == null) {
       throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
     }
 
     GambleSeason gambleSeason = GambleSeason.builder()
         .id(UUID.randomUUID().toString())
-        .actualSeason(actualSeason)
+        .actualSeason(actualSeasonEntity)
         .title(request.getTitle())
         .startedAt(LocalDateTime.parse(request.getStartedAt()))
         .finishedAt(LocalDateTime.parse(request.getFinishedAt()))
@@ -155,7 +175,7 @@ public class AdminGambleSeasonService {
 
     gambleSeasonRepository.save(gambleSeason);
 
-    LeagueDTO leagueDto = new LeagueDTO(league);
+    LeagueDTO leagueDto = new LeagueDTO(leagueEntity);
 
     return GambleSeasonDetailDTO.builder()
         .pk(gambleSeason.getPk())
@@ -167,20 +187,25 @@ public class AdminGambleSeasonService {
         .description(gambleSeason.getDescription())
         .build();
   }
+  //endregion
 
+  //region 승부 예측 시즌 수정
+  /**
+   * 기존 시즌 수정 (리그, 타이틀, 기간 등)
+   */
   @Transactional
-  public GambleSeasonDetailDTO patchGambleSeason(GambleSeason gambleSeason, PatchGambleSeasonRequestDTO request) {
+  public GambleSeasonDetailDTO updateGambleSeason(GambleSeason gambleSeason, UpdateGambleSeasonRequest request) {
 
     if (request.getLeaguePk() != null) {
-      League league = leagueService.findByPk(request.getLeaguePk());
-      if (league == null)
+      League leagueEntity = leagueService.findByPk(request.getLeaguePk());
+      if (leagueEntity == null)
         throw new NotFoundException(ResponseCode.NOT_FOUND_LEAGUE);
-      ActualSeason actualSeason =
-          actualSeasonService.findRecentByLeaguePk(league.getPk());
-      if (actualSeason == null) {
+      ActualSeason actualSeasonEntity =
+          actualSeasonService.findRecentByLeaguePk(leagueEntity.getPk());
+      if (actualSeasonEntity == null) {
         throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
       }
-      gambleSeason.setActualSeason(actualSeason);
+      gambleSeason.setActualSeason(actualSeasonEntity);
     }
     if (request.getTitle() != null) {
       gambleSeason.setTitle(request.getTitle());
@@ -195,7 +220,7 @@ public class AdminGambleSeasonService {
       try {
         gambleSeason.setOperatingStatus(OperatingStatus.valueOf(request.getOperatingStatus()));
       } catch (IllegalArgumentException e) {
-        throw new IllegalArgumentException("상태 값이 유효하지 않습니다: " + request.getOperatingStatus());
+        throw new BadRequestException(ResponseCode.INVALID_REQUEST);
       }
     }
     if (request.getDescription() != null) {
@@ -203,15 +228,16 @@ public class AdminGambleSeasonService {
     }
 
     // 참여 팀 목록 수정
-    gambleSeasonTeamService.patchSeasonTeams(gambleSeason, request.getGambleSeasonTeams());
+    gambleSeasonTeamService.updateSeasonTeams(gambleSeason, request.getGambleSeasonTeams());
     gambleSeasonRepository.save(gambleSeason);
 
     List<SeasonTeamDTO> teamList =
-        gambleSeasonTeamService.findAllByGambleSeasonPk(gambleSeason.getPk());
+        gambleSeasonTeamService.getgambleSeasonTeamListByGambleSeasonPk(gambleSeason.getPk());
 
     List<GetGambleSeasonRankingDTO> rankingList =
         gambleSeasonRankingService.getRankingDtoBySeasonPk(gambleSeason.getPk());
 
     return GambleSeasonDetailDTO.fromEntity(gambleSeason, teamList, rankingList);
   }
+  //endregion
 }

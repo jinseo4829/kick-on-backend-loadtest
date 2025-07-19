@@ -6,7 +6,7 @@ import lombok.Data;
 
 @Data
 @Schema(description = "승부 예측 시즌 생성 요청 DTO")
-public class PatchGambleSeasonRequestDTO {
+public class UpdateGambleSeasonRequest {
 
   @Schema(description = "리그Pk", example = "1")
   private Long leaguePk;

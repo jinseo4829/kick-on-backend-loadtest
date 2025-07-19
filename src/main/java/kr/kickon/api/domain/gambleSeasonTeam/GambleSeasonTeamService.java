@@ -54,30 +54,42 @@ public class GambleSeasonTeamService implements BaseService<GambleSeasonTeam> {
         return gambleSeasonTeam.get();
     }
 
-    public GambleSeasonTeam findRecentOperatingByTeamPk(Long pk) {
+    public GambleSeasonTeam getRecentOperatingByTeamPk(Long pk) {
         QGambleSeasonTeam gambleSeasonTeam = QGambleSeasonTeam.gambleSeasonTeam;
         BooleanExpression predicate = gambleSeasonTeam.team.pk.eq(pk).and(gambleSeasonTeam.status.eq(DataStatus.ACTIVATED).and(gambleSeasonTeam.gambleSeason.operatingStatus.eq(OperatingStatus.PROCEEDING)).and(gambleSeasonTeam.gambleSeason.status.eq(DataStatus.ACTIVATED)));
         Optional<GambleSeasonTeam> gambleSeasonTeamData = gambleSeasonTeamRepository.findOne(predicate);
         return gambleSeasonTeamData.orElse(null);
     }
 
-    public List<SeasonTeamDTO> findAllByGambleSeasonPk(Long seasonPk) {
+//region GambleSeasonTeam 리스트 조회
+    /**
+     * 주어진 GambleSeason의 PK로 GambleSeasonTeam 리스트를 조회하고,
+     * 각 팀 정보를 SeasonTeamDTO로 매핑하여 반환한다.
+     */
+    public List<SeasonTeamDTO> getgambleSeasonTeamListByGambleSeasonPk(Long seasonPk) {
         return gambleSeasonTeamRepository
             .findAllByGambleSeason_PkAndStatus(seasonPk, DataStatus.ACTIVATED)
             .stream()
             .map(gst -> new SeasonTeamDTO(gst.getTeam()))
             .toList();
     }
+//endregion
 
+//region GambleSeasonTeam 수정
+    /**
+     * 주어진 GambleSeason과 팀 PK 리스트를 기반으로 GambleSeasonTeam을 갱신한다.
+     * - 요청에 포함된 팀 중 기존에 없던 팀은 추가
+     * - 기존에 있었지만 요청에 포함되지 않은 팀은 비활성화
+     */
     @Transactional
-    public void patchSeasonTeams(GambleSeason season, List<Long> teamPkList) {
+    public void updateSeasonTeams(GambleSeason gambleseason, List<Long> teamPkList) {
 
         if (teamPkList == null) return;
 
         // 현재 저장돼 있는 팀 PK 들
         List<GambleSeasonTeam> currentEntities =
             gambleSeasonTeamRepository.findAllByGambleSeason_PkAndStatus(
-                season.getPk(), DataStatus.ACTIVATED);
+                gambleseason.getPk(), DataStatus.ACTIVATED);
 
         Set<Long> currentPkSet = currentEntities.stream()
             .map(gst -> gst.getTeam().getPk())
@@ -94,7 +106,7 @@ public class GambleSeasonTeamService implements BaseService<GambleSeasonTeam> {
             Team team = teamService.findByPk(teamPk);
             GambleSeasonTeam gambleSeasonTeam = GambleSeasonTeam.builder()
                 .id(UUID.randomUUID().toString())
-                .gambleSeason(season)
+                .gambleSeason(gambleseason)
                 .team(team)
                 .status(DataStatus.ACTIVATED)
                 .build();
@@ -111,9 +123,14 @@ public class GambleSeasonTeamService implements BaseService<GambleSeasonTeam> {
                 gst.setStatus(DataStatus.DEACTIVATED);
             });
     }
+//endregion
 
+    //region GambleSeasonTeam 팀 시즌 재할당
+    /**
+     * 특정 팀의 최근 GambleSeasonTeam을 찾아 새로운 GambleSeason으로 재할당한다.
+     */
     public void patchGambleSeasonTeam(GambleSeason gambleSeason,Long teamPk) {
-        GambleSeasonTeam gambleSeasonTeam = findRecentOperatingByTeamPk(teamPk);
+        GambleSeasonTeam gambleSeasonTeam = getRecentOperatingByTeamPk(teamPk);
         gambleSeasonTeam.setGambleSeason(gambleSeason);
     }
 }

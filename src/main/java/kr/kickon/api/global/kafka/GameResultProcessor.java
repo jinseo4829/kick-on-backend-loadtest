@@ -199,7 +199,7 @@ public class GameResultProcessor {
                 .toList();
         String homeGambleSeasonPointId = uuidGenerator.generateUniqueUUID(gambleSeasonPointService::findById);
         String awayGambleSeasonPointId = uuidGenerator.generateUniqueUUID(gambleSeasonPointService::findById);
-        GambleSeasonTeam homeGambleSeasonTeam = gambleSeasonTeamService.findRecentOperatingByTeamPk(game.getHomeTeam().getPk());
+        GambleSeasonTeam homeGambleSeasonTeam = gambleSeasonTeamService.getRecentOperatingByTeamPk(game.getHomeTeam().getPk());
 //            System.out.println(homeGambleSeasonTeam.getTeam());
         if(homeGambleSeasonTeam != null){
             Team homeTeam = teamService.findByApiId(apiGamesDTO.getHomeTeamId());
