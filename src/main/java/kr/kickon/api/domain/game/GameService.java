@@ -617,41 +617,22 @@ public class GameService implements BaseService<Game> {
         String mostHitTeamColor = null;
 
         QUserGameGamble gamble = QUserGameGamble.userGameGamble;
-        QGame game = QGame.game;
 
-        // homeTeam, awayTeam 합산
-        List<Tuple> homeCounts = queryFactory
-                .select(game.homeTeam.pk, gamble.count())
+        List<Tuple> supportCounts = queryFactory
+                .select(gamble.supportingTeam.pk, gamble.count())
                 .from(gamble)
-                .join(gamble.game, game)
                 .where(
                         gamble.user.pk.eq(userPk),
                         gamble.gambleStatus.in(GambleStatus.SUCCEED, GambleStatus.PERFECT)
                 )
-                .groupBy(game.homeTeam.pk)
-                .fetch();
-
-        List<Tuple> awayCounts = queryFactory
-                .select(game.awayTeam.pk, gamble.count())
-                .from(gamble)
-                .join(gamble.game, game)
-                .where(
-                        gamble.user.pk.eq(userPk),
-                        gamble.gambleStatus.in(GambleStatus.SUCCEED, GambleStatus.PERFECT)
-                )
-                .groupBy(game.awayTeam.pk)
+                .groupBy(gamble.supportingTeam.pk)
                 .fetch();
 
         Map<Long, Long> teamCountMap = new HashMap<>();
-        for (Tuple t : homeCounts) {
+        for (Tuple t : supportCounts) {
             Long teamPk = t.get(0, Long.class);
             Long count = t.get(1, Long.class);
-            teamCountMap.put(teamPk, teamCountMap.getOrDefault(teamPk, 0L) + count);
-        }
-        for (Tuple t : awayCounts) {
-            Long teamPk = t.get(0, Long.class);
-            Long count = t.get(1, Long.class);
-            teamCountMap.put(teamPk, teamCountMap.getOrDefault(teamPk, 0L) + count);
+            teamCountMap.put(teamPk, count);
         }
 
         Long mostHitTeamPk = teamCountMap.entrySet()
@@ -678,6 +659,8 @@ public class GameService implements BaseService<Game> {
                 .thisMonthPoints(thisMonthPoints)
                 .totalPoints(totalPoints)
                 .mostHitTeamName(mostHitTeamName)
+                .mostHitTeamLogoUrl(mostHitTeamLogoUrl)
+                .mostHitTeamColor(mostHitTeamColor)
                 .build();
     }
     // endregion
