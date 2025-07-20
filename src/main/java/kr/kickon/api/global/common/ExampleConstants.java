@@ -32,7 +32,5 @@ public class ExampleConstants {
     public static final String leaguePk = "12";
     public static final String operatingStatus = "PROCEEDING";
     public static final String seasonTitle = "24/25 K 리그";
-
-
-
+    public static final String seasonTeams = "[1647, 1648, 1649]";
 }

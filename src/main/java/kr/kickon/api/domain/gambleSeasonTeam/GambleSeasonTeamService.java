@@ -104,6 +104,9 @@ public class GambleSeasonTeamService implements BaseService<GambleSeasonTeam> {
 
         for (Long teamPk : addSet) {
             Team team = teamService.findByPk(teamPk);
+            if (team == null) {
+                throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
+            }
             GambleSeasonTeam gambleSeasonTeam = GambleSeasonTeam.builder()
                 .id(UUID.randomUUID().toString())
                 .gambleSeason(gambleseason)
