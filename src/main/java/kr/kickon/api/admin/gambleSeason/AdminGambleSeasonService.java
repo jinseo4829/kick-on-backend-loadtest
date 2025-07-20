@@ -1,14 +1,13 @@
 package kr.kickon.api.admin.gambleSeason;
 
 import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import kr.kickon.api.admin.gambleSeason.dto.GambleSeasonDetailDTO;
-import kr.kickon.api.admin.gambleSeason.dto.GambleSeasonListDTO;
+import kr.kickon.api.admin.gambleSeason.dto.SeasonListDTO;
 import kr.kickon.api.admin.gambleSeason.request.CreateGambleSeasonRequest;
 import kr.kickon.api.admin.gambleSeason.request.GambleSeasonFilterRequest;
 import kr.kickon.api.admin.gambleSeason.request.UpdateGambleSeasonRequest;
@@ -55,9 +54,8 @@ public class AdminGambleSeasonService {
    * pk로 GambleSeason 단건 조회
    */
   public GambleSeason findByPk(Long pk){
-    BooleanExpression predicate = QGambleSeason.gambleSeason.pk.eq(pk).and(QGambleSeason.gambleSeason.status.eq(DataStatus.ACTIVATED));
-    Optional<GambleSeason> gambleSeason = gambleSeasonRepository.findOne(predicate);
-    return gambleSeason.orElse(null);
+    return gambleSeasonRepository.findByPkAndStatus(pk, DataStatus.ACTIVATED)
+        .orElse(null);
   }
   //endregion
 
@@ -66,7 +64,7 @@ public class AdminGambleSeasonService {
    * 필터 조건에 따라 승부 예측 시즌 목록 조회
    */
   @Transactional
-  public Page<GambleSeasonListDTO> getGambleSeasonListByFilter(GambleSeasonFilterRequest request,
+  public Page<SeasonListDTO> getGambleSeasonListByFilter(GambleSeasonFilterRequest request,
       Pageable pageable) {
     QGambleSeason season = QGambleSeason.gambleSeason;
     QActualSeason actualSeason = QActualSeason.actualSeason;
@@ -120,8 +118,8 @@ public class AdminGambleSeasonService {
         .limit(pageable.getPageSize())
         .fetch();
 
-    List<GambleSeasonListDTO> dtos = content.stream()
-        .map(GambleSeasonListDTO::fromEntity)
+    List<SeasonListDTO> dtos = content.stream()
+        .map(SeasonListDTO::fromGambleSeason)
         .toList();
 
     return new PageImpl<>(dtos, pageable, total);

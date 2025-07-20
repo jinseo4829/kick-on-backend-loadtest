@@ -1,7 +1,6 @@
 package kr.kickon.api.admin.actualSeason;
 
 import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -9,8 +8,8 @@ import java.util.List;
 import java.util.Optional;
 import kr.kickon.api.admin.actualSeason.dto.ActualSeasonDetailDTO;
 import kr.kickon.api.admin.actualSeason.request.ActualSeasonFilterRequest;
-import kr.kickon.api.admin.actualSeason.request.PatchActualSeasonRequestDTO;
-import kr.kickon.api.admin.gambleSeason.dto.GambleSeasonListDTO;
+import kr.kickon.api.admin.actualSeason.request.UpdateActualSeasonRequest;
+import kr.kickon.api.admin.gambleSeason.dto.SeasonListDTO;
 import kr.kickon.api.domain.actualSeason.ActualSeasonRepository;
 import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
 import kr.kickon.api.domain.league.LeagueService;
@@ -22,6 +21,7 @@ import kr.kickon.api.global.common.entities.QLeague;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.OperatingStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.error.exceptions.BadRequestException;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,16 +41,24 @@ public class AdminActualSeasonService {
   private final ActualSeasonTeamService actualSeasonTeamService;
   private final LeagueService leagueService;
 
+  //region 실제 시즌 단건 조회
+  /**
+   * pk로 ActualSeason 단건 조회
+   */
   public ActualSeason findByPk(Long pk){
-    BooleanExpression predicate = QActualSeason.actualSeason.pk.eq(pk).and(QActualSeason.actualSeason.status.eq(DataStatus.ACTIVATED));
-    Optional<ActualSeason> actualSeason = actualSeasonRepository.findOne(predicate);
-    return actualSeason.orElse(null);
+    return actualSeasonRepository.findByPkAndStatus(pk, DataStatus.ACTIVATED)
+        .orElse(null);
   }
+  //endregion
 
+  //region 실제 시즌 리스트 조회 (필터 optional)
+  /**
+   * 필터 조건에 따라 실제 시즌 목록 조회
+   */
   @Transactional
-  public Page<GambleSeasonListDTO> findActualSeasonByFilter(ActualSeasonFilterRequest request,
+  public Page<SeasonListDTO> getActualSeasonListByFilter(ActualSeasonFilterRequest request,
       Pageable pageable) {
-    QActualSeason actualSeason   = QActualSeason.actualSeason;
+    QActualSeason actualSeason = QActualSeason.actualSeason;
     QLeague league = QLeague.league;
 
     BooleanBuilder builder = new BooleanBuilder()
@@ -86,65 +94,78 @@ public class AdminActualSeasonService {
         .limit(pageable.getPageSize())
         .fetch();
 
-    List<GambleSeasonListDTO> dtos = content.stream()
-        .map(GambleSeasonListDTO::fromActualSeason)
+    List<SeasonListDTO> dtos = content.stream()
+        .map(SeasonListDTO::fromActualSeason)
         .toList();
 
     return new PageImpl<>(dtos, pageable, total);
   }
+  //endregion
 
+  //region 실제 시즌 상세 조회
+  /**
+   * 시즌 단건 조회 후 상세 DTO 변환
+   */
   @Transactional
-  public ActualSeasonDetailDTO getActualSeasonDetail(ActualSeason season) {
+  public ActualSeasonDetailDTO getActualSeasonDetail(ActualSeason actualSeason) {
     List<SeasonTeamDTO> teamList =
-        actualSeasonTeamService.findAllByActualSeasonPk(season.getPk());
+        actualSeasonTeamService.findAllByActualSeasonPk(actualSeason.getPk());
 
-    return ActualSeasonDetailDTO.fromEntity(season, teamList);
+    return ActualSeasonDetailDTO.fromEntity(actualSeason, teamList);
   }
+  //endregion
 
+  //region 실제 시즌 수정
+  /**
+   * 기존 시즌 수정 (리그, 타이틀, 기간 등)
+   */
   @Transactional
-  public ActualSeasonDetailDTO patchActualSeason(ActualSeason season, PatchActualSeasonRequestDTO request) {
+  public ActualSeasonDetailDTO updateActualSeason(ActualSeason actualSeason, UpdateActualSeasonRequest request) {
 
     if (request.getLeaguePk() != null) {
       League league = leagueService.findByPk(request.getLeaguePk());
       if (league == null)
         throw new NotFoundException(ResponseCode.NOT_FOUND_LEAGUE);
-      season.setLeague(league);
+      actualSeason.setLeague(league);
     }
     if (request.getTitle() != null) {
-      season.setTitle(request.getTitle());
+      actualSeason.setTitle(request.getTitle());
     }
     if (request.getStartedAt() != null) {
-      season.setStartedAt(LocalDate.from(LocalDateTime.parse(request.getStartedAt())));
+      actualSeason.setStartedAt(LocalDate.from(LocalDateTime.parse(request.getStartedAt())));
     }
     if (request.getFinishedAt() != null) {
-      season.setFinishedAt(LocalDate.from(LocalDateTime.parse(request.getFinishedAt())));
+      actualSeason.setFinishedAt(LocalDate.from(LocalDateTime.parse(request.getFinishedAt())));
     }
     if (request.getOperatingStatus() != null) {
       try {
-        season.setOperatingStatus(OperatingStatus.valueOf(request.getOperatingStatus()));
+        actualSeason.setOperatingStatus(OperatingStatus.valueOf(request.getOperatingStatus()));
       } catch (IllegalArgumentException e) {
-        throw new IllegalArgumentException("상태 값이 유효하지 않습니다: " + request.getOperatingStatus());
+        throw new BadRequestException(ResponseCode.INVALID_REQUEST);
       }
     }
     if (request.getDescription() != null) {
-      season.setDescription(request.getDescription());
+      actualSeason.setDescription(request.getDescription());
     }
     if (request.getYear() != null) {
-      season.setYear(request.getYear());
+      actualSeason.setYear(request.getYear());
     }
     // 참여 팀 목록 수정
-    actualSeasonTeamService.patchSeasonTeams(season, request.getActualSeasonTeams());
-    actualSeasonRepository.save(season);
+    actualSeasonTeamService.patchSeasonTeams(actualSeason, request.getActualSeasonTeams());
+    actualSeasonRepository.save(actualSeason);
 
-    List<SeasonTeamDTO> teamList =
-        actualSeasonTeamService.findAllByActualSeasonPk(season.getPk());
-
-    return ActualSeasonDetailDTO.fromEntity(season, teamList);
+    return getActualSeasonDetail(actualSeason);
   }
+  //endregion
 
+  //region 실제 시즌 삭제
+  /**
+   * 주어진 실제 시즌을 비활성화(soft delete) 처리
+   */
   @Transactional
   public void deleteActualSeason(ActualSeason actualSeason) {
     actualSeason.setStatus(DataStatus.DEACTIVATED);
     actualSeasonRepository.save(actualSeason);
   }
+  //endregion
 }

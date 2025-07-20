@@ -6,18 +6,16 @@ import kr.kickon.api.domain.league.dto.LeagueDTO;
 import kr.kickon.api.global.common.ExampleConstants;
 import kr.kickon.api.global.common.entities.ActualSeason;
 import kr.kickon.api.global.common.entities.GambleSeason;
-import kr.kickon.api.global.common.entities.League;
 import kr.kickon.api.global.common.enums.OperatingStatus;
-import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.SuperBuilder;
 
 @Data
 @SuperBuilder(toBuilder = true)
-@Schema(description = "승부 예측 시즌 리스트 응답 DTO")
-public class GambleSeasonListDTO {
+@Schema(description = "시즌 리스트 응답 DTO")
+public class SeasonListDTO {
 
-  @Schema(description = "승부 예측 시즌 PK", example = "1")
+  @Schema(description = "시즌 PK", example = "1")
   private Long pk;
 
   @Schema(description = "리그")
@@ -35,7 +33,7 @@ public class GambleSeasonListDTO {
   @Schema(description = "상태", example = ExampleConstants.operatingStatus)
   private OperatingStatus operatingStatus;
 
-  public static kr.kickon.api.admin.gambleSeason.dto.GambleSeasonListDTO fromEntity(
+  public static SeasonListDTO fromGambleSeason(
       GambleSeason gambleSeason) {
 
     LeagueDTO leagueDto = null;
@@ -45,7 +43,7 @@ public class GambleSeasonListDTO {
       leagueDto = new LeagueDTO(gambleSeason.getActualSeason().getLeague());
     }
 
-    return GambleSeasonListDTO.builder()
+    return SeasonListDTO.builder()
         .pk(gambleSeason.getPk())
         .title(gambleSeason.getTitle())
         .startedAt(gambleSeason.getStartedAt())
@@ -55,13 +53,13 @@ public class GambleSeasonListDTO {
         .build();
   }
 
-  public static GambleSeasonListDTO fromActualSeason(ActualSeason actualSeason) {
+  public static SeasonListDTO fromActualSeason(ActualSeason actualSeason) {
     LeagueDTO leagueDto = null;
     if (actualSeason.getLeague() != null) {
       leagueDto = new LeagueDTO(actualSeason.getLeague());
     }
 
-    return GambleSeasonListDTO.builder()
+    return SeasonListDTO.builder()
         .pk(actualSeason.getPk())
         .title(actualSeason.getTitle())
         .startedAt(actualSeason.getStartedAt().atStartOfDay())

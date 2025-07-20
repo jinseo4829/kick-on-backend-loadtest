@@ -1,22 +1,19 @@
 package kr.kickon.api.admin.gambleSeason.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.time.LocalDateTime;
 import java.util.List;
 import kr.kickon.api.domain.gambleSeasonRanking.dto.GetGambleSeasonRankingDTO;
 import kr.kickon.api.domain.league.dto.LeagueDTO;
 import kr.kickon.api.domain.team.dto.SeasonTeamDTO;
 import kr.kickon.api.global.common.ExampleConstants;
 import kr.kickon.api.global.common.entities.GambleSeason;
-import kr.kickon.api.global.common.enums.OperatingStatus;
-import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.SuperBuilder;
 
 @Data
 @SuperBuilder(toBuilder = true)
 @Schema(description = "승부 예측 시즌 상세 응답 DTO")
-public class GambleSeasonDetailDTO extends GambleSeasonListDTO{
+public class GambleSeasonDetailDTO extends SeasonListDTO {
 
   @Schema(description = "설명(비고)", example = ExampleConstants.etc)
   private String description;

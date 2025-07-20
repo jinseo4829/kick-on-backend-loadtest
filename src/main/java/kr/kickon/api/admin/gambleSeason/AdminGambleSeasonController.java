@@ -9,7 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import kr.kickon.api.admin.gambleSeason.dto.GambleSeasonDetailDTO;
-import kr.kickon.api.admin.gambleSeason.dto.GambleSeasonListDTO;
+import kr.kickon.api.admin.gambleSeason.dto.SeasonListDTO;
 import kr.kickon.api.admin.gambleSeason.request.CreateGambleSeasonRequest;
 import kr.kickon.api.admin.gambleSeason.request.GambleSeasonFilterRequest;
 import kr.kickon.api.admin.gambleSeason.request.UpdateGambleSeasonRequest;
@@ -47,9 +47,9 @@ public class AdminGambleSeasonController {
       @ApiResponse(responseCode = "200", description = "성공",
           content = @Content(schema = @Schema(implementation = GetGambleSeasonResponse.class))),
   })
-  public ResponseEntity<ResponseDTO<List<GambleSeasonListDTO>>> getFilteredGambleSeasons(@Valid @ModelAttribute GambleSeasonFilterRequest request) {
+  public ResponseEntity<ResponseDTO<List<SeasonListDTO>>> getFilteredGambleSeasons(@Valid @ModelAttribute GambleSeasonFilterRequest request) {
     Pageable pageable = request.toPageable();
-    Page<GambleSeasonListDTO> GambleSeasonPage = adminGambleSeasonService.getGambleSeasonListByFilter(request, pageable);
+    Page<SeasonListDTO> GambleSeasonPage = adminGambleSeasonService.getGambleSeasonListByFilter(request, pageable);
 
     return ResponseEntity.ok(
         ResponseDTO.success(
