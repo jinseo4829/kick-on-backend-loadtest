@@ -16,6 +16,8 @@ import kr.kickon.api.global.common.entities.QActualSeasonTeam;
 import kr.kickon.api.global.common.entities.Team;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.OperatingStatus;
+import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -98,16 +100,28 @@ public class ActualSeasonTeamService implements BaseService<ActualSeasonTeam> {
         return actualSeasonTeamRepository.existsByActualSeasonAndTeam_Pk(actualSeason, teamPk);
     }
 
-    public List<SeasonTeamDTO> findAllByActualSeasonPk(Long seasonPk) {
+//region 실제 시즌 팀 목록 조회
+    /**
+     * 주어진 실제 시즌의 연결된 팀 목록을 조회한다.
+     * 각 팀은 SeasonTeamDTO로 변환되어 반환된다.
+     */
+    public List<SeasonTeamDTO> findAllByActualSeason(ActualSeason actualSeason) {
         return actualSeasonTeamRepository
-            .findAllByActualSeason_PkAndStatus(seasonPk, DataStatus.ACTIVATED)
+            .findAllByActualSeason_PkAndStatus(actualSeason.getPk(), DataStatus.ACTIVATED)
             .stream()
-            .map(gst -> new SeasonTeamDTO(gst.getTeam()))
+            .map(actualSeasonTeam -> new SeasonTeamDTO(actualSeasonTeam.getTeam()))
             .toList();
     }
+//endregion
 
+//region 실제 시즌 팀 목록 수정
+    /**
+     * 실제 시즌에 연결된 팀 목록을 요청 목록에 맞게 갱신한다.
+     * - 요청에 없는 기존 팀은 DEACTIVATED 처리
+     * - 기존에 없던 팀은 새로 생성
+     */
     @Transactional
-    public void patchSeasonTeams(ActualSeason season, List<Long> teamPkList) {
+    public void updateSeasonTeams(ActualSeason season, List<Long> teamPkList) {
 
         if (teamPkList == null) return;
 
@@ -129,6 +143,9 @@ public class ActualSeasonTeamService implements BaseService<ActualSeasonTeam> {
 
         for (Long teamPk : addSet) {
             Team team = teamService.findByPk(teamPk);
+            if (team == null) {
+                throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
+            }
             ActualSeasonTeam actualSeasonTeam = ActualSeasonTeam.builder()
                 .id(UUID.randomUUID().toString())
                 .actualSeason(season)
@@ -148,9 +165,27 @@ public class ActualSeasonTeamService implements BaseService<ActualSeasonTeam> {
                 ast.setStatus(DataStatus.DEACTIVATED);
             });
     }
+//endregion
 
+//region 실제 시즌 팀 시즌 재할당
+    /**
+     * 주어진 팀의 최근 시즌 등록 정보를 주어진 ActualSeason으로 재할당한다.
+     */
     public void patchActualSeasonTeam(ActualSeason actualSeason,Long teamPk) {
         ActualSeasonTeam actualSeasonTeam = findLatestByTeam(teamPk);
         actualSeasonTeam.setActualSeason(actualSeason);
     }
+//endregion
+
+//region 실제 시즌 연결 팀 일괄 비활성화
+    /**
+     * 주어진 실제 시즌과 연결된 모든 팀(ActualSeasonTeam)을 비활성화 처리한다.
+     */
+    @Transactional
+    public void deleteActualSeasonTeams(ActualSeason actualSeason) {
+        List<ActualSeasonTeam> teamList = findByActualSeason(actualSeason.getPk(), null);
+        teamList.forEach(team -> team.setStatus(DataStatus.DEACTIVATED));
+    }
+//endregion
+
 }

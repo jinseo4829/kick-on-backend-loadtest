@@ -109,7 +109,7 @@ public class AdminActualSeasonService {
   @Transactional
   public ActualSeasonDetailDTO getActualSeasonDetail(ActualSeason actualSeason) {
     List<SeasonTeamDTO> teamList =
-        actualSeasonTeamService.findAllByActualSeasonPk(actualSeason.getPk());
+        actualSeasonTeamService.findAllByActualSeason(actualSeason);
 
     return ActualSeasonDetailDTO.fromEntity(actualSeason, teamList);
   }
@@ -151,7 +151,7 @@ public class AdminActualSeasonService {
       actualSeason.setYear(request.getYear());
     }
     // 참여 팀 목록 수정
-    actualSeasonTeamService.patchSeasonTeams(actualSeason, request.getActualSeasonTeams());
+    actualSeasonTeamService.updateSeasonTeams(actualSeason, request.getActualSeasonTeams());
     actualSeasonRepository.save(actualSeason);
 
     return getActualSeasonDetail(actualSeason);
@@ -166,6 +166,8 @@ public class AdminActualSeasonService {
   public void deleteActualSeason(ActualSeason actualSeason) {
     actualSeason.setStatus(DataStatus.DEACTIVATED);
     actualSeasonRepository.save(actualSeason);
+
+    actualSeasonTeamService.deleteActualSeasonTeams(actualSeason);
   }
   //endregion
 }
