@@ -18,7 +18,6 @@ import kr.kickon.api.domain.gambleSeasonRanking.GambleSeasonRankingService;
 import kr.kickon.api.domain.gambleSeasonRanking.dto.GetGambleSeasonRankingDTO;
 import kr.kickon.api.domain.gambleSeasonTeam.GambleSeasonTeamService;
 import kr.kickon.api.domain.league.LeagueService;
-import kr.kickon.api.domain.league.dto.LeagueDTO;
 import kr.kickon.api.domain.team.dto.SeasonTeamDTO;
 import kr.kickon.api.global.common.entities.ActualSeason;
 import kr.kickon.api.global.common.entities.GambleSeason;
@@ -175,17 +174,8 @@ public class AdminGambleSeasonService {
 
     gambleSeasonRepository.save(gambleSeason);
 
-    LeagueDTO leagueDto = new LeagueDTO(leagueEntity);
+    return getGambleSeasonDetail(gambleSeason);
 
-    return GambleSeasonDetailDTO.builder()
-        .pk(gambleSeason.getPk())
-        .league(leagueDto)
-        .title(gambleSeason.getTitle())
-        .startedAt(gambleSeason.getStartedAt())
-        .finishedAt(gambleSeason.getFinishedAt())
-        .operatingStatus(gambleSeason.getOperatingStatus())
-        .description(gambleSeason.getDescription())
-        .build();
   }
   //endregion
 
@@ -231,13 +221,7 @@ public class AdminGambleSeasonService {
     gambleSeasonTeamService.updateSeasonTeams(gambleSeason, request.getGambleSeasonTeams());
     gambleSeasonRepository.save(gambleSeason);
 
-    List<SeasonTeamDTO> teamList =
-        gambleSeasonTeamService.getgambleSeasonTeamListByGambleSeasonPk(gambleSeason.getPk());
-
-    List<GetGambleSeasonRankingDTO> rankingList =
-        gambleSeasonRankingService.getRankingDtoBySeasonPk(gambleSeason.getPk());
-
-    return GambleSeasonDetailDTO.fromEntity(gambleSeason, teamList, rankingList);
+    return getGambleSeasonDetail(gambleSeason);
   }
   //endregion
 }

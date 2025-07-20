@@ -28,24 +28,24 @@ public class GambleSeasonDetailDTO extends GambleSeasonListDTO{
   private List<GetGambleSeasonRankingDTO> gambleSeasonRanking;
 
   public static GambleSeasonDetailDTO fromEntity(
-      GambleSeason season,
+      GambleSeason gambleseason,
       List<SeasonTeamDTO> seasonTeamList,
       List<GetGambleSeasonRankingDTO> rankingList
   ) {
     LeagueDTO leagueDto = null;
-    if (season.getActualSeason() != null &&
-        season.getActualSeason().getLeague() != null) {
+    if (gambleseason.getActualSeason() != null &&
+        gambleseason.getActualSeason().getLeague() != null) {
 
-      leagueDto = new LeagueDTO(season.getActualSeason().getLeague());
+      leagueDto = new LeagueDTO(gambleseason.getActualSeason().getLeague());
     }
 
     return GambleSeasonDetailDTO.builder()
-        .pk(season.getPk())
-        .title(season.getTitle())
-        .startedAt(season.getStartedAt())
-        .finishedAt(season.getFinishedAt())
-        .operatingStatus(season.getOperatingStatus())
-        .description(season.getDescription())
+        .pk(gambleseason.getPk())
+        .title(gambleseason.getTitle())
+        .startedAt(gambleseason.getStartedAt())
+        .finishedAt(gambleseason.getFinishedAt())
+        .operatingStatus(gambleseason.getOperatingStatus())
+        .description(gambleseason.getDescription())
         .league(leagueDto)
         .gambleSeasonTeams(seasonTeamList)
         .gambleSeasonRanking(rankingList)
