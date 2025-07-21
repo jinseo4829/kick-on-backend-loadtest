@@ -34,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @RequiredArgsConstructor
 public class GambleSeasonTeamService implements BaseService<GambleSeasonTeam> {
+
     private final GambleSeasonTeamRepository gambleSeasonTeamRepository;
     private final JPAQueryFactory queryFactory;
     private final UUIDGenerator uuidGenerator;
@@ -41,30 +42,37 @@ public class GambleSeasonTeamService implements BaseService<GambleSeasonTeam> {
 
     @Override
     public GambleSeasonTeam findById(String uuid) {
-        BooleanExpression predicate = QGambleSeasonTeam.gambleSeasonTeam.id.eq(uuid).and(QGambleSeasonTeam.gambleSeasonTeam.status.eq(DataStatus.ACTIVATED));
+        BooleanExpression predicate = QGambleSeasonTeam.gambleSeasonTeam.id.eq(uuid)
+            .and(QGambleSeasonTeam.gambleSeasonTeam.status.eq(DataStatus.ACTIVATED));
         Optional<GambleSeasonTeam> gambleSeasonTeam = gambleSeasonTeamRepository.findOne(predicate);
         return gambleSeasonTeam.orElse(null);
     }
 
     @Override
     public GambleSeasonTeam findByPk(Long pk) {
-        BooleanExpression predicate = QGambleSeasonTeam.gambleSeasonTeam.pk.eq(pk).and(QGambleSeasonTeam.gambleSeasonTeam.status.eq(DataStatus.ACTIVATED));
+        BooleanExpression predicate = QGambleSeasonTeam.gambleSeasonTeam.pk.eq(pk)
+            .and(QGambleSeasonTeam.gambleSeasonTeam.status.eq(DataStatus.ACTIVATED));
         Optional<GambleSeasonTeam> gambleSeasonTeam = gambleSeasonTeamRepository.findOne(predicate);
-        if(gambleSeasonTeam.isEmpty()) throw new NotFoundException(ResponseCode.NOT_FOUND_GAMBLE_SEASON);
+        if (gambleSeasonTeam.isEmpty())
+            throw new NotFoundException(ResponseCode.NOT_FOUND_GAMBLE_SEASON);
         return gambleSeasonTeam.get();
     }
 
     public GambleSeasonTeam getRecentOperatingByTeamPk(Long pk) {
         QGambleSeasonTeam gambleSeasonTeam = QGambleSeasonTeam.gambleSeasonTeam;
-        BooleanExpression predicate = gambleSeasonTeam.team.pk.eq(pk).and(gambleSeasonTeam.status.eq(DataStatus.ACTIVATED).and(gambleSeasonTeam.gambleSeason.operatingStatus.eq(OperatingStatus.PROCEEDING)).and(gambleSeasonTeam.gambleSeason.status.eq(DataStatus.ACTIVATED)));
-        Optional<GambleSeasonTeam> gambleSeasonTeamData = gambleSeasonTeamRepository.findOne(predicate);
+        BooleanExpression predicate = gambleSeasonTeam.team.pk.eq(pk).and(
+            gambleSeasonTeam.status.eq(DataStatus.ACTIVATED)
+                .and(gambleSeasonTeam.gambleSeason.operatingStatus.eq(OperatingStatus.PROCEEDING))
+                .and(gambleSeasonTeam.gambleSeason.status.eq(DataStatus.ACTIVATED)));
+        Optional<GambleSeasonTeam> gambleSeasonTeamData = gambleSeasonTeamRepository.findOne(
+            predicate);
         return gambleSeasonTeamData.orElse(null);
     }
 
 //region GambleSeasonTeam 리스트 조회
+
     /**
-     * 주어진 GambleSeason의 PK로 GambleSeasonTeam 리스트를 조회하고,
-     * 각 팀 정보를 SeasonTeamDTO로 매핑하여 반환한다.
+     * 주어진 GambleSeason의 PK로 GambleSeasonTeam 리스트를 조회하고, 각 팀 정보를 SeasonTeamDTO로 매핑하여 반환한다.
      */
     public List<SeasonTeamDTO> getgambleSeasonTeamListByGambleSeasonPk(Long seasonPk) {
         return gambleSeasonTeamRepository
@@ -76,15 +84,16 @@ public class GambleSeasonTeamService implements BaseService<GambleSeasonTeam> {
 //endregion
 
 //region GambleSeasonTeam 수정
+
     /**
-     * 주어진 GambleSeason과 팀 PK 리스트를 기반으로 GambleSeasonTeam을 갱신한다.
-     * - 요청에 포함된 팀 중 기존에 없던 팀은 추가
-     * - 기존에 있었지만 요청에 포함되지 않은 팀은 비활성화
+     * 주어진 GambleSeason과 팀 PK 리스트를 기반으로 GambleSeasonTeam을 갱신한다. - 요청에 포함된 팀 중 기존에 없던 팀은 추가 - 기존에 있었지만
+     * 요청에 포함되지 않은 팀은 비활성화
      */
     @Transactional
     public void updateSeasonTeams(GambleSeason gambleseason, List<Long> teamPkList) {
 
-        if (teamPkList == null) return;
+        if (teamPkList == null)
+            return;
 
         // 현재 저장돼 있는 팀 PK 들
         List<GambleSeasonTeam> currentEntities =
@@ -129,12 +138,22 @@ public class GambleSeasonTeamService implements BaseService<GambleSeasonTeam> {
 //endregion
 
     //region GambleSeasonTeam 팀 시즌 재할당
+
     /**
      * 특정 팀의 최근 GambleSeasonTeam을 찾아 새로운 GambleSeason으로 재할당한다.
      */
-    public void patchGambleSeasonTeam(GambleSeason gambleSeason,Long teamPk) {
-        GambleSeasonTeam gambleSeasonTeam = getRecentOperatingByTeamPk(teamPk);
-        gambleSeasonTeam.setGambleSeason(gambleSeason);
+    public void updateGambleSeasonTeam(GambleSeason gambleSeason, Team team) {
+        GambleSeasonTeam gambleSeasonTeam = getRecentOperatingByTeamPk(team.getPk());
+        if (gambleSeasonTeam == null) {
+            gambleSeasonTeam = GambleSeasonTeam.builder()
+                .id(UUID.randomUUID().toString())
+                .gambleSeason(gambleSeason)
+                .team(team)
+                .build();
+        } else {
+            gambleSeasonTeam.setGambleSeason(gambleSeason);
+        }
+        gambleSeasonTeamRepository.save(gambleSeasonTeam);
     }
 }
 

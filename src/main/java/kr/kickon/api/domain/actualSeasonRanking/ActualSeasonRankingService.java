@@ -3,6 +3,7 @@ package kr.kickon.api.domain.actualSeasonRanking;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.util.UUID;
 import kr.kickon.api.domain.actualSeasonRanking.dto.GetActualSeasonRankingDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -69,4 +71,42 @@ public class ActualSeasonRankingService implements BaseService<ActualSeasonRanki
     public void save(ActualSeasonRanking actualSeasonRanking){
         actualSeasonRankingRepository.save(actualSeasonRanking);
     }
+
+    public ActualSeasonRanking findByTeamPk(Long teamPk) {
+        BooleanExpression predicate = QActualSeasonRanking.actualSeasonRanking.team.pk.eq(teamPk).and(QActualSeasonRanking.actualSeasonRanking.status.eq(DataStatus.ACTIVATED));
+        Optional<ActualSeasonRanking> actualSeasonRanking = actualSeasonRankingRepository.findOne(predicate);
+        return actualSeasonRanking.orElse(null);
+    }
+//region 실제 시즌 변경 시 랭킹 갱신
+    /**
+     * 기존 랭킹을 비활성화하고, 새로운 GambleSeason에 대한 랭킹 엔티티를 생성한다.
+     */
+    @Transactional
+    public void updateActualSeasonRanking(Team team, ActualSeason newSeason) {
+        // 기존 랭킹 비활성화
+        ActualSeasonRanking oldRanking = findByTeamPk(team.getPk());
+        if (oldRanking != null) {
+            oldRanking.setStatus(DataStatus.DEACTIVATED);
+            actualSeasonRankingRepository.save(oldRanking);
+        }
+
+        // 새 랭킹 생성
+        ActualSeasonRanking newRanking = ActualSeasonRanking.builder()
+            .id(UUID.randomUUID().toString())
+            .actualSeason(newSeason)
+            .team(team)
+            .rankOrder(0)
+            .gameNum(0)
+            .wins(0)
+            .draws(0)
+            .loses(0)
+            .wonScores(0)
+            .lostScores(0)
+            .points(0)
+            .status(DataStatus.ACTIVATED)
+            .build();
+
+        actualSeasonRankingRepository.save(newRanking);
+    }
+//endregion
 }

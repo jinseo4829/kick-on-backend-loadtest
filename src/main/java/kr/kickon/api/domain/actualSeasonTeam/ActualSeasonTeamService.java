@@ -170,10 +170,21 @@ public class ActualSeasonTeamService implements BaseService<ActualSeasonTeam> {
 //region 실제 시즌 팀 시즌 재할당
     /**
      * 주어진 팀의 최근 시즌 등록 정보를 주어진 ActualSeason으로 재할당한다.
+     * ActualSeasonTeam이 없는 경우, 새로 생성
      */
-    public void patchActualSeasonTeam(ActualSeason actualSeason,Long teamPk) {
-        ActualSeasonTeam actualSeasonTeam = findLatestByTeam(teamPk);
-        actualSeasonTeam.setActualSeason(actualSeason);
+    @Transactional
+    public void updateActualSeasonTeam(ActualSeason actualSeason,Team team) {
+        ActualSeasonTeam actualSeasonTeam = findLatestByTeam(team.getPk());
+        if (actualSeasonTeam == null) {
+            actualSeasonTeam = ActualSeasonTeam.builder()
+                .id(UUID.randomUUID().toString())
+                .actualSeason(actualSeason)
+                .team(team)
+                .build();
+        } else {
+            actualSeasonTeam.setActualSeason(actualSeason);
+        }
+        actualSeasonTeamRepository.save(actualSeasonTeam);
     }
 //endregion
 
@@ -184,8 +195,9 @@ public class ActualSeasonTeamService implements BaseService<ActualSeasonTeam> {
     @Transactional
     public void deleteActualSeasonTeams(ActualSeason actualSeason) {
         List<ActualSeasonTeam> teamList = findByActualSeason(actualSeason.getPk(), null);
-        teamList.forEach(team -> team.setStatus(DataStatus.DEACTIVATED));
-    }
+        if (teamList != null) {
+            teamList.forEach(team -> team.setStatus(DataStatus.DEACTIVATED));
+        }    }
 //endregion
 
 }
