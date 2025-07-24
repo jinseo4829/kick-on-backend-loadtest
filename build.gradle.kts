@@ -55,7 +55,7 @@ dependencies {
 	annotationProcessor("org.projectlombok:lombok")
 
 	// MySQL 연결 (JDBC 드라이버)
-	runtimeOnly("com.mysql:mysql-connector-j")
+	implementation("com.mysql:mysql-connector-j")
 
 	// Spring Boot 설정 프로세서 (자동 완성 지원)
 	annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")

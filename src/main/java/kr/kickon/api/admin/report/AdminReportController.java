@@ -33,7 +33,7 @@ public class AdminReportController {
     private final AdminReportService adminReportService;
 
     @Operation(summary = "신고 통합 리스트 조회", description = "게시글/뉴스 통합 신고 리스트를 필터 및 정렬 조건에 따라 조회," +
-            "\n type은 \"BOARD\", \"NEWS\", \"ALL\" 중 하나" +
+            "\n type은 \"BOARD\", \"NEWS\" 중 하나" +
             "\n sort는 \"REPORT_COUNT\", \"CREATED_AT\" 중 하나")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공",
