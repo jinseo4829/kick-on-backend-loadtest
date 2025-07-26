@@ -164,4 +164,31 @@ public class GambleSeasonRankingService implements BaseService<GambleSeasonRanki
         return gambleSeasonRanking.orElse(null);
     }
 
+//region 승부 예측 시즌 변경 시 랭킹 갱신
+    /**
+     * 기존 랭킹을 비활성화하고, 새로운 GambleSeason에 대한 랭킹 엔티티를 생성한다.
+     */
+    @Transactional
+    public void updateGambleSeasonRanking(Team team, GambleSeason newSeason) {
+        // 기존 랭킹 비활성화
+        GambleSeasonRanking oldRanking = findByTeamPk(team.getPk());
+        if (oldRanking != null) {
+            oldRanking.setStatus(DataStatus.DEACTIVATED);
+            gambleSeasonRankingRepository.save(oldRanking);
+        }
+
+        // 새 랭킹 생성
+        GambleSeasonRanking newRanking = GambleSeasonRanking.builder()
+            .id(UUID.randomUUID().toString())
+            .gambleSeason(newSeason)
+            .team(team)
+            .rankOrder(0)
+            .gameNum(0)
+            .points(0)
+            .status(DataStatus.ACTIVATED)
+            .build();
+
+        gambleSeasonRankingRepository.save(newRanking);
+    }
+//endregion
 }

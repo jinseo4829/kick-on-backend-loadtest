@@ -10,11 +10,10 @@ import jakarta.validation.Valid;
 import java.util.List;
 import kr.kickon.api.admin.team.dto.TeamDetailDTO;
 import kr.kickon.api.admin.team.dto.TeamListDTO;
-import kr.kickon.api.admin.team.request.PatchTeamRequestDTO;
+import kr.kickon.api.admin.team.request.UpdateTeamRequest;
 import kr.kickon.api.admin.team.request.TeamFilterRequest;
 import kr.kickon.api.admin.team.response.GetTeamDetailResponse;
 import kr.kickon.api.admin.team.response.GetTeamsResponse;
-import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.Team;
@@ -49,7 +48,7 @@ public class AdminTeamController {
   })
   public ResponseEntity<ResponseDTO<List<TeamListDTO>>> getFilteredTeams(@Valid @ModelAttribute TeamFilterRequest request) {
     Pageable pageable = request.toPageable();
-    Page<TeamListDTO> TeamPage = adminTeamService.findTeamByFilter(request, pageable);
+    Page<TeamListDTO> TeamPage = adminTeamService.getTeamListByFilter(request, pageable);
 
     return ResponseEntity.ok(
         ResponseDTO.success(
@@ -84,10 +83,10 @@ public class AdminTeamController {
           content = @Content(schema = @Schema(implementation = GetTeamDetailResponse.class))),
   })
   public ResponseEntity<ResponseDTO<TeamDetailDTO>> patchTeam(@PathVariable Long pk,
-      @RequestBody PatchTeamRequestDTO request) {
+      @RequestBody UpdateTeamRequest request) {
     Team team = adminTeamService.findByPk(pk);
     if (team == null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
-    TeamDetailDTO responseDto = adminTeamService.patchTeam(team, request);
+    TeamDetailDTO responseDto = adminTeamService.updateTeam(team, request);
     return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, responseDto));
   }
 }

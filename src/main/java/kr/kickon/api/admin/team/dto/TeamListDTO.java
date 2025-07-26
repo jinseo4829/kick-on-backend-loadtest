@@ -12,7 +12,7 @@ import lombok.experimental.SuperBuilder;
 @Schema(description = "팀 리스트 응답 DTO")
 public class TeamListDTO {
 
-  @Schema(description = "팀 고유 PK", example = "1647")
+  @Schema(description = "팀 고유 PK", example = ExampleConstants.teamPk)
   private Long pk;
 
   @Schema(description = "리그")
@@ -44,10 +44,10 @@ public class TeamListDTO {
   @SuperBuilder
   @Schema(description = "시즌 정보 DTO")
   public static class SeasonInfo {
-    @Schema(description = "시즌 PK", example = "1")
+    @Schema(description = "시즌 PK", example = "21")
     private Long pk;
 
-    @Schema(description = "시즌 제목", example = "24/25 K 리그")
+    @Schema(description = "시즌 제목", example = ExampleConstants.seasonTitle)
     private String title;
 
     @Schema(description = "순위", example = "1")
