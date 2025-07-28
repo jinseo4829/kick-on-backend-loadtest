@@ -30,5 +30,7 @@ public class ExampleConstants {
     public static final String teamPk = "1647";
     public static final String userPk = "1";
     public static final String leaguePk = "12";
+    public static final String s3Key = "화면_기록_20250528_오후_11727_20250601002627.mov";
+    public static final String UsedInType = "BOARD";
 
 }
