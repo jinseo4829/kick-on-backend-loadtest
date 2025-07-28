@@ -61,7 +61,14 @@ public class AdminPartnersService {
   }
   //endregion
 
-//region 파트너스 리스트 조회 (필터 이용)
+//region 파트너스 리스트 조회 (필터 optional)
+  /**
+   * 필터 조건에 따라 파트너스 리스트를 조회한다.
+   *
+   * @param request 필터 조건 (이름, 닉네임, 팀 PK, 리그 PK 등)
+   * @param pageable 페이지네이션 정보
+   * @return 필터링된 파트너스 리스트 페이징 결과
+   */
   public Page<PartnersListDTO> getPartnersListByFilter(PartnersFilterRequest request,
       Pageable pageable) {
     QPartners partners = QPartners.partners;
@@ -140,6 +147,12 @@ public class AdminPartnersService {
   }//endregion
 
 //region 파트너스 상세 정보 조회
+  /**
+   * 파트너스 상세 정보를 조회한다.
+   *
+   * @param partners 상세 정보를 조회할 파트너스 엔티티
+   * @return 파트너스 상세 정보 DTO
+   */
   public PartnersDetailDTO getPartnersDetail(Partners partners) {
 
     User userEntity = partners.getUser();
@@ -162,6 +175,12 @@ public class AdminPartnersService {
 //endregion
 
 //region 파트너스 생성
+  /**
+   * 주어진 요청 정보를 기반으로 파트너스를 생성한다.
+   *
+   * @param request 생성 요청 DTO
+   * @return 생성된 파트너스의 상세 정보 DTO
+   */
   @Transactional
   public PartnersDetailDTO createPartners(CreatePartnersRequest request) {
 
@@ -198,6 +217,11 @@ public class AdminPartnersService {
 //endregion
 
 //region 파트너스 삭제
+  /**
+   * 주어진 파트너스를 비활성화(soft delete) 처리한다.
+   *
+   * @param partners 삭제할 파트너스 엔티티
+   */
   @Transactional
   public void deletePartners(Partners partners) {
     partners.setStatus(DataStatus.DEACTIVATED);
@@ -206,6 +230,13 @@ public class AdminPartnersService {
 //endregion
 
 //region 파트너스 정보 수정
+  /**
+   * 주어진 파트너스에 대해 수정 요청 정보를 반영하여 업데이트한다.
+   *
+   * @param partners 수정 대상 파트너스 엔티티
+   * @param request 수정 요청 DTO
+   * @return 수정된 파트너스의 상세 정보 DTO
+   */
   @Transactional
   public PartnersDetailDTO updatePartners(Partners partners, UpdatePartnersRequest request) {
 

@@ -1,6 +1,7 @@
 package kr.kickon.api.admin.team.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import kr.kickon.api.global.common.ExampleConstants;
 import lombok.Data;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -9,14 +10,11 @@ import org.springframework.data.domain.Pageable;
 @Schema(description = "팀 리스트 조회를 위한 필터링 요청 객체")
 public class TeamFilterRequest {
 
-  @Schema(description = "팀 이름", example = "전남")
+  @Schema(description = "팀 이름", example = ExampleConstants.teamName)
   private String name;
 
   @Schema(description = "실제 시즌 PK", example = "20")
   private Long actualSeasonPk;
-
-  @Schema(description = "연도", example = "2024")
-  private Integer year;
 
   @Schema(description = "페이지 번호 (1부터 시작)", example = "1")
   private Integer page = 1;

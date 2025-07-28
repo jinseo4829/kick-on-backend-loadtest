@@ -10,9 +10,9 @@ import jakarta.validation.Valid;
 import java.util.List;
 import kr.kickon.api.admin.actualSeason.dto.ActualSeasonDetailDTO;
 import kr.kickon.api.admin.actualSeason.request.ActualSeasonFilterRequest;
-import kr.kickon.api.admin.actualSeason.request.PatchActualSeasonRequestDTO;
+import kr.kickon.api.admin.actualSeason.request.UpdateActualSeasonRequest;
 import kr.kickon.api.admin.actualSeason.response.GetActualSeasonDetailResponse;
-import kr.kickon.api.admin.gambleSeason.dto.GambleSeasonListDTO;
+import kr.kickon.api.admin.gambleSeason.dto.SeasonListDTO;
 import kr.kickon.api.admin.gambleSeason.response.GetGambleSeasonResponse;
 import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
@@ -46,9 +46,9 @@ public class AdminActualSeasonController {
       @ApiResponse(responseCode = "200", description = "성공",
           content = @Content(schema = @Schema(implementation = GetGambleSeasonResponse.class))),
   })
-  public ResponseEntity<ResponseDTO<List<GambleSeasonListDTO>>> getFilteredActualSeasons(@Valid @ModelAttribute ActualSeasonFilterRequest request) {
+  public ResponseEntity<ResponseDTO<List<SeasonListDTO>>> getFilteredActualSeasons(@Valid @ModelAttribute ActualSeasonFilterRequest request) {
     Pageable pageable = request.toPageable();
-    Page<GambleSeasonListDTO> ActualSeasonPage = adminActualSeasonService.findActualSeasonByFilter(request, pageable);
+    Page<SeasonListDTO> ActualSeasonPage = adminActualSeasonService.getActualSeasonListByFilter(request, pageable);
 
     return ResponseEntity.ok(
         ResponseDTO.success(
@@ -84,10 +84,10 @@ public class AdminActualSeasonController {
           content = @Content(schema = @Schema(implementation = GetActualSeasonDetailResponse.class))),
   })
   public ResponseEntity<ResponseDTO<ActualSeasonDetailDTO>> patchActualSeason(@PathVariable Long pk,
-      @RequestBody PatchActualSeasonRequestDTO request) {
+      @RequestBody UpdateActualSeasonRequest request) {
     ActualSeason actualSeason = adminActualSeasonService.findByPk(pk);
     if (actualSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
-    ActualSeasonDetailDTO responseDto = adminActualSeasonService.patchActualSeason(actualSeason, request);
+    ActualSeasonDetailDTO responseDto = adminActualSeasonService.updateActualSeason(actualSeason, request);
     return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, responseDto));
   }
 

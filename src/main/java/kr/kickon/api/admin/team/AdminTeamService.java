@@ -2,13 +2,14 @@ package kr.kickon.api.admin.team;
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
-import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
 import java.util.Optional;
 import kr.kickon.api.admin.team.dto.TeamDetailDTO;
 import kr.kickon.api.admin.team.dto.TeamListDTO;
-import kr.kickon.api.admin.team.request.PatchTeamRequestDTO;
+import kr.kickon.api.admin.team.request.UpdateTeamRequest;
 import kr.kickon.api.admin.team.request.TeamFilterRequest;
 import kr.kickon.api.domain.actualSeason.ActualSeasonService;
 import kr.kickon.api.domain.actualSeasonRanking.ActualSeasonRankingService;
@@ -27,11 +28,13 @@ import kr.kickon.api.global.common.entities.GambleSeasonRanking;
 import kr.kickon.api.global.common.entities.GambleSeasonTeam;
 import kr.kickon.api.global.common.entities.League;
 import kr.kickon.api.global.common.entities.QActualSeason;
+import kr.kickon.api.global.common.entities.QActualSeasonRanking;
 import kr.kickon.api.global.common.entities.QActualSeasonTeam;
 import kr.kickon.api.global.common.entities.QLeague;
 import kr.kickon.api.global.common.entities.QTeam;
 import kr.kickon.api.global.common.entities.Team;
 import kr.kickon.api.global.common.enums.DataStatus;
+import kr.kickon.api.global.common.enums.OperatingStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -57,25 +60,29 @@ public class AdminTeamService {
   private final GambleSeasonTeamService gambleSeasonTeamService;
   private final UserFavoriteTeamService userFavoriteTeamService;
 
+  //region 팀 단건 조회
+  /**
+   * pk로 team 단건 조회
+   */
   public Team findByPk(Long pk) {
-    BooleanExpression predicate = QTeam.team.pk.eq(pk).and(QTeam.team.status.eq(DataStatus.ACTIVATED));
-    Optional<Team> team = teamRepository.findOne(predicate);
-    return team.orElse(null);
+    return teamRepository.findByPkAndStatus(pk, DataStatus.ACTIVATED).orElse(null);
   }
+  //endregion
 
+//region 팀 리스트 조회 (필터 optional)
+  /**
+   * 필터 조건(팀 이름, 시즌 PK)에 따른 팀 리스트 조회 (페이징 포함)
+   */
   @Transactional
-  public Page<TeamListDTO> findTeamByFilter(TeamFilterRequest request,
+  public Page<TeamListDTO> getTeamListByFilter(TeamFilterRequest request,
       Pageable pageable) {
     QActualSeason actualSeason = QActualSeason.actualSeason;
     QLeague league = QLeague.league;
     QTeam team = QTeam.team;
-    QActualSeasonTeam ast = QActualSeasonTeam.actualSeasonTeam;
+    QActualSeasonTeam actualSeasonTeam = QActualSeasonTeam.actualSeasonTeam;
 
     BooleanBuilder builder = new BooleanBuilder()
-        .and(team.status.eq(DataStatus.ACTIVATED))
-        .and(actualSeason.status.eq(DataStatus.ACTIVATED))
-        .and(league.status.eq(DataStatus.ACTIVATED))
-        .and(ast.status.eq(DataStatus.ACTIVATED));
+        .and(team.status.eq(DataStatus.ACTIVATED));
 
     // 팀 이름(한글‧영어)
     if (request.getName() != null && !request.getName().isBlank()) {
@@ -90,130 +97,138 @@ public class AdminTeamService {
       builder.and(actualSeason.pk.eq(request.getActualSeasonPk()));
     }
 
-    // 연도
-    if (request.getYear() != null) {
-      builder.and(actualSeason.year.eq(request.getYear()));
-    }
-
     // total count
     long total = Optional.ofNullable(
         queryFactory
             .select(team.countDistinct())
             .from(team)
-            .join(ast).on(ast.team.eq(team))
-            .join(ast.actualSeason, actualSeason)
-            .join(actualSeason.league, league)
+            .leftJoin(actualSeasonTeam).on(actualSeasonTeam.team.eq(team),
+                actualSeasonTeam.status.eq(DataStatus.ACTIVATED)
+            )
+            .leftJoin(actualSeasonTeam.actualSeason, actualSeason)
             .where(builder)
             .fetchOne()
     ).orElse(0L);
 
     // content
     List<Tuple> content = queryFactory
-        .select(team, league)
+        .selectDistinct(team, league)
         .from(team)
-        .join(ast).on(ast.team.eq(team))
-        .join(ast.actualSeason, actualSeason)
-        .join(actualSeason.league, league)
+        .leftJoin(actualSeasonTeam).on(actualSeasonTeam.team.eq(team),
+            actualSeasonTeam.status.eq(DataStatus.ACTIVATED)
+        )
+        .leftJoin(actualSeasonTeam.actualSeason, actualSeason)
+        .leftJoin(actualSeason.league, league).on(league.status.eq(DataStatus.ACTIVATED))
         .where(builder)
-        .orderBy(actualSeason.startedAt.desc())
         .offset(pageable.getOffset())
         .limit(pageable.getPageSize())
         .fetch();
 
     List<TeamListDTO> dtos = (List<TeamListDTO>) content.stream()
         .map(t -> {
-          Team tm = t.get(team);
-          League lg = t.get(league);
-          ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService
-              .findLatestByTeam(tm.getPk());
-
-          Integer actualRankOrder = null;
-          ActualSeasonRanking ar =
-              actualSeasonRankingService.findByActualSeasonAndTeam(actualSeasonTeam.getActualSeason()
-                  .getPk(), actualSeasonTeam.getTeam().getPk());
-          if (ar != null) actualRankOrder = ar.getRankOrder();
-
-          TeamListDTO.SeasonInfo actualSeasonInfo = null;
-          if (actualSeasonTeam != null && actualSeasonTeam.getActualSeason() != null) {
-            actualSeasonInfo = TeamListDTO.SeasonInfo.builder()
-                .pk(actualSeasonTeam.getActualSeason().getPk())
-                .title(actualSeasonTeam.getActualSeason().getTitle())
-                .rankOrder(actualRankOrder)
-                .build();
+          Team teamEntity = t.get(team);
+          League leagueEntity = t.get(league);
+          ActualSeasonTeam actualSeasonTeamEntity = actualSeasonTeamService
+              .findLatestByTeam(teamEntity.getPk());
+          ActualSeason actualSeasonEntity = null;
+          if (actualSeasonTeamEntity != null) {
+            actualSeasonEntity = actualSeasonTeamEntity.getActualSeason();
           }
+          Integer rankOrder = null;
 
-          return TeamListDTO.fromEntity(tm)
+              if (actualSeasonEntity != null) {
+                ActualSeasonRanking seasonRanking =
+                    actualSeasonRankingService.findByActualSeasonAndTeam(
+                        actualSeasonEntity.getPk(),
+                        teamEntity.getPk()
+                    );
+                if (seasonRanking != null)
+                  rankOrder = seasonRanking.getRankOrder();
+              }
+          TeamListDTO.SeasonInfo seasonInfo = (actualSeasonEntity != null)
+              ? TeamListDTO.SeasonInfo.builder()
+                .pk(actualSeasonEntity.getPk())
+                .title(actualSeasonEntity.getTitle())
+                .rankOrder(rankOrder)
+                .build()
+              : null;
+
+          return TeamListDTO.fromEntity(teamEntity)
               .toBuilder()
-              .league(new LeagueDTO(lg))
-              .actualSeason(actualSeasonInfo)
+              .league(leagueEntity != null ? new LeagueDTO(leagueEntity) : null)
+              .actualSeason(seasonInfo)
               .build();
         })
         .toList();
 
     return new PageImpl<>(dtos, pageable, total);
   }
+//endregion
 
+//region 팀 상세 조회
+  /**
+   * 팀 상세 정보 조회
+   */
   @Transactional
   public TeamDetailDTO getTeamDetail(Team team) {
 
-    TeamDetailDTO.SeasonInfo actualSeasonInfo = null;
-    TeamDetailDTO.SeasonInfo gambleSeasonInfo = null;
-    LeagueDTO leagueDto = null;
+    TeamListDTO.SeasonInfo actualSeasonInfo = null;
+    TeamListDTO.SeasonInfo gambleSeasonInfo = null;
 
-    ActualSeasonTeam ast = actualSeasonTeamService.findLatestByTeam(team.getPk());
-    if (ast != null && ast.getActualSeason() != null) {
-      ActualSeason actualSeason = ast.getActualSeason();
-
-      League league = actualSeason.getLeague();
-      if (league != null) {
-        leagueDto = new LeagueDTO(league);
-      }
+    ActualSeasonTeam actualSeasonTeamEntity = actualSeasonTeamService.findLatestByTeam(team.getPk());
+    if (actualSeasonTeamEntity != null && actualSeasonTeamEntity.getActualSeason() != null) {
+      ActualSeason actualSeasonEntity = actualSeasonTeamEntity.getActualSeason();
 
       Integer actualRankOrder = null;
-      ActualSeasonRanking ar =
-          actualSeasonRankingService.findByActualSeasonAndTeam(actualSeason.getPk(), team.getPk());
-      if (ar != null) actualRankOrder = ar.getRankOrder();
+      ActualSeasonRanking actualSeasonRankingEntity =
+          actualSeasonRankingService.findByActualSeasonAndTeam(actualSeasonEntity.getPk(), team.getPk());
+      if (actualSeasonRankingEntity != null) actualRankOrder = actualSeasonRankingEntity.getRankOrder();
 
-    actualSeasonInfo = TeamDetailDTO.SeasonInfo.builder()
-        .pk(actualSeason.getPk())
-        .title(actualSeason.getTitle())
+    actualSeasonInfo = TeamListDTO.SeasonInfo.builder()
+        .pk(actualSeasonEntity.getPk())
+        .title(actualSeasonEntity.getTitle())
         .rankOrder(actualRankOrder)
         .build();
   }
 
     // GambleSeasonTeam 기반 정보
 
-    if (leagueDto != null) {
-      GambleSeasonTeam gst =
-          gambleSeasonTeamService.findRecentOperatingByTeamPk(team.getPk());
-      if (gst != null && gst.getGambleSeason() != null) {
-        GambleSeason gs = gst.getGambleSeason();
-        Integer gambleRankOrder = null;
-        GambleSeasonRanking gr = gambleSeasonRankingService.findByGambleSeasonAndTeam(gs.getPk(), team.getPk());
-        if (gr != null)
-          gambleRankOrder = gr.getRankOrder();
+      GambleSeasonTeam gambleSeasonTeamEntity =
+          gambleSeasonTeamService.getRecentOperatingByTeamPk(team.getPk());
+      if (gambleSeasonTeamEntity != null && gambleSeasonTeamEntity.getGambleSeason() != null) {
+        GambleSeason gambleSeasonEntity = gambleSeasonTeamEntity.getGambleSeason();
+        Integer gambleRankOrderEntity = null;
+        GambleSeasonRanking gambleSeasonRankingEntity = gambleSeasonRankingService.findByGambleSeasonAndTeam(gambleSeasonEntity.getPk(), team.getPk());
+        if (gambleSeasonRankingEntity != null)
+          gambleRankOrderEntity = gambleSeasonRankingEntity.getRankOrder();
 
-        gambleSeasonInfo = TeamDetailDTO.SeasonInfo.builder()
-            .pk(gs.getPk())
-            .title(gs.getTitle())
-            .rankOrder(gambleRankOrder)
+        gambleSeasonInfo = TeamListDTO.SeasonInfo.builder()
+            .pk(gambleSeasonEntity.getPk())
+            .title(gambleSeasonEntity.getTitle())
+            .rankOrder(gambleRankOrderEntity)
             .build();
       }
-    }
-    Integer fanCnt = userFavoriteTeamService.countFansByTeamPk(team.getPk());
+
+    Integer fanCount = userFavoriteTeamService.countFansByTeamPk(team.getPk());
 
     return TeamDetailDTO.fromEntity(team)
         .toBuilder()
-        .league(leagueDto)
         .actualSeason(actualSeasonInfo)
         .gambleSeason(gambleSeasonInfo)
-        .fanCount(fanCnt != null ? fanCnt : 0)
+        .fanCount(fanCount != null ? fanCount : 0)
         .build();
   }
+//endregion
 
+//region 팀 정보 수정
+  /**
+   * 팀 정보 수정
+   * - 이름(한글, 영어), 시즌 연결, 로고 URL 등 수정
+   * - 연관된 실제 시즌 또는 승부 예측 시즌도 함께 재할당
+   */
   @Transactional
-  public TeamDetailDTO patchTeam(
-      Team team, PatchTeamRequestDTO request) {
+  public TeamDetailDTO updateTeam(
+      Team team, UpdateTeamRequest request) {
       if (request.getNameKr() != null) {
         team.setNameKr(request.getNameKr());
       }
@@ -221,16 +236,18 @@ public class AdminTeamService {
         team.setNameEn(request.getNameEn());
       }
       if (request.getActualSeasonPk() != null) {
-        ActualSeason actualSeason = actualSeasonService.findByPk(request.getActualSeasonPk());
-        if (actualSeason == null)
+        ActualSeason actualSeasonEntity = actualSeasonService.findByPk(request.getActualSeasonPk());
+        if (actualSeasonEntity == null)
           throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
-        actualSeasonTeamService.patchActualSeasonTeam(actualSeason, team.getPk());
+        actualSeasonTeamService.updateActualSeasonTeam(actualSeasonEntity, team);
+        actualSeasonRankingService.updateActualSeasonRanking(team, actualSeasonEntity);
       }
       if (request.getGambleSeasonPk() != null) {
-        GambleSeason gambleSeason = gambleSeasonService.findByPk(request.getGambleSeasonPk());
-        if (gambleSeason == null)
+        GambleSeason gambleSeasonEntity = gambleSeasonService.findByPk(request.getGambleSeasonPk());
+        if (gambleSeasonEntity == null)
           throw new NotFoundException(ResponseCode.NOT_FOUND_GAMBLE_SEASON);
-        gambleSeasonTeamService.patchGambleSeasonTeam(gambleSeason, team.getPk());
+        gambleSeasonTeamService.updateGambleSeasonTeam(gambleSeasonEntity, team);
+        gambleSeasonRankingService.updateGambleSeasonRanking(team, gambleSeasonEntity);
       }
       if (request.getLogoUrl() != null) {
         team.setLogoUrl(request.getLogoUrl());
@@ -241,4 +258,5 @@ public class AdminTeamService {
 
       return getTeamDetail(updatedTeam);
   }
+//endregion
 }

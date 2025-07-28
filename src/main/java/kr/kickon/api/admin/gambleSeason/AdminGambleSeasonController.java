@@ -9,10 +9,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import kr.kickon.api.admin.gambleSeason.dto.GambleSeasonDetailDTO;
-import kr.kickon.api.admin.gambleSeason.dto.GambleSeasonListDTO;
-import kr.kickon.api.admin.gambleSeason.request.CreateGambleSeasonRequestDTO;
+import kr.kickon.api.admin.gambleSeason.dto.SeasonListDTO;
+import kr.kickon.api.admin.gambleSeason.request.CreateGambleSeasonRequest;
 import kr.kickon.api.admin.gambleSeason.request.GambleSeasonFilterRequest;
-import kr.kickon.api.admin.gambleSeason.request.PatchGambleSeasonRequestDTO;
+import kr.kickon.api.admin.gambleSeason.request.UpdateGambleSeasonRequest;
 import kr.kickon.api.admin.gambleSeason.response.GetGambleSeasonDetailResponse;
 import kr.kickon.api.admin.gambleSeason.response.GetGambleSeasonResponse;
 import kr.kickon.api.global.common.PagedMetaDTO;
@@ -47,9 +47,9 @@ public class AdminGambleSeasonController {
       @ApiResponse(responseCode = "200", description = "성공",
           content = @Content(schema = @Schema(implementation = GetGambleSeasonResponse.class))),
   })
-  public ResponseEntity<ResponseDTO<List<GambleSeasonListDTO>>> getFilteredGambleSeasons(@Valid @ModelAttribute GambleSeasonFilterRequest request) {
+  public ResponseEntity<ResponseDTO<List<SeasonListDTO>>> getFilteredGambleSeasons(@Valid @ModelAttribute GambleSeasonFilterRequest request) {
     Pageable pageable = request.toPageable();
-    Page<GambleSeasonListDTO> GambleSeasonPage = adminGambleSeasonService.findGambleSeasonByFilter(request, pageable);
+    Page<SeasonListDTO> GambleSeasonPage = adminGambleSeasonService.getGambleSeasonListByFilter(request, pageable);
 
     return ResponseEntity.ok(
         ResponseDTO.success(
@@ -84,7 +84,7 @@ public class AdminGambleSeasonController {
       @ApiResponse(responseCode = "200", description = "성공",
           content = @Content(schema = @Schema(implementation = GetGambleSeasonDetailResponse.class))),
   })
-  public ResponseEntity<ResponseDTO<GambleSeasonDetailDTO>> createGambleSeason(@RequestBody CreateGambleSeasonRequestDTO request) {
+  public ResponseEntity<ResponseDTO<GambleSeasonDetailDTO>> createGambleSeason(@RequestBody CreateGambleSeasonRequest request) {
     GambleSeasonDetailDTO responseDto = adminGambleSeasonService.createGambleSeason(request);
     return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, responseDto));
   }
@@ -96,10 +96,10 @@ public class AdminGambleSeasonController {
           content = @Content(schema = @Schema(implementation = GetGambleSeasonDetailResponse.class))),
   })
   public ResponseEntity<ResponseDTO<GambleSeasonDetailDTO>> patchGambleSeason(@PathVariable Long pk,
-      @RequestBody PatchGambleSeasonRequestDTO request) {
+      @RequestBody UpdateGambleSeasonRequest request) {
     GambleSeason gambleSeason = adminGambleSeasonService.findByPk(pk);
     if (gambleSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_GAMBLE_SEASON);
-    GambleSeasonDetailDTO responseDto = adminGambleSeasonService.patchGambleSeason(gambleSeason, request);
+    GambleSeasonDetailDTO responseDto = adminGambleSeasonService.updateGambleSeason(gambleSeason, request);
     return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, responseDto));
   }
 }
