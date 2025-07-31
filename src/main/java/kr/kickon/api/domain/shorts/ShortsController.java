@@ -8,16 +8,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
-import kr.kickon.api.admin.team.request.TeamFilterRequest;
-import kr.kickon.api.admin.team.response.GetTeamsResponse;
 import kr.kickon.api.domain.shorts.dto.ShortsDTO;
-import kr.kickon.api.domain.shorts.dto.ShortsListDTO;
 import kr.kickon.api.domain.shorts.request.GetShortsRequest;
 import kr.kickon.api.domain.shorts.response.GetShortsResponse;
 import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.enums.ResponseCode;
-import kr.kickon.api.global.common.enums.ShortsSortType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -26,7 +22,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
