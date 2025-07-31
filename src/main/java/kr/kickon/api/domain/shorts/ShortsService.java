@@ -237,6 +237,10 @@ public class ShortsService {
   }
   //endregion
 
+  // region S3Key Prefix 제거
+  /**
+   * ShortsDTO 리스트에서 각 DTO의 s3Key에 포함된 S3 경로 제거
+   */
   private List<ShortsDTO> trimS3KeyPrefix(List<ShortsDTO> list) {
     return list.stream()
         .peek(dto -> {
@@ -252,5 +256,6 @@ public class ShortsService {
         })
         .collect(Collectors.toList());
   }
+  //endregion
 
 }
