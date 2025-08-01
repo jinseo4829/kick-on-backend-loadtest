@@ -79,8 +79,8 @@ public class NewsKickService implements BaseService<NewsKick> {
      * @param newsPk 뉴스PK
      * @return Long 킥 수
      */
-    public Long countByNewsPk(Long newsPk) {
-        return newsKickRepository.countByNews_Pk(newsPk);
+    public Long countKicksByNewsPk(Long newsPk) {
+        return newsKickRepository.countByNews_PkAndStatus(newsPk, DataStatus.ACTIVATED);
     }
     // endregion
 
@@ -91,7 +91,7 @@ public class NewsKickService implements BaseService<NewsKick> {
      * @param newsPk 뉴스PK
      * @return Long 48시간 이내 킥 수
      */
-    public long countByNewsPkWithin48Hours(Long newsPk) {
+    public long countKicksByNewsPkWithin48Hours(Long newsPk) {
         LocalDateTime cutoff = LocalDateTime.now().minusHours(48);
         return newsKickRepository.countByNews_PkAndCreatedAtAfterAndStatus(newsPk, cutoff, DataStatus.ACTIVATED);
     }

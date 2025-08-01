@@ -271,4 +271,16 @@ public class BoardReplyService implements BaseService<BoardReply> {
         return saved;
     }
     // endregion
+
+    // region 게시글 댓글 수 반환
+    /**
+     * Board PK로 댓글 수 계산
+     *
+     * @param boardPk 게시글PK
+     * @return Long 댓글 수
+     */
+    public Long countRepliesByBoardPk(Long boardPk) {
+        return boardReplyRepository.countByBoard_PkAndStatus(boardPk, DataStatus.ACTIVATED);
+    }
+    // endregion
 }

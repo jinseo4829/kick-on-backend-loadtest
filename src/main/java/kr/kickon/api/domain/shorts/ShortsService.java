@@ -12,11 +12,14 @@ import java.util.stream.Collectors;
 import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.board.BoardService;
 import kr.kickon.api.domain.boardKick.BoardKickService;
+import kr.kickon.api.domain.boardReply.BoardReplyService;
 import kr.kickon.api.domain.boardViewHistory.BoardViewHistoryService;
 import kr.kickon.api.domain.news.NewsService;
 import kr.kickon.api.domain.newsKick.NewsKickService;
+import kr.kickon.api.domain.newsReply.NewsReplyService;
 import kr.kickon.api.domain.newsViewHistory.NewsViewHistoryService;
 import kr.kickon.api.domain.shorts.dto.ShortsDTO;
+import kr.kickon.api.domain.shorts.dto.ShortsDetailDTO;
 import kr.kickon.api.domain.shorts.request.GetShortsRequest;
 import kr.kickon.api.global.common.entities.AwsFileReference;
 import kr.kickon.api.global.common.entities.Board;
@@ -28,6 +31,7 @@ import kr.kickon.api.global.common.entities.QBoardViewHistory;
 import kr.kickon.api.global.common.entities.QNews;
 import kr.kickon.api.global.common.entities.QNewsKick;
 import kr.kickon.api.global.common.entities.QNewsViewHistory;
+import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.enums.UsedInType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +39,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -49,14 +54,15 @@ public class ShortsService {
   private final BoardService boardService;
   private final NewsService newsService;
   private final JPAQueryFactory queryFactory;
+  private final BoardReplyService boardReplyService;
+  private final NewsReplyService newsReplyService;
 
-  // region 고정 쇼츠 리스트 조회
+  // region 배너 쇼츠 리스트 조회
   /**
-   * 고정된 Shorts 영상 리스트를 조회합니다.
+   * 배너 Shorts 영상 리스트를 조회합니다.
    * - AwsFileReference 엔티티 중 동영상 파일(MP4, MOV, AVI, MKV)만 필터링
-   * - 게시글/뉴스 타입에 따라 각각의 48시간 기준 조회수를 가져옵니다.
-   * - 조회수 기준으로 내림차순 정렬 후 상위 4개만 반환합니다.
-   * - 조회수가 같은 경우 킥 수 기준
+   * - 1) 조회수 2) 킥 수 기준으로 내림차순 정렬 후 상위 4개만 반환합니다.
+   * * @return ShortsDTO 리스트
    */
   public List<ShortsDTO> getFixedShorts() {
     List<AwsFileReference> allVideos = awsFileReferenceService.findAll()
@@ -73,23 +79,24 @@ public class ShortsService {
           Long totalKickCount = 0L;
           String title = null;
 
+          // 게시글/뉴스 각각의 48시간 기준 조회수, 킥 수, 전체 조회수, 킥 수를 가져옵니다.
           if (file.getUsedIn() == UsedInType.BOARD) {
-            recentViewCount = boardViewHistoryService.countByBoardPkWithin48Hours(file.getReferencePk());
-            recentKickCount = boardKickService.countByBoardPkWithin48Hours(file.getReferencePk());
+            recentViewCount = boardViewHistoryService.countViewsByBoardPkWithin48Hours(file.getReferencePk());
+            recentKickCount = boardKickService.countKicksByBoardPkWithin48Hours(file.getReferencePk());
 
-            totalViewCount = boardViewHistoryService.countByBoardPk(file.getReferencePk());
-            totalKickCount = boardKickService.countByBoardPk(file.getReferencePk());
+            totalViewCount = boardViewHistoryService.countViewsByBoardPk(file.getReferencePk());
+            totalKickCount = boardKickService.countKicksByBoardPk(file.getReferencePk());
 
             Board board = boardService.findByPk(file.getReferencePk());
             if (board != null) {
               title = board.getTitle();
             }
           } else if (file.getUsedIn() == UsedInType.NEWS) {
-            recentViewCount = newsViewHistoryService.countByNewsPkWithin48Hours(file.getReferencePk());
-            recentKickCount = newsKickService.countByNewsPkWithin48Hours(file.getReferencePk());
+            recentViewCount = newsViewHistoryService.countViewsByNewsPkWithin48Hours(file.getReferencePk());
+            recentKickCount = newsKickService.countKicksByNewsPkWithin48Hours(file.getReferencePk());
 
-            totalViewCount = newsViewHistoryService.countByNewsPk(file.getReferencePk());
-            totalKickCount = newsKickService.countByNewsPk(file.getReferencePk());
+            totalViewCount = newsViewHistoryService.countViewsByNewsPk(file.getReferencePk());
+            totalKickCount = newsKickService.countKicksByNewsPk(file.getReferencePk());
 
             News news = newsService.findByPk(file.getReferencePk());
             if (news != null) {
@@ -114,97 +121,97 @@ public class ShortsService {
   // region 쇼츠 리스트 조회
   /**
    * Shorts 영상 리스트를 조회합니다.
-   * - AwsFileReference 엔티티 중 동영상 파일(MP4, MOV, AVI, MKV)만 필터링
-   * - 게시글/뉴스 타입에 따라 각각의 48시간 기준 조회수를 가져옵니다.
-   * - 게시글/뉴스를 unionAll로 통합합니다.
-   * - 조회수가 같은 경우 킥 수 기준
+   * @param request 정렬 기준, 페이징 크기
+   * @param pageable 페이징
+   * @return ShortsDTO 리스트
    */
   public Page<ShortsDTO> getShorts(GetShortsRequest request, Pageable pageable) {
-    QAwsFileReference afr = QAwsFileReference.awsFileReference;
-    QBoard b = QBoard.board;
-    QNews n = QNews.news;
-    QBoardViewHistory bv = QBoardViewHistory.boardViewHistory;
-    QBoardKick bk = QBoardKick.boardKick;
-    QNewsViewHistory nv = QNewsViewHistory.newsViewHistory;
-    QNewsKick nk = QNewsKick.newsKick;
+    QAwsFileReference awsFileReference = QAwsFileReference.awsFileReference;
+    QBoard board = QBoard.board;
+    QNews news = QNews.news;
+    QBoardViewHistory boardViewHistory = QBoardViewHistory.boardViewHistory;
+    QBoardKick boardKick = QBoardKick.boardKick;
+    QNewsViewHistory newsViewHistory = QNewsViewHistory.newsViewHistory;
+    QNewsKick newsKick = QNewsKick.newsKick;
 
+    // 게시글/뉴스 각각의 48시간 기준 조회수, 킥 수를 가져옵니다.
     LocalDateTime cutoff = LocalDateTime.now().minusHours(48);
 
     // Board Shorts
     List<ShortsDTO> boardShorts = queryFactory
         .select(Projections.constructor(ShortsDTO.class,
-            afr.pk,
-            afr.s3Key,
-            afr.usedIn,
-            afr.referencePk,
-            b.title,
+            awsFileReference.pk,
+            awsFileReference.s3Key,
+            awsFileReference.usedIn,
+            awsFileReference.referencePk,
+            board.title,
             ExpressionUtils.as(JPAExpressions
-                .select(bv.pk.count())
-                .from(bv)
-                .where(bv.board.pk.eq(b.pk)), "totalViewCount"),
+                .select(boardViewHistory.pk.count())
+                .from(boardViewHistory)
+                .where(boardViewHistory.board.pk.eq(board.pk)), "totalViewCount"),
             ExpressionUtils.as(JPAExpressions
-                .select(bk.pk.count())
-                .from(bk)
-                .where(bk.board.pk.eq(b.pk)), "totalKickCount"),
+                .select(boardKick.pk.count())
+                .from(boardKick)
+                .where(boardKick.board.pk.eq(board.pk)), "totalKickCount"),
             ExpressionUtils.as(JPAExpressions
-                .select(bv.pk.count())
-                .from(bv)
-                .where(bv.board.pk.eq(b.pk).and(bv.createdAt.after(cutoff))), "recentViewCount"),
+                .select(boardViewHistory.pk.count())
+                .from(boardViewHistory)
+                .where(boardViewHistory.board.pk.eq(board.pk).and(boardViewHistory.createdAt.after(cutoff))), "recentViewCount"),
             ExpressionUtils.as(JPAExpressions
-                .select(bk.pk.count())
-                .from(bk)
-                .where(bk.board.pk.eq(b.pk).and(bk.createdAt.after(cutoff))), "recentKickCount"),
-            afr.createdAt
+                .select(boardKick.pk.count())
+                .from(boardKick)
+                .where(boardKick.board.pk.eq(board.pk).and(boardKick.createdAt.after(cutoff))), "recentKickCount"),
+            awsFileReference.createdAt
             ))
-        .from(afr)
-        .leftJoin(b).on(afr.referencePk.eq(b.pk))
+        .from(awsFileReference)
+        .leftJoin(board).on(awsFileReference.referencePk.eq(board.pk))
         .where(
-            afr.usedIn.eq(UsedInType.BOARD),
-            afr.s3Key.endsWithIgnoreCase(".mp4")
-                .or(afr.s3Key.endsWithIgnoreCase(".mov"))
-                .or(afr.s3Key.endsWithIgnoreCase(".avi"))
-                .or(afr.s3Key.endsWithIgnoreCase(".mkv"))
+            awsFileReference.usedIn.eq(UsedInType.BOARD),
+            awsFileReference.s3Key.endsWithIgnoreCase(".mp4")
+                .or(awsFileReference.s3Key.endsWithIgnoreCase(".mov"))
+                .or(awsFileReference.s3Key.endsWithIgnoreCase(".avi"))
+                .or(awsFileReference.s3Key.endsWithIgnoreCase(".mkv"))
         )
         .fetch();
 
     // News Shorts
     List<ShortsDTO> newsShorts = queryFactory
         .select(Projections.constructor(ShortsDTO.class,
-            afr.pk,
-            afr.s3Key,
-            afr.usedIn,
-            afr.referencePk,
-            n.title,
+            awsFileReference.pk,
+            awsFileReference.s3Key,
+            awsFileReference.usedIn,
+            awsFileReference.referencePk,
+            news.title,
             ExpressionUtils.as(JPAExpressions
-                .select(nv.pk.count())
-                .from(nv)
-                .where(nv.news.pk.eq(n.pk)), "totalViewCount"),
+                .select(newsViewHistory.pk.count())
+                .from(newsViewHistory)
+                .where(newsViewHistory.news.pk.eq(news.pk)), "totalViewCount"),
             ExpressionUtils.as(JPAExpressions
-                .select(nk.pk.count())
-                .from(nk)
-                .where(nk.news.pk.eq(n.pk)), "totalKickCount"),
+                .select(newsKick.pk.count())
+                .from(newsKick)
+                .where(newsKick.news.pk.eq(news.pk)), "totalKickCount"),
             ExpressionUtils.as(JPAExpressions
-                .select(nv.pk.count())
-                .from(nv)
-                .where(nv.news.pk.eq(n.pk).and(nv.createdAt.after(cutoff))), "recentViewCount"),
+                .select(newsViewHistory.pk.count())
+                .from(newsViewHistory)
+                .where(newsViewHistory.news.pk.eq(news.pk).and(newsViewHistory.createdAt.after(cutoff))), "recentViewCount"),
             ExpressionUtils.as(JPAExpressions
-                .select(nk.pk.count())
-                .from(nk)
-                .where(nk.news.pk.eq(n.pk).and(nk.createdAt.after(cutoff))), "recentKickCount"),
-            afr.createdAt
+                .select(newsKick.pk.count())
+                .from(newsKick)
+                .where(newsKick.news.pk.eq(news.pk).and(newsKick.createdAt.after(cutoff))), "recentKickCount"),
+            awsFileReference.createdAt
             ))
-        .from(afr)
-        .leftJoin(n).on(afr.referencePk.eq(n.pk))
+        .from(awsFileReference)
+        .leftJoin(news).on(awsFileReference.referencePk.eq(news.pk))
         .where(
-            afr.usedIn.eq(UsedInType.NEWS),
-            afr.s3Key.endsWithIgnoreCase(".mp4")
-                .or(afr.s3Key.endsWithIgnoreCase(".mov"))
-                .or(afr.s3Key.endsWithIgnoreCase(".avi"))
-                .or(afr.s3Key.endsWithIgnoreCase(".mkv"))
+            awsFileReference.usedIn.eq(UsedInType.NEWS),
+            awsFileReference.s3Key.endsWithIgnoreCase(".mp4")
+                .or(awsFileReference.s3Key.endsWithIgnoreCase(".mov"))
+                .or(awsFileReference.s3Key.endsWithIgnoreCase(".avi"))
+                .or(awsFileReference.s3Key.endsWithIgnoreCase(".mkv"))
         )
         .fetch();
 
-    // Combine and sort
+    // 게시글/뉴스를 unionAll로 통합
     List<ShortsDTO> combined = new ArrayList<>();
     combined.addAll(boardShorts);
     combined.addAll(newsShorts);
@@ -212,13 +219,13 @@ public class ShortsService {
     combined = trimS3KeyPrefix(combined);
 
     Long totalCount = queryFactory
-        .select(afr.count())
-        .from(afr)
+        .select(awsFileReference.count())
+        .from(awsFileReference)
         .where(
-            afr.s3Key.endsWithIgnoreCase(".mp4")
-                .or(afr.s3Key.endsWithIgnoreCase(".mov"))
-                .or(afr.s3Key.endsWithIgnoreCase(".avi"))
-                .or(afr.s3Key.endsWithIgnoreCase(".mkv"))
+            awsFileReference.s3Key.endsWithIgnoreCase(".mp4")
+                .or(awsFileReference.s3Key.endsWithIgnoreCase(".mov"))
+                .or(awsFileReference.s3Key.endsWithIgnoreCase(".avi"))
+                .or(awsFileReference.s3Key.endsWithIgnoreCase(".mkv"))
         )
         .fetchOne();
 
@@ -258,4 +265,43 @@ public class ShortsService {
   }
   //endregion
 
+  // region 쇼츠 상세 조회
+  /**
+   *
+   * @param file AwsFileReference 영상 엔티티
+   * @return ShortsDetailDTO
+   */
+  @Transactional
+  public ShortsDetailDTO getShortsDetail(AwsFileReference file){
+    Long viewCount = 0L;
+    Long kickCount = 0L;
+    Long replyCount = 0L;
+    String title = null;
+    User user = null;
+
+    if (file.getUsedIn() == UsedInType.BOARD) {
+      viewCount = boardViewHistoryService.countViewsByBoardPk(file.getReferencePk());
+      kickCount = boardKickService.countKicksByBoardPk(file.getReferencePk());
+      replyCount = boardReplyService.countRepliesByBoardPk(file.getReferencePk());
+
+      Board board = boardService.findByPk(file.getReferencePk());
+      if (board != null) {
+        title = board.getTitle();
+        user = board.getUser();
+      }
+    } else if (file.getUsedIn() == UsedInType.NEWS) {
+      viewCount = newsViewHistoryService.countViewsByNewsPk(file.getReferencePk());
+      kickCount = newsKickService.countKicksByNewsPk(file.getReferencePk());
+      replyCount = newsReplyService.countRepliesByNewsPk(file.getReferencePk());
+
+      News news = newsService.findByPk(file.getReferencePk());
+      if (news != null) {
+        title = news.getTitle();
+        user = news.getUser();
+      }
+    }
+
+    return ShortsDetailDTO.fromEntity(file, viewCount, kickCount, replyCount, title, user);
+  }
+  //endregion
 }

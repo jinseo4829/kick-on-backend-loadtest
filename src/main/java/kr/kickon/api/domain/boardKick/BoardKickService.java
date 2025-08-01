@@ -71,8 +71,8 @@ public class BoardKickService implements BaseService<BoardKick> {
      * @param boardPk 게시글PK
      * @return Long 킥 수
      */
-    public Long countByBoardPk(Long boardPk) {
-        return boardKickRepository.countByBoard_Pk(boardPk);
+    public Long countKicksByBoardPk(Long boardPk) {
+        return boardKickRepository.countByBoard_PkAndStatus(boardPk, DataStatus.ACTIVATED);
     }
     // endregion
 
@@ -83,7 +83,7 @@ public class BoardKickService implements BaseService<BoardKick> {
      * @param boardPk 게시글PK
      * @return Long 48시간 이내 킥 수
      */
-    public long countByBoardPkWithin48Hours(Long boardPk) {
+    public long countKicksByBoardPkWithin48Hours(Long boardPk) {
         LocalDateTime cutoff = LocalDateTime.now().minusHours(48);
         return boardKickRepository.countByBoard_PkAndCreatedAtAfterAndStatus(boardPk, cutoff, DataStatus.ACTIVATED);
     }

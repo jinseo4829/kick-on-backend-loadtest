@@ -70,7 +70,7 @@ public class BoardViewHistoryService implements BaseService<BoardViewHistory> {
      * @param boardPk 게시글PK
      * @return Long 조회수
      */
-    public Long countByBoardPk(Long boardPk) {
+    public Long countViewsByBoardPk(Long boardPk) {
         return boardViewHistoryRepository.countByBoard_Pk(boardPk);
     }
     // endregion
@@ -82,7 +82,7 @@ public class BoardViewHistoryService implements BaseService<BoardViewHistory> {
      * @param boardPk 게시글PK
      * @return Long 조회수
      */
-    public Long countByBoardPkWithin48Hours(Long boardPk) {
+    public Long countViewsByBoardPkWithin48Hours(Long boardPk) {
         LocalDateTime cutoff = LocalDateTime.now().minusHours(48);
         return boardViewHistoryRepository.countByBoardPkAndCreatedAtAfter(boardPk, cutoff);
     }
