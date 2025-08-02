@@ -19,6 +19,7 @@ import kr.kickon.api.domain.game.response.MyPredictionStatsResponse;
 import kr.kickon.api.domain.game.response.PredictOpenResponse;
 import kr.kickon.api.domain.league.LeagueService;
 import kr.kickon.api.domain.league.dto.LeagueDTO;
+import kr.kickon.api.domain.notification.NotificationService;
 import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
@@ -58,6 +59,7 @@ public class GameService implements BaseService<Game> {
     public static String[] ScheduledStatus = {"TBD", "NS"};
     public static String[] FinishedStatus = {"FT", "AET", "PEN"};
     private final UserFavoriteTeamService userFavoriteTeamService;
+    private final NotificationService notificationService;
 
     // region {findById} Game UUID 기반 조회
     @Override
@@ -696,4 +698,56 @@ public class GameService implements BaseService<Game> {
         ).toList();
     }
     // endregion
+
+    public void notifyGameFinished(Game game) {
+        Set<User> usersToNotify = new HashSet<>();
+
+        usersToNotify.addAll(userFavoriteTeamService.findUsersByTeamPk(game.getHomeTeam().getPk()));
+        usersToNotify.addAll(userFavoriteTeamService.findUsersByTeamPk(game.getAwayTeam().getPk()));
+
+        String redirectUrl = "/gamble/" + game.getPk();
+
+        for (User user : usersToNotify) {
+            notificationService.sendNotification(
+                    user,
+                    "GAME_RESULT",
+                    game.getHomeTeam().getNameKr() + " vs " + game.getAwayTeam().getNameKr() + " 경기가 종료됐어요. 승부예측결과를 확인해 보세요.",
+                    redirectUrl
+            );
+        }
+    }
+
+    public void notifyGamesBeforeHours(int hoursBefore) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime targetStart = now.plusHours(hoursBefore).minusMinutes(2);
+        LocalDateTime targetEnd = now.plusHours(hoursBefore).plusMinutes(2);
+
+        List<Game> games = gameRepository.findByStartedAtBetween(targetStart, targetEnd);
+
+        for (Game game : games) {
+            Set<User> usersToNotify = new HashSet<>();
+            usersToNotify.addAll(userFavoriteTeamService.findUsersByTeamPk(game.getHomeTeam().getPk()));
+            usersToNotify.addAll(userFavoriteTeamService.findUsersByTeamPk(game.getAwayTeam().getPk()));
+
+            String redirectUrl = "/gamble/" + game.getPk();
+            String message;
+            String type;
+
+            if (hoursBefore == 72) {
+                message = String.format("%s vs %s 경기가 D-3 남았어요.", game.getHomeTeam().getNameKr(), game.getAwayTeam().getNameKr());
+                type = "GAME_REMINDER_D3";
+            } else if (hoursBefore == 24) {
+                message = String.format("%s vs %s 경기가 D-1 남았어요.", game.getHomeTeam().getNameKr(), game.getAwayTeam().getNameKr());
+                type = "GAME_REMINDER_D1";
+            } else {
+                continue;
+            }
+
+            for (User user : usersToNotify) {
+                notificationService.sendNotification(user, type, message, redirectUrl);
+            }
+        }
+    }
+
+
 }

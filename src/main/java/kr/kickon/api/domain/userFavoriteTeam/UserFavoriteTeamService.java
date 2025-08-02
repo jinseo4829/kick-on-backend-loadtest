@@ -6,6 +6,7 @@ import jakarta.transaction.Transactional;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.QUser;
 import kr.kickon.api.global.common.entities.QUserFavoriteTeam;
+import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.entities.UserFavoriteTeam;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
@@ -84,4 +85,22 @@ public class UserFavoriteTeamService implements BaseService<UserFavoriteTeam> {
 
         return count != null ? count.intValue() : 0;
     }
+
+    public List<User> findUsersByTeamPk(Long teamPk) {
+        QUserFavoriteTeam ft = QUserFavoriteTeam.userFavoriteTeam;
+        QUser u = QUser.user;
+
+        return queryFactory
+                .select(u)
+                .from(ft)
+                .join(ft.user, u)
+                .where(
+                        ft.team.pk.eq(teamPk),
+                        ft.status.eq(DataStatus.ACTIVATED),
+                        ft.team.status.eq(DataStatus.ACTIVATED),
+                        u.status.eq(DataStatus.ACTIVATED)
+                )
+                .fetch();
+    }
+
 }

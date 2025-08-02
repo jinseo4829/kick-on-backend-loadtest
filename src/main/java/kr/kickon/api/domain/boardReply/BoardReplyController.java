@@ -66,14 +66,16 @@ public class BoardReplyController {
                 .board(board)
                 .contents(request.getContents());
 
+        BoardReply parentBoardReply = null;
         if(request.getParentReply()!=null) {
-            BoardReply parentBoardReply = boardReplyService.findByPk(request.getParentReply());
+            parentBoardReply = boardReplyService.findByPk(request.getParentReply());
             if(parentBoardReply == null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS);
             boardReplyBuilder.parentBoardReply(parentBoardReply);
         }
 
         BoardReply boardReply = boardReplyBuilder.build();
         boardReply = boardReplyService.createBoardReplyWithImages(boardReply,request.getUsedImageKeys());
+        boardReplyService.sendReplyNotification(board, parentBoardReply,user);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
 

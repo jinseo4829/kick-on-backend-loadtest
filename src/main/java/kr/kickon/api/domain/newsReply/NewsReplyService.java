@@ -10,6 +10,7 @@ import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.newsReply.dto.PaginatedNewsReplyListDTO;
 import kr.kickon.api.domain.newsReply.dto.ReplyDTO;
 import kr.kickon.api.domain.newsReplyKick.NewsReplyKickService;
+import kr.kickon.api.domain.notification.NotificationService;
 import kr.kickon.api.domain.user.dto.BaseUserDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
@@ -37,6 +38,7 @@ public class NewsReplyService implements BaseService<NewsReply> {
     private final UUIDGenerator uuidGenerator;
     private final AwsFileReferenceService awsFileReferenceService;
     private final AwsService awsService;
+    private final NotificationService notificationService;
 
     @Value("${spring.config.activate.on-profile}")
     private String env;
@@ -276,5 +278,30 @@ public class NewsReplyService implements BaseService<NewsReply> {
         return savedNewsReplyEntity;
     }
     // endregion
+
+    public void sendReplyNotification(News news, NewsReply parent, User writer) {
+        String redirectUrl = "/news/" + news.getPk();
+
+        // 뉴스 글에 대한 댓글 (부모가 없음)
+        if (parent == null && !news.getUser().equals(writer)) {
+            notificationService.sendNotification(
+                    news.getUser(),
+                    "NEWS_REPLY",
+                    writer.getNickname() + "님이 회원님의 뉴스에 댓글을 달았어요.",
+                    redirectUrl
+            );
+        }
+
+        // 대댓글
+        if (parent != null && !parent.getUser().equals(writer)) {
+            notificationService.sendNotification(
+                    parent.getUser(),
+                    "NEWS_REPLY_REPLY",
+                    writer.getNickname() + "님이 답글을 달았어요.",
+                    redirectUrl + "?replyId=" + parent.getPk()
+            );
+        }
+    }
+
 }
 
