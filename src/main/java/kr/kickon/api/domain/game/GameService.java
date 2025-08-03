@@ -79,6 +79,7 @@ public class GameService implements BaseService<Game> {
 
     // region {findByApiId} 외부 API ID 기반 조회
     public Game findByApiId(Long apiId){
+        log.info("api id : " + apiId.toString());
         BooleanExpression predicate = QGame.game.apiId.eq(apiId).and(QGame.game.status.eq(DataStatus.ACTIVATED));
         Optional<Game> gameEntity = gameRepository.findOne(predicate);
         if(gameEntity.isPresent()) return gameEntity.get();
