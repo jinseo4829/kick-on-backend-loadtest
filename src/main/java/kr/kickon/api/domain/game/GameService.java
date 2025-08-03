@@ -219,7 +219,7 @@ public class GameService implements BaseService<Game> {
 
         // 현재 시간과 4시간 전 시간 계산
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime past24Hours = now.minusHours(2400);
+        LocalDateTime past24Hours = now.minusHours(4320);
 
         // QueryDSL을 사용하여 24시간 이내에 시작한 게임 중 종료된 게임을 조회
         return queryFactory
