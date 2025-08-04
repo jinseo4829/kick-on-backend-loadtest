@@ -2,6 +2,7 @@ package kr.kickon.api.domain.newsViewHistory;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.time.LocalDateTime;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.NewsViewHistory;
 import kr.kickon.api.global.common.entities.QNewsViewHistory;
@@ -59,6 +60,31 @@ public class NewsViewHistoryService implements BaseService<NewsViewHistory> {
      */
     public void save(NewsViewHistory newsViewHistory) {
         newsViewHistoryRepository.save(newsViewHistory);
+    }
+    // endregion
+
+    // region 뉴스 조회수 반환
+    /**
+     * News PK로 조회수 계산
+     *
+     * @param newsPk
+     * @return Long 조회수
+     */
+    public Long countByNewsPk(Long newsPk) {
+        return newsViewHistoryRepository.countByNews_Pk(newsPk);
+    }
+    // endregion
+
+    // region 뉴스 48시간 이내 조회수 반환
+    /**
+     * News PK로 조회수 계산
+     *
+     * @param newsPk 뉴스PK
+     * @return Long 조회수
+     */
+    public Long countByNewsPkWithin48Hours(Long newsPk) {
+        LocalDateTime cutoff = LocalDateTime.now().minusHours(48);
+        return newsViewHistoryRepository.countByNewsPkAndCreatedAtAfter(newsPk, cutoff);
     }
     // endregion
 }
