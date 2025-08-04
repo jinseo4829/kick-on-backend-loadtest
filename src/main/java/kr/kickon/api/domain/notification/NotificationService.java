@@ -20,8 +20,6 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final SimpMessagingTemplate messagingTemplate;
-    private final BoardService boardService;
-    private final BoardReplyService boardReplyService;
 
     /**
      * 알림 생성 + WebSocket 실시간 전송
