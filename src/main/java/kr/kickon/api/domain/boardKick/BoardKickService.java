@@ -2,6 +2,7 @@ package kr.kickon.api.domain.boardKick;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.time.LocalDateTime;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
@@ -60,6 +61,31 @@ public class BoardKickService implements BaseService<BoardKick> {
      */
     public void save(BoardKick boardKick) {
         boardKickRepository.save(boardKick);
+    }
+    // endregion
+
+    // region 게시글 킥 수 반환
+    /**
+     * Board PK로 킥 수 계산
+     *
+     * @param boardPk 게시글PK
+     * @return Long 킥 수
+     */
+    public Long countByBoardPk(Long boardPk) {
+        return boardKickRepository.countByBoard_Pk(boardPk);
+    }
+    // endregion
+
+    // region 게시글 48시간 이내 킥 수 반환
+    /**
+     * Board PK로 킥 수 계산
+     *
+     * @param boardPk 게시글PK
+     * @return Long 48시간 이내 킥 수
+     */
+    public long countByBoardPkWithin48Hours(Long boardPk) {
+        LocalDateTime cutoff = LocalDateTime.now().minusHours(48);
+        return boardKickRepository.countByBoard_PkAndCreatedAtAfterAndStatus(boardPk, cutoff, DataStatus.ACTIVATED);
     }
     // endregion
 }

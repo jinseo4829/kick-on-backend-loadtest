@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.kafka.support.KafkaHeaders;
 
@@ -42,6 +43,7 @@ public class GameResultProcessor {
     private final GambleSeasonPointService gambleSeasonPointService;
     private final GambleSeasonRankingService gambleSeasonRankingService;
     private final GambleSeasonTeamService gambleSeasonTeamService;
+
 
     private static List<String> scheduledStatus = new ArrayList<>(Arrays.asList(GameService.ScheduledStatus));
     private static List<String> finishedStatus = new ArrayList<>(Arrays.asList(GameService.FinishedStatus));
@@ -69,6 +71,8 @@ public class GameResultProcessor {
                 processUserPredictions(game, gameData, gameStatus);
                 updateTeamAvgPoints(game,gameData);
                 updateTeamRankingStats(game);
+
+                gameService.notifyGameFinished(game);
             }
 
             ack.acknowledge();
@@ -260,4 +264,11 @@ public class GameResultProcessor {
                 .average()
                 .orElse(0.0);
     }
+
+    @Scheduled(cron = "0 */5 * * * *") // 매 5분마다 실행
+    public void notifyUpcomingGames() {
+        gameService.notifyGamesBeforeHours(72); // D-3
+        gameService.notifyGamesBeforeHours(24); // D-1
+    }
+
 }
