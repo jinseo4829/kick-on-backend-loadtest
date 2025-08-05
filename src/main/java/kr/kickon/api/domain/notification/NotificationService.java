@@ -1,7 +1,5 @@
 package kr.kickon.api.domain.notification;
 
-import kr.kickon.api.domain.board.BoardService;
-import kr.kickon.api.domain.boardReply.BoardReplyService;
 import kr.kickon.api.domain.notification.response.NotificationResponse;
 import kr.kickon.api.global.common.entities.Notification;
 import kr.kickon.api.global.common.entities.User;
@@ -30,7 +28,7 @@ public class NotificationService {
                 .type(type)
                 .content(content)
                 .redirectUrl(redirectUrl)
-                .read(false)
+                .isRead(false)
                 .build();
 
         notificationRepository.save(notification);
@@ -64,7 +62,7 @@ public class NotificationService {
     }
 
     public int getUnreadNotificationCount(User user) {
-        return notificationRepository.countByReceiverAndReadIsFalse(user);
+        return notificationRepository.countByReceiverAndIsReadIsFalse(user);
     }
 
 }
