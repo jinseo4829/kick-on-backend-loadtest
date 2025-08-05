@@ -14,6 +14,7 @@ import java.time.format.DateTimeFormatter;
 @Schema(name = "NotificationListResponse", description = "알림 목록 응답")
 public class NotificationResponse {
     private Long pk;
+    private String type;
     private String content;
     private String redirectUrl;
     private boolean read;
@@ -23,6 +24,7 @@ public class NotificationResponse {
     public static NotificationResponse from(Notification notification) {
         return NotificationResponse.builder()
                 .pk(notification.getPk())
+                .type(notification.getType())
                 .content(notification.getContent())
                 .redirectUrl(notification.getRedirectUrl())
                 .read(notification.isRead())
