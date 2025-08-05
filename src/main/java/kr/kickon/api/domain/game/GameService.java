@@ -214,12 +214,12 @@ public class GameService implements BaseService<Game> {
     // endregion
 
     // region {getGameListByToday} 오늘 진행 예정인 경기 조회
-    public List<Game> getGameListByToday() {
+    public List<Game> getPendingGames() {
         // QGame 객체 생성
         QGame game = QGame.game;
 
         // 현재 시간과 4시간 전 시간 계산
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now().minusHours(3);
         LocalDateTime past24Hours = now.minusHours(4320);
 
         // QueryDSL을 사용하여 24시간 이내에 시작한 게임 중 종료된 게임을 조회
@@ -227,7 +227,7 @@ public class GameService implements BaseService<Game> {
                 .selectFrom(game)
                 .where(
                         game.startedAt.between(past24Hours, now),  // 24시간 이내 시작한 게임
-                        game.gameStatus.in(GameStatus.PENDING, GameStatus.POSTPONED,GameStatus.PROCEEDING),
+                        game.gameStatus.in(GameStatus.PENDING, GameStatus.POSTPONED, GameStatus.PROCEEDING),
                         game.status.eq(DataStatus.ACTIVATED)
                 )
                 .orderBy(game.startedAt.desc()) // 최신순 정렬
