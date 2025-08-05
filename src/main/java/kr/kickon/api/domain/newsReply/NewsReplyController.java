@@ -64,15 +64,20 @@ public class NewsReplyController {
                 .contents(request.getContents())
                 .news(news);
 
-        if(request.getParentReply()!=null) {
-            NewsReply parentNewsReply = newsReplyService.findByPk(request.getParentReply());
-            if(parentNewsReply == null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS);
+        NewsReply parentNewsReply = null;
+
+        if (request.getParentReply() != null) {
+            parentNewsReply = newsReplyService.findByPk(request.getParentReply());
+            if (parentNewsReply == null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS);
             newsReplyBuilder.parentNewsReply(parentNewsReply);
         }
 
         NewsReply newsReply = newsReplyBuilder.build();
 
         newsReply = newsReplyService.createNewsReplyWithImages(newsReply, request.getUsedImageKeys());
+
+        newsReplyService.sendReplyNotification(news, parentNewsReply, user);
+
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
 
