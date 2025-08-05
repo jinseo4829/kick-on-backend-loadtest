@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.kickon.api.domain.notification.response.NotificationCountResponse;
 import kr.kickon.api.domain.notification.response.NotificationResponse;
 import kr.kickon.api.global.auth.jwt.user.JwtTokenProvider;
@@ -21,6 +22,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/notifications")
+@Tag(name = "알림 관련")
 public class NotificationController {
 
     private final NotificationService notificationService;
