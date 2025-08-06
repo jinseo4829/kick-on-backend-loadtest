@@ -216,8 +216,6 @@ public class ShortsService {
     combined.addAll(boardShorts);
     combined.addAll(newsShorts);
 
-    combined = trimS3KeyPrefix(combined);
-
     Long totalCount = queryFactory
         .select(awsFileReference.count())
         .from(awsFileReference)
@@ -241,27 +239,6 @@ public class ShortsService {
     };
     combined.sort(comparator);
     return new PageImpl<>(combined, pageable, total);
-  }
-  //endregion
-
-  // region S3Key Prefix 제거
-  /**
-   * ShortsDTO 리스트에서 각 DTO의 s3Key에 포함된 S3 경로 제거
-   */
-  private List<ShortsDTO> trimS3KeyPrefix(List<ShortsDTO> list) {
-    return list.stream()
-        .peek(dto -> {
-          String s3Key = dto.getS3Key();
-          if (s3Key != null) {
-            String trimmed = s3Key
-                .replaceFirst("^dev/board-files/", "")
-                .replaceFirst("^dev/news-files/", "")
-                .replaceFirst("^local/board-files/", "")
-                .replaceFirst("^local/news-files/", "");
-            dto.setS3Key(trimmed);
-          }
-        })
-        .collect(Collectors.toList());
   }
   //endregion
 

@@ -51,15 +51,10 @@ public class ShortsDTO {
   private LocalDateTime createdAt;
 
   public static ShortsDTO fromEntity(AwsFileReference file, Long viewCount, Long kickCount, String title) {
-    String trimmedS3Key = file.getS3Key()
-        .replaceFirst("^dev/board-files/", "")
-        .replaceFirst("^dev/news-files/", "")
-        .replaceFirst("^local/board-files/", "")
-        .replaceFirst("^local/news-files/", "");
 
     return ShortsDTO.builder()
         .pk(file.getPk())
-        .s3Key(trimmedS3Key)
+        .s3Key(file.getS3Key())
         .usedIn(file.getUsedIn())
         .referencePk(file.getReferencePk())
         .title(title)

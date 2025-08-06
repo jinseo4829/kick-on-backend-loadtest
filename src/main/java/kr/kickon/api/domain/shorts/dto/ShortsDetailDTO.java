@@ -25,15 +25,10 @@ public class ShortsDetailDTO extends ShortsDTO{
   private BaseUserDTO user;
 
   public static ShortsDetailDTO fromEntity(AwsFileReference file, Long viewCount, Long kickCount, Long replyCount, String title, User user) {
-    String trimmedS3Key = file.getS3Key()
-        .replaceFirst("^dev/board-files/", "")
-        .replaceFirst("^dev/news-files/", "")
-        .replaceFirst("^local/board-files/", "")
-        .replaceFirst("^local/news-files/", "");
 
     return ShortsDetailDTO.builder()
         .pk(file.getPk())
-        .s3Key(trimmedS3Key)
+        .s3Key(file.getS3Key())
         .usedIn(file.getUsedIn())
         .referencePk(file.getReferencePk())
         .title(title)
