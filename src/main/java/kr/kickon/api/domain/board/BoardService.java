@@ -278,6 +278,12 @@ public class BoardService implements BaseService<Board> {
         boardDetailDTO.setUsedImageKeys(usedImageKeys);
         boolean isInfluencer = partnersService.findByUserPk(userEntity.getPk());
         boardDetailDTO.setIsInfluencer(isInfluencer);
+
+        List<EmbeddedLink> embeddedLinks = embeddedLinkService.findByBoardPk(boardEntity.getPk());
+        String[] embeddedUrls = embeddedLinks.stream()
+            .map(EmbeddedLink::getUrl)
+            .toArray(String[]::new);
+        boardDetailDTO.setEmbeddedLinks(embeddedUrls);
         return boardDetailDTO;
     }
     //#endregion

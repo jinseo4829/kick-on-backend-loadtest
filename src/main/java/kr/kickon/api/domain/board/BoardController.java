@@ -16,6 +16,7 @@ import kr.kickon.api.domain.board.response.GetBoardDetailResponse;
 import kr.kickon.api.domain.board.response.GetBoardsResponse;
 import kr.kickon.api.domain.board.response.GetHomeBoardsResponse;
 import kr.kickon.api.domain.team.TeamService;
+import kr.kickon.api.domain.user.UserService;
 import kr.kickon.api.global.auth.jwt.user.JwtTokenProvider;
 import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
@@ -41,6 +42,7 @@ public class BoardController {
     private final JwtTokenProvider jwtTokenProvider;
     private final TeamService teamService;
     private final UUIDGenerator uuidGenerator;
+    private final UserService userService;
 
     @Operation(summary = "홈화면 함께 볼만한 게시글 리스트 조회", description = "응원팀 여부에 상관없이 최신 게시글 기준으로 10개 리스트 반환")
     @ApiResponses({
@@ -61,7 +63,7 @@ public class BoardController {
     })
     @PostMapping()
     public ResponseEntity<ResponseDTO<BoardDetailDTO>> createBoard(@Valid @RequestBody CreateBoardRequest request){
-        User user = jwtTokenProvider.getUserFromSecurityContext();
+        User user = userService.findById("9ba08d10-8d66-4b66-937c-8233ef7e3036");
         String id = uuidGenerator.generateUniqueUUID(boardService::findById);
         Board board = Board.builder()
                 .id(id)
