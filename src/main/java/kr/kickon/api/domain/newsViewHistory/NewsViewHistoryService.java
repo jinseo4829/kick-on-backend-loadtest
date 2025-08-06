@@ -70,7 +70,7 @@ public class NewsViewHistoryService implements BaseService<NewsViewHistory> {
      * @param newsPk
      * @return Long 조회수
      */
-    public Long countByNewsPk(Long newsPk) {
+    public Long countViewsByNewsPk(Long newsPk) {
         return newsViewHistoryRepository.countByNews_Pk(newsPk);
     }
     // endregion
@@ -82,7 +82,7 @@ public class NewsViewHistoryService implements BaseService<NewsViewHistory> {
      * @param newsPk 뉴스PK
      * @return Long 조회수
      */
-    public Long countByNewsPkWithin48Hours(Long newsPk) {
+    public Long countViewsByNewsPkWithin48Hours(Long newsPk) {
         LocalDateTime cutoff = LocalDateTime.now().minusHours(48);
         return newsViewHistoryRepository.countByNewsPkAndCreatedAtAfter(newsPk, cutoff);
     }

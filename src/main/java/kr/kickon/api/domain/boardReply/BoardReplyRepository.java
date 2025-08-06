@@ -1,9 +1,12 @@
 package kr.kickon.api.domain.boardReply;
 import kr.kickon.api.global.common.entities.BoardReply;
+import kr.kickon.api.global.common.enums.DataStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface BoardReplyRepository extends JpaRepository<BoardReply, Long>, QuerydslPredicateExecutor<BoardReply> {
+  Long countByBoard_PkAndStatus(Long boardPk, DataStatus status);
+
 }

@@ -279,6 +279,18 @@ public class NewsReplyService implements BaseService<NewsReply> {
     }
     // endregion
 
+    // region 뉴스 댓글 수 반환
+    /**
+     * news PK로 댓글 수 계산
+     *
+     * @param newsPk 뉴스PK
+     * @return Long 댓글 수
+     */
+    public Long countRepliesByNewsPk(Long newsPk) {
+        return newsReplyRepository.countByNews_PkAndStatus(newsPk, DataStatus.ACTIVATED);
+    }
+    // endregion
+
     public void sendReplyNotification(News news, NewsReply parent, User writer) {
         String redirectUrl = "/news/" + news.getPk();
 
