@@ -38,5 +38,6 @@ public class ExampleConstants {
     public static final String year = "2025";
     public static final String fanCount = "100";
     public static final String apiId = "2746";
+    public static final String shortsSortType = "CREATED_DESC";
 
 }

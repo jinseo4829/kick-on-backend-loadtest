@@ -2,6 +2,7 @@ package kr.kickon.api.domain.shorts.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
 import kr.kickon.api.global.common.ExampleConstants;
 import kr.kickon.api.global.common.entities.AwsFileReference;
 import kr.kickon.api.global.common.enums.UsedInType;
@@ -18,6 +19,9 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @Schema(description = "쇼츠 리스트 DTO")
 public class ShortsDTO {
+
+  @Schema(description = "AwsFileReference pk", example = "215")
+  private Long pk;
 
   @Schema(description = "s3Key", example = ExampleConstants.s3Key)
   private String s3Key;
@@ -42,20 +46,26 @@ public class ShortsDTO {
 
   @JsonIgnore
   private Long sortKickCount;
-  public static ShortsDTO fromEntity(AwsFileReference entity, Long viewCount, Long kickCount, String title) {
-    String trimmedS3Key = entity.getS3Key()
+
+  @Schema(description = "작성일", example = ExampleConstants.datetime)
+  private LocalDateTime createdAt;
+
+  public static ShortsDTO fromEntity(AwsFileReference file, Long viewCount, Long kickCount, String title) {
+    String trimmedS3Key = file.getS3Key()
         .replaceFirst("^dev/board-files/", "")
         .replaceFirst("^dev/news-files/", "")
         .replaceFirst("^local/board-files/", "")
         .replaceFirst("^local/news-files/", "");
 
     return ShortsDTO.builder()
+        .pk(file.getPk())
         .s3Key(trimmedS3Key)
-        .usedIn(entity.getUsedIn())
-        .referencePk(entity.getReferencePk())
+        .usedIn(file.getUsedIn())
+        .referencePk(file.getReferencePk())
         .title(title)
         .viewCount(viewCount)
         .kickCount(kickCount)
+        .createdAt(file.getCreatedAt())
         .build();
   }
 }
