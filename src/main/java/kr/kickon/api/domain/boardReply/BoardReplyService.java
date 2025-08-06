@@ -14,6 +14,7 @@ import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.boardReply.dto.PaginatedReplyListDTO;
 import kr.kickon.api.domain.boardReply.dto.ReplyDTO;
 import kr.kickon.api.domain.boardReplyKick.BoardReplyKickService;
+import kr.kickon.api.domain.notification.NotificationService;
 import kr.kickon.api.domain.user.dto.BaseUserDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
@@ -41,6 +42,7 @@ public class BoardReplyService implements BaseService<BoardReply> {
     private final UUIDGenerator uuidGenerator;
     private final AwsFileReferenceService awsFileReferenceService;
     private final AwsService awsService;
+    private final NotificationService notificationService;
     @Value("${spring.config.activate.on-profile}")
     private String env;
 
@@ -283,4 +285,27 @@ public class BoardReplyService implements BaseService<BoardReply> {
         return boardReplyRepository.countByBoard_PkAndStatus(boardPk, DataStatus.ACTIVATED);
     }
     // endregion
+
+    public void sendReplyNotification(Board board, BoardReply parent, User writer) {
+        String redirectUrl = "/board/" + board.getPk();
+
+        if (parent == null && !board.getUser().equals(writer)) {
+            notificationService.sendNotification(
+                    board.getUser(),
+                    "BOARD_REPLY",
+                    writer.getNickname() + "님이 회원님의 게시글에 댓글을 달았어요.",
+                    redirectUrl
+            );
+        }
+
+        if (parent != null && !parent.getUser().equals(writer)) {
+            notificationService.sendNotification(
+                    parent.getUser(),
+                    "BOARD_REPLY_REPLY",
+                    writer.getNickname() + "님이 답글을 달았어요.",
+                    redirectUrl + "?replyId=" + parent.getPk()
+            );
+        }
+    }
+
 }

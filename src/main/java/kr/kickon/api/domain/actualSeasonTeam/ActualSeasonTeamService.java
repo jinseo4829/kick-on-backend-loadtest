@@ -114,6 +114,17 @@ public class ActualSeasonTeamService implements BaseService<ActualSeasonTeam> {
     }
 //endregion
 
+//region 실제 시즌 팀 목록 조회
+    /**
+     * 주어진 실제 시즌의 연결된 팀 목록을 조회한다.
+     * 각 팀은 SeasonTeamDTO로 변환되어 반환된다.
+     */
+    public List<ActualSeasonTeam> findAll() {
+        return actualSeasonTeamRepository
+                .findAllByStatus(DataStatus.ACTIVATED);
+    }
+//endregion
+
 //region 실제 시즌 팀 목록 수정
     /**
      * 실제 시즌에 연결된 팀 목록을 요청 목록에 맞게 갱신한다.
@@ -187,6 +198,7 @@ public class ActualSeasonTeamService implements BaseService<ActualSeasonTeam> {
         actualSeasonTeamRepository.save(actualSeasonTeam);
     }
 //endregion
+
 
 //region 실제 시즌 연결 팀 일괄 비활성화
     /**

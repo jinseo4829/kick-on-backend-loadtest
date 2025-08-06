@@ -19,6 +19,7 @@ import kr.kickon.api.domain.game.response.MyPredictionStatsResponse;
 import kr.kickon.api.domain.game.response.PredictOpenResponse;
 import kr.kickon.api.domain.league.LeagueService;
 import kr.kickon.api.domain.league.dto.LeagueDTO;
+import kr.kickon.api.domain.notification.NotificationService;
 import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
@@ -58,6 +59,7 @@ public class GameService implements BaseService<Game> {
     public static String[] ScheduledStatus = {"TBD", "NS"};
     public static String[] FinishedStatus = {"FT", "AET", "PEN"};
     private final UserFavoriteTeamService userFavoriteTeamService;
+    private final NotificationService notificationService;
 
     // region {findById} Game UUID 기반 조회
     @Override
@@ -79,6 +81,7 @@ public class GameService implements BaseService<Game> {
 
     // region {findByApiId} 외부 API ID 기반 조회
     public Game findByApiId(Long apiId){
+        log.info("api id : {}", apiId.toString());
         BooleanExpression predicate = QGame.game.apiId.eq(apiId).and(QGame.game.status.eq(DataStatus.ACTIVATED));
         Optional<Game> gameEntity = gameRepository.findOne(predicate);
         if(gameEntity.isPresent()) return gameEntity.get();
@@ -213,20 +216,20 @@ public class GameService implements BaseService<Game> {
     // endregion
 
     // region {getGameListByToday} 오늘 진행 예정인 경기 조회
-    public List<Game> getGameListByToday() {
+    public List<Game> getPendingGames() {
         // QGame 객체 생성
         QGame game = QGame.game;
 
         // 현재 시간과 4시간 전 시간 계산
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime past24Hours = now.minusHours(4);
+        LocalDateTime now = LocalDateTime.now().minusHours(3);
+        LocalDateTime past24Hours = now.minusHours(4320);
 
         // QueryDSL을 사용하여 24시간 이내에 시작한 게임 중 종료된 게임을 조회
         return queryFactory
                 .selectFrom(game)
                 .where(
                         game.startedAt.between(past24Hours, now),  // 24시간 이내 시작한 게임
-                        game.gameStatus.in(GameStatus.PENDING, GameStatus.POSTPONED,GameStatus.PROCEEDING),
+                        game.gameStatus.in(GameStatus.PENDING, GameStatus.POSTPONED, GameStatus.PROCEEDING),
                         game.status.eq(DataStatus.ACTIVATED)
                 )
                 .orderBy(game.startedAt.desc()) // 최신순 정렬
@@ -696,4 +699,56 @@ public class GameService implements BaseService<Game> {
         ).toList();
     }
     // endregion
+
+    public void notifyGameFinished(Game game) {
+        Set<User> usersToNotify = new HashSet<>();
+
+        usersToNotify.addAll(userFavoriteTeamService.findUsersByTeamPk(game.getHomeTeam().getPk()));
+        usersToNotify.addAll(userFavoriteTeamService.findUsersByTeamPk(game.getAwayTeam().getPk()));
+
+        String redirectUrl = "/gamble/" + game.getPk();
+
+        for (User user : usersToNotify) {
+            notificationService.sendNotification(
+                    user,
+                    "GAME_RESULT",
+                    game.getHomeTeam().getNameKr() + " vs " + game.getAwayTeam().getNameKr() + " 경기가 종료됐어요. 승부예측결과를 확인해 보세요.",
+                    redirectUrl
+            );
+        }
+    }
+
+    public void notifyGamesBeforeHours(int hoursBefore) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime targetStart = now.plusHours(hoursBefore).minusMinutes(2);
+        LocalDateTime targetEnd = now.plusHours(hoursBefore).plusMinutes(2);
+
+        List<Game> games = gameRepository.findByStartedAtBetween(targetStart, targetEnd);
+
+        for (Game game : games) {
+            Set<User> usersToNotify = new HashSet<>();
+            usersToNotify.addAll(userFavoriteTeamService.findUsersByTeamPk(game.getHomeTeam().getPk()));
+            usersToNotify.addAll(userFavoriteTeamService.findUsersByTeamPk(game.getAwayTeam().getPk()));
+
+            String redirectUrl = "/gamble/" + game.getPk();
+            String message;
+            String type;
+
+            if (hoursBefore == 72) {
+                message = String.format("%s vs %s 경기가 D-3 남았어요.", game.getHomeTeam().getNameKr(), game.getAwayTeam().getNameKr());
+                type = "GAME_REMINDER_D3";
+            } else if (hoursBefore == 24) {
+                message = String.format("%s vs %s 경기가 D-1 남았어요.", game.getHomeTeam().getNameKr(), game.getAwayTeam().getNameKr());
+                type = "GAME_REMINDER_D1";
+            } else {
+                continue;
+            }
+
+            for (User user : usersToNotify) {
+                notificationService.sendNotification(user, type, message, redirectUrl);
+            }
+        }
+    }
+
+
 }

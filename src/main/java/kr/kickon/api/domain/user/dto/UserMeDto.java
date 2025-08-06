@@ -39,6 +39,9 @@ public class UserMeDto extends BaseUserDTO {
     @Schema(description = "인플루언서 여부", example = "false")
     private Boolean isInfluencer;
 
+    @Schema(description = "구단기자 여부", example = "false")
+    private Boolean isReporter=false;
+
     public UserMeDto(User user) {
         super(user);
         email = user.getEmail();

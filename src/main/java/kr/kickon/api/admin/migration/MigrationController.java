@@ -2,7 +2,10 @@ package kr.kickon.api.admin.migration;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import kr.kickon.api.domain.actualSeason.ActualSeasonService;
+import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
 import kr.kickon.api.domain.country.CountryService;
+import kr.kickon.api.domain.gambleSeasonRanking.GambleSeasonRankingService;
 import kr.kickon.api.domain.game.GameService;
 import kr.kickon.api.domain.league.LeagueService;
 import kr.kickon.api.admin.migration.dto.ApiGamesDTO;
@@ -14,9 +17,7 @@ import kr.kickon.api.domain.user.UserService;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.*;
-import kr.kickon.api.global.common.enums.ProviderType;
-import kr.kickon.api.global.common.enums.ResponseCode;
-import kr.kickon.api.global.common.enums.UserAccountStatus;
+import kr.kickon.api.global.common.enums.*;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.kafka.KafkaGameProducer;
 import lombok.AllArgsConstructor;
@@ -47,6 +48,8 @@ public class MigrationController {
     private final TeamService teamService;
     private final UserService userService;
     private final UserFavoriteTeamService userFavoriteTeamService;
+    private final GambleSeasonRankingService gambleSeasonRankingService;
+    private final ActualSeasonService actualSeasonService;
 
     @PostMapping("/ai-user")
     @Operation(summary = "AI 유저 마이그레이션", description = "팀당 하나씩 AI 유저를 생성합니다. 이미 존재하는 경우 건너뜁니다.")
@@ -150,12 +153,11 @@ public class MigrationController {
     @GetMapping("/gambles")
     @Scheduled(cron = "0 0 */3 * * *")
     public void fetchGambles() {
-        List<Game> games = gameService.getGameListByToday();
-
+        List<Game> games = gameService.getPendingGames();
         List<ApiGamesDTO> apiGamesDTOS = migrationService.fetchGamesByApiIds(games);
-
         // 👇 여기 추가
         List<CompletableFuture<SendResult<String, ApiGamesDTO>>> futures = new ArrayList<>();
+
         for (ApiGamesDTO apiGame : apiGamesDTOS) {
             CompletableFuture<SendResult<String, ApiGamesDTO>> future =
                     kafkaGameProducer.sendGameResultProcessing(apiGame.getId().toString(), apiGame);
@@ -163,6 +165,14 @@ public class MigrationController {
         }
 
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+
+        List<League> leagues = leagueService.findAllLeagues();
+        for(League league : leagues) {
+            ActualSeason actualSeason = actualSeasonService.findRecentByLeaguePk(league.getPk());
+            gambleSeasonRankingService.updateGameNumOnlyByActualSeason(actualSeason.getPk());
+        }
+
         migrationService.updateFinalTeamRanking();
     }
 }

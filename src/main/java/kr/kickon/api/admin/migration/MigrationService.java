@@ -354,6 +354,7 @@ public class MigrationService {
                         Map<String, Object> goalData = (Map<String, Object>) metaData.get("goals");
 //                        log.error(rankingData.toString());
 
+                        log.info("api id : {}", teamData.get("id").toString());
                         Team team = teamService.findByApiId(Long.valueOf((Integer) teamData.get("id")));
 
                         if(team == null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
