@@ -20,6 +20,10 @@ public class EmbeddedLinkService {
   public List<EmbeddedLink> findByBoardPk(Long boardPk){
     return embeddedLinkRepository.findByUsedInEqualsAndReferencePkEquals(UsedInType.BOARD, boardPk);
   }
+
+  public List<EmbeddedLink> findByNewsPk(Long newsPk){
+    return embeddedLinkRepository.findByUsedInEqualsAndReferencePkEquals(UsedInType.NEWS, newsPk);
+  }
   public void save(EmbeddedLink embeddedLink) {
     embeddedLinkRepository.save(embeddedLink);
   }
