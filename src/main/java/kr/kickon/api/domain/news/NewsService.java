@@ -12,7 +12,6 @@ import java.util.*;
 
 import kr.kickon.api.domain.aws.AwsService;
 import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
-import kr.kickon.api.domain.embeddedLink.EmbeddedLinkService;
 import kr.kickon.api.domain.news.dto.*;
 import kr.kickon.api.domain.newsKick.NewsKickService;
 import kr.kickon.api.domain.team.dto.TeamDTO;
@@ -41,7 +40,6 @@ public class NewsService implements BaseService<News> {
     private final NewsKickService newsKickService;
     private final AwsFileReferenceService awsFileReferenceService;
     private final AwsService awsService;
-    private final EmbeddedLinkService embeddedLinkService;
 
     @Value("${spring.config.activate.on-profile}")
     private String env;
@@ -66,7 +64,7 @@ public class NewsService implements BaseService<News> {
 
     // region {createNewsWithImages} 뉴스 생성 + 이미지 사용 처리
     @Transactional
-    public News createNewsWithMedia(News news, String[] usedImageKeys, String[] usedVideoKeys, String[] embeddedLinks) {
+    public News createNewsWithImages(News news, String[] usedImageKeys) {
         News savedNewsEntity = newsRepository.save(news);
 //        System.out.println(env);
         if (usedImageKeys != null) {
@@ -78,31 +76,6 @@ public class NewsService implements BaseService<News> {
                     UsedInType.NEWS,
                     savedNewsEntity.getPk()
             );
-        }
-        if (usedVideoKeys != null && usedVideoKeys.length > 0) {
-            List<String> fullKeys = Arrays.stream(usedVideoKeys)
-                .map(key -> env + "/news-files/" + key)
-                .toList();
-
-            awsFileReferenceService.updateFilesAsUsed(
-                fullKeys,
-                UsedInType.NEWS,
-                savedNewsEntity.getPk()
-            );
-        }
-
-        if (embeddedLinks != null && embeddedLinks.length > 0) {
-            List<EmbeddedLink> links = Arrays.stream(embeddedLinks)
-                .distinct()
-                .map(link -> EmbeddedLink.builder()
-                    .id(UUID.randomUUID().toString())
-                    .url(link)
-                    .usedIn(UsedInType.NEWS)
-                    .referencePk(savedNewsEntity.getPk())
-                    .build()
-                ).collect(Collectors.toList());
-
-            embeddedLinkService.saveAll(links);
         }
 
         return savedNewsEntity;
@@ -214,12 +187,6 @@ public class NewsService implements BaseService<News> {
             .toArray(String[]::new);
 
         newsDetailDTO.setUsedImageKeys(usedImageKeys);
-
-        List<EmbeddedLink> embeddedLinks = embeddedLinkService.findByNewsPk(newsEntity.getPk());
-        String[] embeddedUrls = embeddedLinks.stream()
-            .map(EmbeddedLink::getUrl)
-            .toArray(String[]::new);
-        newsDetailDTO.setEmbeddedLinks(embeddedUrls);
         return newsDetailDTO;
     }
     // endregion
