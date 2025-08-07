@@ -62,7 +62,7 @@ public class NewsService implements BaseService<News> {
     }
     // endregion
 
-    // region {createNewsWithImages} 뉴스 생성 + 이미지 사용 처리
+    // region {createNewsWithImages} 뉴스 생성 + 이미지/영상 사용 처리
     @Transactional
     public News createNewsWithImages(News news, String[] usedImageKeys) {
         News savedNewsEntity = newsRepository.save(news);

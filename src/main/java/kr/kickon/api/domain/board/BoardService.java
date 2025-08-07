@@ -78,9 +78,9 @@ public class BoardService implements BaseService<Board> {
     }
     //#endregion
 
-    // region {createBoardWithImages} 게시글 생성 및 이미지 연동 처리
+    // region {createBoardWithImages} 게시글 생성 및 이미지/영상 연동 처리
     /**
-     * 게시글을 생성하고, 해당 게시글에 사용된 이미지 파일들을 연동 처리합니다.
+     * 게시글을 생성하고, 해당 게시글에 사용된 이미지/영상 파일들을 연동 처리합니다.
      */
     @Transactional
     public Board createBoardWithImages(Board board, String[] usedImageKeys) {
