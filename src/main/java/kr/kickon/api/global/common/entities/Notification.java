@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 public class Notification extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "receiver_id", nullable = false)
+    @JoinColumn(name = "receiver_pk", nullable = false)
     private User receiver;
 
     private String type;
@@ -23,10 +23,12 @@ public class Notification extends BaseEntity {
 
     private String redirectUrl;
 
+    @Column(name = "is_read", nullable = false)
     private boolean read;
 
     public void markAsRead() {
         this.read = true;
     }
 }
+
 
