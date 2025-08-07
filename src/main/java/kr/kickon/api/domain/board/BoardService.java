@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 import kr.kickon.api.domain.aws.AwsService;
 import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.board.dto.BoardDetailDTO;
@@ -20,7 +19,6 @@ import kr.kickon.api.domain.board.dto.BoardListDTO;
 import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
 import kr.kickon.api.domain.board.dto.BoardListDTO;
 import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
-import kr.kickon.api.domain.embeddedLink.EmbeddedLinkService;
 import kr.kickon.api.domain.partners.PartnersService;
 import kr.kickon.api.domain.user.dto.BaseUserDTO;
 import kr.kickon.api.domain.boardKick.BoardKickService;
@@ -53,8 +51,6 @@ public class BoardService implements BaseService<Board> {
     private final AwsFileReferenceService awsFileReferenceService;
     private final AwsService awsService;
     private final PartnersService partnersService;
-    private final EmbeddedLinkService embeddedLinkService;
-
     @Value("${spring.config.activate.on-profile}")
     private String env;
 
@@ -87,7 +83,7 @@ public class BoardService implements BaseService<Board> {
      * 게시글을 생성하고, 해당 게시글에 사용된 이미지/영상 파일들을 연동 처리합니다.
      */
     @Transactional
-    public Board createBoardWithMedia(Board board, String[] usedImageKeys, String[] usedVideoKeys, String[] embeddedLinks) {
+    public Board createBoardWithImages(Board board, String[] usedImageKeys) {
         Board boardEntity = boardRepository.save(board);
 
         if (usedImageKeys != null) {
@@ -101,33 +97,6 @@ public class BoardService implements BaseService<Board> {
                     boardEntity.getPk()
             );
         }
-
-        if (usedVideoKeys != null && usedVideoKeys.length > 0) {
-            List<String> fullKeys = Arrays.stream(usedVideoKeys)
-                .map(key -> env + "/board-files/" + key)
-                .toList();
-
-            awsFileReferenceService.updateFilesAsUsed(
-                fullKeys,
-                UsedInType.BOARD,
-                boardEntity.getPk()
-            );
-        }
-
-        if (embeddedLinks != null && embeddedLinks.length > 0) {
-            List<EmbeddedLink> links = Arrays.stream(embeddedLinks)
-                .distinct()
-                .map(link -> EmbeddedLink.builder()
-                    .id(UUID.randomUUID().toString())
-                    .url(link)
-                    .usedIn(UsedInType.BOARD)
-                    .referencePk(boardEntity.getPk())
-                    .build()
-                ).collect(Collectors.toList());
-
-            embeddedLinkService.saveAll(links);
-        }
-
 
         return boardEntity;
     }
@@ -278,12 +247,6 @@ public class BoardService implements BaseService<Board> {
         boardDetailDTO.setUsedImageKeys(usedImageKeys);
         boolean isInfluencer = partnersService.findByUserPk(userEntity.getPk());
         boardDetailDTO.setIsInfluencer(isInfluencer);
-
-        List<EmbeddedLink> embeddedLinks = embeddedLinkService.findByBoardPk(boardEntity.getPk());
-        String[] embeddedUrls = embeddedLinks.stream()
-            .map(EmbeddedLink::getUrl)
-            .toArray(String[]::new);
-        boardDetailDTO.setEmbeddedLinks(embeddedUrls);
         return boardDetailDTO;
     }
     //#endregion
