@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+@Table(name = "Notification")
 @Entity
 @Getter
 @NoArgsConstructor
@@ -23,12 +24,10 @@ public class Notification extends BaseEntity {
 
     private String redirectUrl;
 
-    @Column(name = "is_read", nullable = false)
-    private boolean read;
+    private boolean isRead;
 
     public void markAsRead() {
-        this.read = true;
+        this.isRead = true;
     }
 }
-
 

@@ -2,6 +2,7 @@ package kr.kickon.api.domain.boardViewHistory;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.time.LocalDateTime;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.BoardViewHistory;
 import kr.kickon.api.global.common.entities.QBoardViewHistory;
@@ -59,6 +60,31 @@ public class BoardViewHistoryService implements BaseService<BoardViewHistory> {
      */
     public void save(BoardViewHistory boardViewHistory) {
         boardViewHistoryRepository.save(boardViewHistory);
+    }
+    // endregion
+
+    // region 게시글 조회수 반환
+    /**
+     * Board PK로 조회수 계산
+     *
+     * @param boardPk 게시글PK
+     * @return Long 조회수
+     */
+    public Long countViewsByBoardPk(Long boardPk) {
+        return boardViewHistoryRepository.countByBoard_Pk(boardPk);
+    }
+    // endregion
+
+    // region 게시글 48시간 이내 조회수 반환
+    /**
+     * Board PK로 조회수 계산
+     *
+     * @param boardPk 게시글PK
+     * @return Long 조회수
+     */
+    public Long countViewsByBoardPkWithin48Hours(Long boardPk) {
+        LocalDateTime cutoff = LocalDateTime.now().minusHours(48);
+        return boardViewHistoryRepository.countByBoardPkAndCreatedAtAfter(boardPk, cutoff);
     }
     // endregion
 }

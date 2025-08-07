@@ -81,6 +81,7 @@ public class GameService implements BaseService<Game> {
 
     // region {findByApiId} 외부 API ID 기반 조회
     public Game findByApiId(Long apiId){
+        log.info("api id : {}", apiId.toString());
         BooleanExpression predicate = QGame.game.apiId.eq(apiId).and(QGame.game.status.eq(DataStatus.ACTIVATED));
         Optional<Game> gameEntity = gameRepository.findOne(predicate);
         if(gameEntity.isPresent()) return gameEntity.get();
@@ -215,20 +216,20 @@ public class GameService implements BaseService<Game> {
     // endregion
 
     // region {getGameListByToday} 오늘 진행 예정인 경기 조회
-    public List<Game> getGameListByToday() {
+    public List<Game> getPendingGames() {
         // QGame 객체 생성
         QGame game = QGame.game;
 
         // 현재 시간과 4시간 전 시간 계산
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime past24Hours = now.minusHours(4);
+        LocalDateTime now = LocalDateTime.now().minusHours(3);
+        LocalDateTime past24Hours = now.minusHours(4320);
 
         // QueryDSL을 사용하여 24시간 이내에 시작한 게임 중 종료된 게임을 조회
         return queryFactory
                 .selectFrom(game)
                 .where(
                         game.startedAt.between(past24Hours, now),  // 24시간 이내 시작한 게임
-                        game.gameStatus.in(GameStatus.PENDING, GameStatus.POSTPONED,GameStatus.PROCEEDING),
+                        game.gameStatus.in(GameStatus.PENDING, GameStatus.POSTPONED, GameStatus.PROCEEDING),
                         game.status.eq(DataStatus.ACTIVATED)
                 )
                 .orderBy(game.startedAt.desc()) // 최신순 정렬

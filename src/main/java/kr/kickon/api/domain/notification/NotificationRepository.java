@@ -9,6 +9,6 @@ import java.util.List;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long>, QuerydslPredicateExecutor<Notification> {
     List<Notification> findByReceiverOrderByCreatedAtDesc(User receiver);
-    int countByReceiverAndReadIsFalse(User receiver);
+    int countByReceiverAndIsReadIsFalse(User receiver);
 }
 

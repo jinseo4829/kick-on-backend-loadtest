@@ -30,11 +30,14 @@ public class ExampleConstants {
     public static final String teamPk = "1647";
     public static final String userPk = "1";
     public static final String leaguePk = "12";
+    public static final String s3Key = "dev/board-files/화면_기록_20250528_오후_11727_20250601002627.mov";
+    public static final String UsedInType = "BOARD";
     public static final String operatingStatus = "PROCEEDING";
     public static final String seasonTitle = "24/25 K 리그";
     public static final String seasonTeams = "[1647, 1648, 1649]";
     public static final String year = "2025";
     public static final String fanCount = "100";
     public static final String apiId = "2746";
+    public static final String shortsSortType = "CREATED_DESC";
 
 }

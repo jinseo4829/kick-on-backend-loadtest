@@ -2,6 +2,7 @@ package kr.kickon.api.domain.newsKick;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.time.LocalDateTime;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.BoardKick;
 import kr.kickon.api.global.common.entities.NewsKick;
@@ -68,6 +69,31 @@ public class NewsKickService implements BaseService<NewsKick> {
      */
     public void save(NewsKick newsKick) {
         newsKickRepository.save(newsKick);
+    }
+    // endregion
+
+    // region 뉴스 킥 수 반환
+    /**
+     * News PK로 킥 수 계산
+     *
+     * @param newsPk 뉴스PK
+     * @return Long 킥 수
+     */
+    public Long countKicksByNewsPk(Long newsPk) {
+        return newsKickRepository.countByNews_PkAndStatus(newsPk, DataStatus.ACTIVATED);
+    }
+    // endregion
+
+    // region 게시글 48시간 이내 킥 수 반환
+    /**
+     * News PK로 킥 수 계산
+     *
+     * @param newsPk 뉴스PK
+     * @return Long 48시간 이내 킥 수
+     */
+    public long countKicksByNewsPkWithin48Hours(Long newsPk) {
+        LocalDateTime cutoff = LocalDateTime.now().minusHours(48);
+        return newsKickRepository.countByNews_PkAndCreatedAtAfterAndStatus(newsPk, cutoff, DataStatus.ACTIVATED);
     }
     // endregion
 }
