@@ -18,6 +18,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @NoArgsConstructor
 public class EmbeddedLink extends BaseEntity {
+
   @Column(length = 512, nullable = false, name = "url")
   private String url;
 
