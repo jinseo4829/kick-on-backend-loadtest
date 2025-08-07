@@ -114,7 +114,8 @@ public class NewsController {
             news.setTeam(team);
         }
 
-        News newsCreated = newsService.createNewsWithImages(news, request.getUsedImageKeys());
+        News newsCreated = newsService.createNewsWithMedia(news, request.getUsedImageKeys(),
+            request.getUsedVideoKeys(), request.getEmbeddedLinks());
 
         NewsDetailDTO newsDetailDTO = newsService.getNewsDetailDTOByPk(newsCreated.getPk(),user);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS,newsDetailDTO));
