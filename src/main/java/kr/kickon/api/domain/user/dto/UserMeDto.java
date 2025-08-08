@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -41,6 +42,12 @@ public class UserMeDto extends BaseUserDTO {
 
     @Schema(description = "구단기자 여부", example = "false")
     private Boolean isReporter=false;
+
+    @Schema(description = "응원팀 변경 가능 여부", example = "true")
+    private Boolean canChangeTeam;
+
+    @Schema(description = "다음 응원팀 변경 가능 시각", example = ExampleConstants.datetime)
+    private LocalDateTime nextAvailableChangeDate;
 
     public UserMeDto(User user) {
         super(user);
