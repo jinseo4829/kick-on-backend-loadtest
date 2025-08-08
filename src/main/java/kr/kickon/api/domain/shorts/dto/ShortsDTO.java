@@ -23,8 +23,8 @@ public class ShortsDTO {
   @Schema(description = "AwsFileReference pk", example = "215")
   private Long pk;
 
-  @Schema(description = "s3Key", example = ExampleConstants.s3Key)
-  private String s3Key;
+  @Schema(description = "videoUrl", example = ExampleConstants.s3Key)
+  private String videoUrl;
 
   @Schema(description = "게시글/뉴스 구분", example = ExampleConstants.UsedInType)
   private UsedInType usedIn;
@@ -50,17 +50,25 @@ public class ShortsDTO {
   @Schema(description = "작성일", example = ExampleConstants.datetime)
   private LocalDateTime createdAt;
 
-  public static ShortsDTO fromEntity(AwsFileReference file, Long viewCount, Long kickCount, String title) {
+  public interface VideoResource {
+    Long getPk();
+    String getVideoUrl();
+    UsedInType getUsedIn();
+    Long getReferencePk();
+    LocalDateTime getCreatedAt();
+  }
+
+  public static ShortsDTO fromEntity(VideoResource video, Long viewCount, Long kickCount, String title) {
 
     return ShortsDTO.builder()
-        .pk(file.getPk())
-        .s3Key(file.getS3Key())
-        .usedIn(file.getUsedIn())
-        .referencePk(file.getReferencePk())
+        .pk(video.getPk())
+        .videoUrl(video.getVideoUrl())
+        .usedIn(video.getUsedIn())
+        .referencePk(video.getReferencePk())
         .title(title)
         .viewCount(viewCount)
         .kickCount(kickCount)
-        .createdAt(file.getCreatedAt())
+        .createdAt(video.getCreatedAt())
         .build();
   }
 }

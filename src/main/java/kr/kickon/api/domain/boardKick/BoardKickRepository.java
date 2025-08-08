@@ -10,7 +10,4 @@ import org.springframework.stereotype.Repository;
 public interface BoardKickRepository extends JpaRepository<BoardKick, Long>, QuerydslPredicateExecutor<BoardKick> {
 
   Long countByBoard_PkAndStatus(Long boardPk, DataStatus status);
-
-  // 48시간 이내의 활성화된 BoardKick 수
-  long countByBoard_PkAndCreatedAtAfterAndStatus(Long boardPk, LocalDateTime after, DataStatus status);
 }

@@ -24,18 +24,18 @@ public class ShortsDetailDTO extends ShortsDTO{
   @Schema(description = "유저 정보")
   private BaseUserDTO user;
 
-  public static ShortsDetailDTO fromEntity(AwsFileReference file, Long viewCount, Long kickCount, Long replyCount, String title, User user) {
+  public static ShortsDetailDTO fromEntity(VideoResource video, Long viewCount, Long kickCount, Long replyCount, String title, User user) {
 
     return ShortsDetailDTO.builder()
-        .pk(file.getPk())
-        .s3Key(file.getS3Key())
-        .usedIn(file.getUsedIn())
-        .referencePk(file.getReferencePk())
+        .pk(video.getPk())
+        .videoUrl(video.getVideoUrl())
+        .usedIn(video.getUsedIn())
+        .referencePk(video.getReferencePk())
         .title(title)
         .viewCount(viewCount)
         .kickCount(kickCount)
         .replyCount(replyCount)
-        .createdAt(file.getCreatedAt())
+        .createdAt(video.getCreatedAt())
         .user(user != null ? new BaseUserDTO(user) : null)
         .build();
   }

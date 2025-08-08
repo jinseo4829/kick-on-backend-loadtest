@@ -75,17 +75,4 @@ public class BoardKickService implements BaseService<BoardKick> {
         return boardKickRepository.countByBoard_PkAndStatus(boardPk, DataStatus.ACTIVATED);
     }
     // endregion
-
-    // region 게시글 48시간 이내 킥 수 반환
-    /**
-     * Board PK로 킥 수 계산
-     *
-     * @param boardPk 게시글PK
-     * @return Long 48시간 이내 킥 수
-     */
-    public long countKicksByBoardPkWithin48Hours(Long boardPk) {
-        LocalDateTime cutoff = LocalDateTime.now().minusHours(48);
-        return boardKickRepository.countByBoard_PkAndCreatedAtAfterAndStatus(boardPk, cutoff, DataStatus.ACTIVATED);
-    }
-    // endregion
 }

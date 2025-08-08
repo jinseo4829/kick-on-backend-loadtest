@@ -8,7 +8,4 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface NewsViewHistoryRepository extends JpaRepository<NewsViewHistory, Long>, QuerydslPredicateExecutor<NewsViewHistory> {
   Long countByNews_Pk(Long newsPk);
-
-  Long countByNewsPkAndCreatedAtAfter(Long newsPk, LocalDateTime createdAtAfter);
-
 }

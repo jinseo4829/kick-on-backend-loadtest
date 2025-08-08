@@ -74,17 +74,4 @@ public class NewsViewHistoryService implements BaseService<NewsViewHistory> {
         return newsViewHistoryRepository.countByNews_Pk(newsPk);
     }
     // endregion
-
-    // region 뉴스 48시간 이내 조회수 반환
-    /**
-     * News PK로 조회수 계산
-     *
-     * @param newsPk 뉴스PK
-     * @return Long 조회수
-     */
-    public Long countViewsByNewsPkWithin48Hours(Long newsPk) {
-        LocalDateTime cutoff = LocalDateTime.now().minusHours(48);
-        return newsViewHistoryRepository.countByNewsPkAndCreatedAtAfter(newsPk, cutoff);
-    }
-    // endregion
 }
