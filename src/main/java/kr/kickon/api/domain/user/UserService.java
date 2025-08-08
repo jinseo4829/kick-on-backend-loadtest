@@ -205,21 +205,31 @@ public class UserService implements BaseService<User> {
             List<Long> requestedTeamPks = request.getTeams();
             List<UserFavoriteTeam> existingList = userFavoriteTeamService.findAllByUserPk(user.getPk());
 
-            // 변경 제한 기간 체크
-            for (UserFavoriteTeam oldUft : existingList) {
-                if (oldUft.getStatus() == DataStatus.ACTIVATED) {
-                    LocalDateTime createdAt = oldUft.getCreatedAt();
-                    if (createdAt != null && createdAt.plusMonths(6).isAfter(LocalDateTime.now())) {
-                        throw new BadRequestException(ResponseCode.CANNOT_CHANGE_TEAM_YET);
-                    }
+            // 기존 활성화된 팀 목록 (PK만 추출, 순서 무시)
+            Set<Long> currentTeamPkSet = existingList.stream()
+                    .filter(uf -> uf.getStatus() == DataStatus.ACTIVATED)
+                    .map(uf -> uf.getTeam().getPk())
+                    .collect(Collectors.toSet());
+
+            Set<Long> requestedTeamPkSet = new HashSet<>(requestedTeamPks);
+
+            // ✅ 팀 구성(PK 집합)이 달라진 경우에만 제한 검사 수행
+            if (!currentTeamPkSet.equals(requestedTeamPkSet)) {
+                Optional<LocalDateTime> latestUpdatedAt = existingList.stream()
+                        .filter(uf -> uf.getStatus() == DataStatus.ACTIVATED)
+                        .map(UserFavoriteTeam::getUpdatedAt)
+                        .filter(Objects::nonNull)
+                        .max(LocalDateTime::compareTo);
+
+                if (latestUpdatedAt.isPresent() &&
+                        latestUpdatedAt.get().plusMonths(6).isAfter(LocalDateTime.now())) {
+                    throw new BadRequestException(ResponseCode.CANNOT_CHANGE_TEAM_YET);
                 }
             }
 
             // 기존 팀 매핑
             Map<Long, UserFavoriteTeam> teamMap = existingList.stream()
                     .collect(Collectors.toMap(uf -> uf.getTeam().getPk(), Function.identity()));
-
-            Set<Long> requestedTeamPkSet = new HashSet<>(requestedTeamPks);
 
             // 요청되지 않은 팀은 비활성화 처리
             for (UserFavoriteTeam oldUft : existingList) {
