@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
-import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.board.BoardService;
 import kr.kickon.api.domain.boardKick.BoardKickService;
 import kr.kickon.api.domain.boardReply.BoardReplyService;
@@ -20,9 +19,9 @@ import kr.kickon.api.domain.newsKick.NewsKickService;
 import kr.kickon.api.domain.newsReply.NewsReplyService;
 import kr.kickon.api.domain.newsViewHistory.NewsViewHistoryService;
 import kr.kickon.api.domain.shorts.dto.ShortsDTO;
+import kr.kickon.api.domain.shorts.dto.ShortsDTO.VideoResource;
 import kr.kickon.api.domain.shorts.dto.ShortsDetailDTO;
 import kr.kickon.api.domain.shorts.request.GetShortsRequest;
-import kr.kickon.api.global.common.entities.AwsFileReference;
 import kr.kickon.api.global.common.entities.Board;
 import kr.kickon.api.global.common.entities.News;
 import kr.kickon.api.global.common.entities.QAwsFileReference;
@@ -48,7 +47,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ShortsService {
 
-  private final AwsFileReferenceService awsFileReferenceService;
   private final BoardViewHistoryService boardViewHistoryService;
   private final NewsViewHistoryService newsViewHistoryService;
   private final BoardKickService boardKickService;
@@ -233,7 +231,7 @@ public class ShortsService {
    * @return ShortsDetailDTO
    */
   @Transactional
-  public ShortsDetailDTO getShortsDetail(AwsFileReference file){
+  public ShortsDetailDTO getShortsDetail(VideoResource file){
     Long viewCount = 0L;
     Long kickCount = 0L;
     Long replyCount = 0L;
