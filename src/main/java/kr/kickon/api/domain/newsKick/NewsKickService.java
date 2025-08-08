@@ -83,17 +83,4 @@ public class NewsKickService implements BaseService<NewsKick> {
         return newsKickRepository.countByNews_PkAndStatus(newsPk, DataStatus.ACTIVATED);
     }
     // endregion
-
-    // region 게시글 48시간 이내 킥 수 반환
-    /**
-     * News PK로 킥 수 계산
-     *
-     * @param newsPk 뉴스PK
-     * @return Long 48시간 이내 킥 수
-     */
-    public long countKicksByNewsPkWithin48Hours(Long newsPk) {
-        LocalDateTime cutoff = LocalDateTime.now().minusHours(48);
-        return newsKickRepository.countByNews_PkAndCreatedAtAfterAndStatus(newsPk, cutoff, DataStatus.ACTIVATED);
-    }
-    // endregion
 }

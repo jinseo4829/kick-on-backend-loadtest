@@ -33,6 +33,7 @@ import kr.kickon.api.global.common.entities.QNews;
 import kr.kickon.api.global.common.entities.QNewsKick;
 import kr.kickon.api.global.common.entities.QNewsViewHistory;
 import kr.kickon.api.global.common.entities.User;
+import kr.kickon.api.global.common.enums.ShortsSortType;
 import kr.kickon.api.global.common.enums.UsedInType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -94,8 +95,12 @@ public class ShortsService {
 
     long total = totalCount != null ? totalCount : 0L;
 
+    ShortsSortType sortType = request.getSort();
+    if (sortType == null) {
+      sortType = ShortsSortType.CREATED_DESC; // 기본 정렬 기준
+    }
     // 정렬 조건
-    Comparator<ShortsDTO> comparator = switch (request.getSort()) {
+    Comparator<ShortsDTO> comparator = switch (sortType) {
       case CREATED_ASC -> Comparator.comparing(ShortsDTO::getCreatedAt);
       case POPULAR -> Comparator.comparingLong(ShortsDTO::getSortViewCount).reversed()
           .thenComparing(Comparator.comparingLong(ShortsDTO::getSortKickCount).reversed());
@@ -106,6 +111,12 @@ public class ShortsService {
   }
   //endregion
 
+  // region 쇼츠 리스트 조회
+  /**
+   * Shorts 영상 리스트를 조회하는 공통 로직입니다.
+   * @param limit 조회 엔티티 수
+   * @return ShortsDTO 리스트
+   */
   private List<ShortsDTO> queryShorts(@Nullable Integer limit) {
     QAwsFileReference awsFileReference = QAwsFileReference.awsFileReference;
     QBoard board = QBoard.board;
@@ -213,6 +224,7 @@ public class ShortsService {
 
     return combined;
   }
+  //endregion
 
   // region 쇼츠 상세 조회
   /**
