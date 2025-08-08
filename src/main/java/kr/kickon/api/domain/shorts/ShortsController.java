@@ -60,7 +60,7 @@ public class ShortsController {
   })
   public ResponseEntity<ResponseDTO<List<ShortsDTO>>> getShorts(@Valid @ModelAttribute GetShortsRequest request) {
     Pageable pageable = request.toPageable();
-    Page<ShortsDTO> shortsPage = shortsService.getShorts(request, pageable);
+    Page<ShortsDTO> shortsPage = shortsService.getShortsWithPagination(request, pageable);
     return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, shortsPage.getContent(),
         new PagedMetaDTO(
         shortsPage.getNumber() + 1,
