@@ -11,6 +11,7 @@ import kr.kickon.api.domain.newsReply.dto.PaginatedNewsReplyListDTO;
 import kr.kickon.api.domain.newsReply.dto.ReplyDTO;
 import kr.kickon.api.domain.newsReplyKick.NewsReplyKickService;
 import kr.kickon.api.domain.notification.NotificationService;
+import kr.kickon.api.domain.teamReporter.TeamReporterService;
 import kr.kickon.api.domain.user.dto.BaseUserDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
@@ -39,6 +40,7 @@ public class NewsReplyService implements BaseService<NewsReply> {
     private final AwsFileReferenceService awsFileReferenceService;
     private final AwsService awsService;
     private final NotificationService notificationService;
+    private final TeamReporterService teamReporterService;
 
     @Value("${spring.config.activate.on-profile}")
     private String env;
@@ -190,6 +192,7 @@ public class NewsReplyService implements BaseService<NewsReply> {
             myNewsReplyKickEntity = newsReplyKickService.findByNewsReplyAndUser(parentNewsReplyEntity.getPk(), userPk);
         }
         Long kickCount = newsReplyKickService.getNewsReplyKickCount(parentNewsReplyEntity.getPk());
+        TeamReporter teamReporter = teamReporterService.findByUserId(parentNewsReplyEntity.getUser().getId());
         return ReplyDTO.builder()
                 .pk(parentNewsReplyEntity.getPk())
                 .contents(parentNewsReplyEntity.getContents())
@@ -198,6 +201,7 @@ public class NewsReplyService implements BaseService<NewsReply> {
                         .id(replyUserEntity.getId())
                         .nickname(replyUserEntity.getNickname())
                         .profileImageUrl(replyUserEntity.getProfileImageUrl())
+                        .isReporter(teamReporter != null)
                         .build())
                 .replies(parentNewsReplyEntity.getParentNewsReply() != null ? null : getChildReplyList(parentNewsReplyEntity.getPk(), userPk))
                 .isKicked(myNewsReplyKickEntity!=null)

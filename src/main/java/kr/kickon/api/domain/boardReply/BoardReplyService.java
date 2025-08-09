@@ -15,6 +15,7 @@ import kr.kickon.api.domain.boardReply.dto.PaginatedReplyListDTO;
 import kr.kickon.api.domain.boardReply.dto.ReplyDTO;
 import kr.kickon.api.domain.boardReplyKick.BoardReplyKickService;
 import kr.kickon.api.domain.notification.NotificationService;
+import kr.kickon.api.domain.teamReporter.TeamReporterService;
 import kr.kickon.api.domain.user.dto.BaseUserDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
@@ -43,6 +44,7 @@ public class BoardReplyService implements BaseService<BoardReply> {
     private final AwsFileReferenceService awsFileReferenceService;
     private final AwsService awsService;
     private final NotificationService notificationService;
+    private final TeamReporterService teamReporterService;
     @Value("${spring.config.activate.on-profile}")
     private String env;
 
@@ -158,6 +160,7 @@ public class BoardReplyService implements BaseService<BoardReply> {
             myBoardReplyKick = boardReplyKickService.findByBoardReplyAndUser(parentReply.getPk(), userPk);
         }
         Long kickCount = boardReplyKickService.getBoardReplyKickCount(parentReply.getPk());
+        TeamReporter teamReporter = teamReporterService.findByUserId(parentReply.getUser().getId());
         return ReplyDTO.builder()
                 .pk(parentReply.getPk())
                 .contents(parentReply.getContents())
@@ -166,6 +169,7 @@ public class BoardReplyService implements BaseService<BoardReply> {
                         .id(replyUser.getId())
                         .nickname(replyUser.getNickname())
                         .profileImageUrl(replyUser.getProfileImageUrl())
+                        .isReporter(teamReporter!=null)
                         .build())
                 .replies(parentReply.getParentBoardReply() != null ? null : getChildReplyList(parentReply.getPk(), userPk))
                 .isKicked(myBoardReplyKick!=null)
