@@ -10,5 +10,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface TeamReporterRepository extends JpaRepository<TeamReporter, Long>, QuerydslPredicateExecutor<TeamReporter> {
     TeamReporter findByUserAndStatus(User user, DataStatus status);
-    TeamReporter findByUserIdAAndStatus(String id, DataStatus status);
+    TeamReporter findByUserIdAndStatus(String id, DataStatus status);
 }

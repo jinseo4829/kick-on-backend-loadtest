@@ -39,7 +39,7 @@ public class TeamReporterService implements BaseService<TeamReporter> {
     }
 
     public TeamReporter findByUserId(String userId) {
-        return teamReporterRepository.findByUserIdAAndStatus(userId, DataStatus.ACTIVATED);
+        return teamReporterRepository.findByUserIdAndStatus(userId, DataStatus.ACTIVATED);
     }
 
     public void save(TeamReporter teamReporter) {
