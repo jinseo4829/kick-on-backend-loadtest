@@ -30,7 +30,6 @@ import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.UsedInType;
-import kr.kickon.api.global.util.HtmlParserUtil;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -89,11 +88,8 @@ public class BoardService implements BaseService<Board> {
      * 게시글을 생성하고, 해당 게시글에 사용된 이미지/영상 파일들을 연동 처리합니다.
      */
     @Transactional
-    public Board createBoardWithMedia(Board board, String[] usedImageKeys, String[] usedVideoKeys) {
+    public Board createBoardWithMedia(Board board, String[] usedImageKeys, String[] usedVideoKeys, String[] embeddedLinks) {
         Board boardEntity = boardRepository.save(board);
-
-        // YouTube 링크 추출
-        String[] embeddedLinks = HtmlParserUtil.extractYoutubeWatchLinks(boardEntity.getContents());
 
         if (usedImageKeys != null) {
             List<String> fullKeys = Arrays.stream(usedImageKeys)
@@ -119,7 +115,7 @@ public class BoardService implements BaseService<Board> {
             );
         }
 
-        if (embeddedLinks.length > 0) {
+        if (embeddedLinks != null && embeddedLinks.length > 0) {
             List<EmbeddedLink> links = Arrays.stream(embeddedLinks)
                 .distinct()
                 .map(link -> EmbeddedLink.builder()
@@ -289,6 +285,12 @@ public class BoardService implements BaseService<Board> {
 
         TeamReporter teamReporter = teamReporterService.findByUserId(boardEntity.getUser().getId());
         boardDetailDTO.getUser().setIsReporter(teamReporter != null);
+
+        List<EmbeddedLink> embeddedLinks = embeddedLinkService.findByBoardPk(boardEntity.getPk());
+        String[] embeddedUrls = embeddedLinks.stream()
+            .map(EmbeddedLink::getUrl)
+            .toArray(String[]::new);
+        boardDetailDTO.setEmbeddedLinks(embeddedUrls);
         return boardDetailDTO;
     }
     //#endregion
