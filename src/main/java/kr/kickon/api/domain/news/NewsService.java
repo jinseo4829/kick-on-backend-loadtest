@@ -22,6 +22,7 @@ import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.UsedInType;
+import kr.kickon.api.global.util.HtmlParserUtil;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -68,8 +69,10 @@ public class NewsService implements BaseService<News> {
 
     // region {createNewsWithImages} 뉴스 생성 + 이미지/영상 사용 처리
     @Transactional
-    public News createNewsWithMedia(News news, String[] usedImageKeys, String[] usedVideoKeys, String[] embeddedLinks) {
+    public News createNewsWithMedia(News news, String[] usedImageKeys, String[] usedVideoKeys) {
         News savedNewsEntity = newsRepository.save(news);
+        // YouTube 링크 추출
+        String[] embeddedLinks = HtmlParserUtil.extractYoutubeWatchLinks(savedNewsEntity.getContents());
 //        System.out.println(env);
         if (usedImageKeys != null) {
             List<String> fullKeys = Arrays.stream(usedImageKeys)
@@ -93,7 +96,7 @@ public class NewsService implements BaseService<News> {
             );
         }
 
-        if (embeddedLinks != null && embeddedLinks.length > 0) {
+        if (embeddedLinks.length > 0) {
             List<EmbeddedLink> links = Arrays.stream(embeddedLinks)
                 .distinct()
                 .map(link -> EmbeddedLink.builder()
@@ -225,12 +228,6 @@ public class NewsService implements BaseService<News> {
         if(teamReporter != null) {
             newsDetailDTO.getUser().setIsReporter(true);
         }
-
-        List<EmbeddedLink> embeddedLinks = embeddedLinkService.findByNewsPk(newsEntity.getPk());
-        String[] embeddedUrls = embeddedLinks.stream()
-            .map(EmbeddedLink::getUrl)
-            .toArray(String[]::new);
-        newsDetailDTO.setEmbeddedLinks(embeddedUrls);
         return newsDetailDTO;
     }
     // endregion
