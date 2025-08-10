@@ -26,6 +26,7 @@ public class AwsFileReference extends BaseEntity implements VideoResource {
 
     @Override
     public String getVideoUrl() {
-        return s3Key;
+        return "https://kickon-files-bucket.s3.ap-northeast-2.amazonaws.com/" + s3Key;
     }
+
 }
