@@ -77,7 +77,8 @@ public class BoardController {
             if(team==null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
             board.setTeam(team);
         }
-        Board boardCreated = boardService.createBoardWithMedia(board, request.getUsedImageKeys(), request.getUsedVideoKeys());
+        Board boardCreated = boardService.createBoardWithMedia(board, request.getUsedImageKeys(), request.getUsedVideoKeys(),
+            request.getEmbeddedLinks());
 
         BoardDetailDTO boardDetailDTO = boardService.getBoardDetailDTOByPk(boardCreated.getPk(),user);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, boardDetailDTO));

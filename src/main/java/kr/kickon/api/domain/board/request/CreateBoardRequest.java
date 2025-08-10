@@ -34,6 +34,9 @@ public class CreateBoardRequest {
     @Schema(description = "게시글 내 사용된 영상 S3 키 배열", example = "[\"화면_기록_20250528_오후_11727_20250601002627.mov\"]")
     private String[] usedVideoKeys;
 
+    @Schema(description = "게시글 내 삽입된 영상 링크 배열", example = "[\"https://www.youtube.com/watch?v=szWUXa7NI0s\"]")
+    private String[] embeddedLinks;
+
     @Schema(description = "게시글 상단 고정 여부", example = "false", nullable = true)
     private Boolean isPinned;
 }
