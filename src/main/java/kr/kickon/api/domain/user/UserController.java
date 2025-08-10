@@ -32,9 +32,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
@@ -110,6 +111,37 @@ public class UserController {
         if(teamReporter != null) {
             userDto.setIsReporter(true);
         }
+
+        // 응원팀 변경 가능 여부 및 다음 변경 가능일 계산
+        List<UserFavoriteTeam> allFavoriteTeams = userFavoriteTeamService.findAllByUserPk(user.getPk());
+
+        // 기존 활성화된 팀 PK Set (순서 무시)
+        Set<Long> currentTeamPkSet = allFavoriteTeams.stream()
+                .filter(uf -> uf.getStatus() == DataStatus.ACTIVATED)
+                .map(uf -> uf.getTeam().getPk())
+                .collect(Collectors.toSet());
+
+        Set<Long> requestedTeamPkSet = currentTeamPkSet; // 프론트에 팀 구성 요청은 없음 → 현재 구성 기준
+
+        boolean canChangeTeam = true;
+        LocalDateTime nextAvailableChangeDate = null;
+
+        //  가장 최근 updatedAt 기준으로 검사
+        Optional<LocalDateTime> latestUpdatedAt = allFavoriteTeams.stream()
+                .filter(uf -> uf.getStatus() == DataStatus.ACTIVATED)
+                .map(UserFavoriteTeam::getUpdatedAt)
+                .filter(Objects::nonNull)
+                .max(LocalDateTime::compareTo);
+
+        if (latestUpdatedAt.isPresent() &&
+                latestUpdatedAt.get().plusMonths(6).isAfter(LocalDateTime.now())) {
+            canChangeTeam = false;
+            nextAvailableChangeDate = latestUpdatedAt.get().plusMonths(6);
+        }
+
+        userDto.setCanChangeTeam(canChangeTeam);
+        userDto.setNextAvailableChangeDate(nextAvailableChangeDate);
+
 
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS,userDto));
     }

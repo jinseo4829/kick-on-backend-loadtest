@@ -35,7 +35,11 @@ public class TeamReporterService implements BaseService<TeamReporter> {
     }
 
     public TeamReporter findByUser(User user) {
-        return teamReporterRepository.findByUser(user);
+        return teamReporterRepository.findByUserAndStatus(user, DataStatus.ACTIVATED);
+    }
+
+    public TeamReporter findByUserId(String userId) {
+        return teamReporterRepository.findByUserIdAndStatus(userId, DataStatus.ACTIVATED);
     }
 
     public void save(TeamReporter teamReporter) {

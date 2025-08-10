@@ -16,6 +16,7 @@ import kr.kickon.api.domain.embeddedLink.EmbeddedLinkService;
 import kr.kickon.api.domain.news.dto.*;
 import kr.kickon.api.domain.newsKick.NewsKickService;
 import kr.kickon.api.domain.team.dto.TeamDTO;
+import kr.kickon.api.domain.teamReporter.TeamReporterService;
 import kr.kickon.api.domain.user.dto.BaseUserDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
@@ -42,6 +43,7 @@ public class NewsService implements BaseService<News> {
     private final AwsFileReferenceService awsFileReferenceService;
     private final AwsService awsService;
     private final EmbeddedLinkService embeddedLinkService;
+    private final TeamReporterService teamReporterService;
 
     @Value("${spring.config.activate.on-profile}")
     private String env;
@@ -168,6 +170,11 @@ public class NewsService implements BaseService<News> {
                     .build());
         }
 
+        TeamReporter teamReporter = teamReporterService.findByUserId(newsListDTO.getUser().getId());
+        if(teamReporter != null) {
+            newsListDTO.getUser().setIsReporter(true);
+        }
+
         return newsListDTO;
     }
     // endregion
@@ -214,6 +221,10 @@ public class NewsService implements BaseService<News> {
             .toArray(String[]::new);
 
         newsDetailDTO.setUsedImageKeys(usedImageKeys);
+        TeamReporter teamReporter = teamReporterService.findByUserId(newsDetailDTO.getUser().getId());
+        if(teamReporter != null) {
+            newsDetailDTO.getUser().setIsReporter(true);
+        }
 
         List<EmbeddedLink> embeddedLinks = embeddedLinkService.findByNewsPk(newsEntity.getPk());
         String[] embeddedUrls = embeddedLinks.stream()

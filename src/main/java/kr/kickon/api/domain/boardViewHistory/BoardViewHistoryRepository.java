@@ -8,6 +8,4 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface BoardViewHistoryRepository extends JpaRepository<BoardViewHistory, Long>, QuerydslPredicateExecutor<BoardViewHistory> {
   Long countByBoard_Pk(Long boardPk);
-
-  Long countByBoardPkAndCreatedAtAfter(Long boardPk, LocalDateTime createdAtAfter);
 }

@@ -24,6 +24,9 @@ public class BaseUserDTO {
     @Schema(description = "사용자 프로필 이미지", example = "https://naver.me/image.png")
     private String profileImageUrl;
 
+    @Schema(description = "구단기자 여부", example = "false")
+    private Boolean isReporter=false;
+
     public BaseUserDTO(User user) {
         id = user.getId();
         nickname = user.getNickname();

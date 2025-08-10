@@ -22,6 +22,7 @@ import kr.kickon.api.domain.board.dto.BoardListDTO;
 import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
 import kr.kickon.api.domain.embeddedLink.EmbeddedLinkService;
 import kr.kickon.api.domain.partners.PartnersService;
+import kr.kickon.api.domain.teamReporter.TeamReporterService;
 import kr.kickon.api.domain.user.dto.BaseUserDTO;
 import kr.kickon.api.domain.boardKick.BoardKickService;
 import kr.kickon.api.domain.team.dto.TeamDTO;
@@ -54,7 +55,7 @@ public class BoardService implements BaseService<Board> {
     private final AwsService awsService;
     private final PartnersService partnersService;
     private final EmbeddedLinkService embeddedLinkService;
-
+    private final TeamReporterService teamReporterService;
     @Value("${spring.config.activate.on-profile}")
     private String env;
 
@@ -198,6 +199,9 @@ public class BoardService implements BaseService<Board> {
                     .nameEn(teamEntity.getNameEn())
                     .build());
         }
+
+        TeamReporter teamReporter = teamReporterService.findByUserId(boardEntity.getUser().getId());
+        boardListDTO.getUser().setIsReporter(teamReporter != null);
         return boardListDTO;
     }
     //#endregion
@@ -278,6 +282,9 @@ public class BoardService implements BaseService<Board> {
         boardDetailDTO.setUsedImageKeys(usedImageKeys);
         boolean isInfluencer = partnersService.findByUserPk(userEntity.getPk());
         boardDetailDTO.setIsInfluencer(isInfluencer);
+
+        TeamReporter teamReporter = teamReporterService.findByUserId(boardEntity.getUser().getId());
+        boardDetailDTO.getUser().setIsReporter(teamReporter != null);
 
         List<EmbeddedLink> embeddedLinks = embeddedLinkService.findByBoardPk(boardEntity.getPk());
         String[] embeddedUrls = embeddedLinks.stream()

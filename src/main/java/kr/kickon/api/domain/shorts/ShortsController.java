@@ -53,14 +53,14 @@ public class ShortsController {
   }
 
   @GetMapping
-  @Operation(summary = "쇼츠 리스트 조회", description = "쇼츠 리스트를 조회합니다. 최신순/인기순/등록순으로 정렬 가능합니다.")
+  @Operation(summary = "쇼츠 리스트 조회", description = "쇼츠 리스트를 조회합니다. 최신순(CREATED_DESC)/인기순(POPULAR)/등록순(CREATED_ASC)으로 정렬 가능합니다. default는 최신순입니다.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "성공",
           content = @Content(schema = @Schema(implementation = GetShortsResponse.class))),
   })
   public ResponseEntity<ResponseDTO<List<ShortsDTO>>> getShorts(@Valid @ModelAttribute GetShortsRequest request) {
     Pageable pageable = request.toPageable();
-    Page<ShortsDTO> shortsPage = shortsService.getShorts(request, pageable);
+    Page<ShortsDTO> shortsPage = shortsService.getShortsWithPagination(request, pageable);
     return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, shortsPage.getContent(),
         new PagedMetaDTO(
         shortsPage.getNumber() + 1,

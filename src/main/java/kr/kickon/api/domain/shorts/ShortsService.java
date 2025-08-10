@@ -4,12 +4,12 @@ import com.querydsl.core.types.ExpressionUtils;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import jakarta.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
-import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.board.BoardService;
 import kr.kickon.api.domain.boardKick.BoardKickService;
 import kr.kickon.api.domain.boardReply.BoardReplyService;
@@ -19,9 +19,9 @@ import kr.kickon.api.domain.newsKick.NewsKickService;
 import kr.kickon.api.domain.newsReply.NewsReplyService;
 import kr.kickon.api.domain.newsViewHistory.NewsViewHistoryService;
 import kr.kickon.api.domain.shorts.dto.ShortsDTO;
+import kr.kickon.api.domain.shorts.dto.ShortsDTO.VideoResource;
 import kr.kickon.api.domain.shorts.dto.ShortsDetailDTO;
 import kr.kickon.api.domain.shorts.request.GetShortsRequest;
-import kr.kickon.api.global.common.entities.AwsFileReference;
 import kr.kickon.api.global.common.entities.Board;
 import kr.kickon.api.global.common.entities.News;
 import kr.kickon.api.global.common.entities.QAwsFileReference;
@@ -32,6 +32,7 @@ import kr.kickon.api.global.common.entities.QNews;
 import kr.kickon.api.global.common.entities.QNewsKick;
 import kr.kickon.api.global.common.entities.QNewsViewHistory;
 import kr.kickon.api.global.common.entities.User;
+import kr.kickon.api.global.common.enums.ShortsSortType;
 import kr.kickon.api.global.common.enums.UsedInType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,7 +47,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ShortsService {
 
-  private final AwsFileReferenceService awsFileReferenceService;
   private final BoardViewHistoryService boardViewHistoryService;
   private final NewsViewHistoryService newsViewHistoryService;
   private final BoardKickService boardKickService;
@@ -65,56 +65,7 @@ public class ShortsService {
    * * @return ShortsDTO 리스트
    */
   public List<ShortsDTO> getFixedShorts() {
-    List<AwsFileReference> allVideos = awsFileReferenceService.findAll()
-        .stream()
-        .filter(file -> file.getS3Key().matches(".*\\.(mp4|mov|avi|mkv)$"))
-        .filter(file -> file.getReferencePk() != null)
-        .toList();
-
-    return allVideos.stream()
-        .map(file -> {
-          Long recentViewCount = 0L;
-          Long recentKickCount = 0L;
-          Long totalViewCount = 0L;
-          Long totalKickCount = 0L;
-          String title = null;
-
-          // 게시글/뉴스 각각의 48시간 기준 조회수, 킥 수, 전체 조회수, 킥 수를 가져옵니다.
-          if (file.getUsedIn() == UsedInType.BOARD) {
-            recentViewCount = boardViewHistoryService.countViewsByBoardPkWithin48Hours(file.getReferencePk());
-            recentKickCount = boardKickService.countKicksByBoardPkWithin48Hours(file.getReferencePk());
-
-            totalViewCount = boardViewHistoryService.countViewsByBoardPk(file.getReferencePk());
-            totalKickCount = boardKickService.countKicksByBoardPk(file.getReferencePk());
-
-            Board board = boardService.findByPk(file.getReferencePk());
-            if (board != null) {
-              title = board.getTitle();
-            }
-          } else if (file.getUsedIn() == UsedInType.NEWS) {
-            recentViewCount = newsViewHistoryService.countViewsByNewsPkWithin48Hours(file.getReferencePk());
-            recentKickCount = newsKickService.countKicksByNewsPkWithin48Hours(file.getReferencePk());
-
-            totalViewCount = newsViewHistoryService.countViewsByNewsPk(file.getReferencePk());
-            totalKickCount = newsKickService.countKicksByNewsPk(file.getReferencePk());
-
-            News news = newsService.findByPk(file.getReferencePk());
-            if (news != null) {
-              title = news.getTitle();
-            }
-          }
-
-          ShortsDTO dto = ShortsDTO.fromEntity(file, totalViewCount, totalKickCount, title);
-          dto.setSortViewCount(recentViewCount);  // 정렬용 값
-          dto.setSortKickCount(recentKickCount);
-          return dto;
-        })
-        .sorted(
-            Comparator.comparingLong(ShortsDTO::getSortViewCount).reversed()
-                .thenComparing(Comparator.comparingLong(ShortsDTO::getSortKickCount).reversed())
-        )
-        .limit(4)
-        .collect(Collectors.toList());
+    return queryShorts(4);
   }
   // endregion
 
@@ -125,7 +76,46 @@ public class ShortsService {
    * @param pageable 페이징
    * @return ShortsDTO 리스트
    */
-  public Page<ShortsDTO> getShorts(GetShortsRequest request, Pageable pageable) {
+  public Page<ShortsDTO> getShortsWithPagination(GetShortsRequest request, Pageable pageable) {
+    QAwsFileReference awsFileReference = QAwsFileReference.awsFileReference;
+    List<ShortsDTO> combined = queryShorts(null);
+
+    Long totalCount = queryFactory
+        .select(awsFileReference.count())
+        .from(awsFileReference)
+        .where(
+            awsFileReference.s3Key.endsWithIgnoreCase(".mp4")
+                .or(awsFileReference.s3Key.endsWithIgnoreCase(".mov"))
+                .or(awsFileReference.s3Key.endsWithIgnoreCase(".avi"))
+                .or(awsFileReference.s3Key.endsWithIgnoreCase(".mkv"))
+        )
+        .fetchOne();
+
+    long total = totalCount != null ? totalCount : 0L;
+
+    ShortsSortType sortType = request.getSort();
+    if (sortType == null) {
+      sortType = ShortsSortType.CREATED_DESC; // 기본 정렬 기준
+    }
+    // 정렬 조건
+    Comparator<ShortsDTO> comparator = switch (sortType) {
+      case CREATED_ASC -> Comparator.comparing(ShortsDTO::getCreatedAt);
+      case POPULAR -> Comparator.comparingLong(ShortsDTO::getSortViewCount).reversed()
+          .thenComparing(Comparator.comparingLong(ShortsDTO::getSortKickCount).reversed());
+      default -> Comparator.comparing(ShortsDTO::getCreatedAt).reversed(); // 기본: 최신순
+    };
+    combined.sort(comparator);
+    return new PageImpl<>(combined, pageable, total);
+  }
+  //endregion
+
+  // region 쇼츠 리스트 조회
+  /**
+   * Shorts 영상 리스트를 조회하는 공통 로직입니다.
+   * @param limit 조회 엔티티 수
+   * @return ShortsDTO 리스트
+   */
+  private List<ShortsDTO> queryShorts(@Nullable Integer limit) {
     QAwsFileReference awsFileReference = QAwsFileReference.awsFileReference;
     QBoard board = QBoard.board;
     QNews news = QNews.news;
@@ -156,13 +146,15 @@ public class ShortsService {
             ExpressionUtils.as(JPAExpressions
                 .select(boardViewHistory.pk.count())
                 .from(boardViewHistory)
-                .where(boardViewHistory.board.pk.eq(board.pk).and(boardViewHistory.createdAt.after(cutoff))), "recentViewCount"),
+                .where(boardViewHistory.board.pk.eq(board.pk)
+                    .and(boardViewHistory.createdAt.after(cutoff))), "recentViewCount"),
             ExpressionUtils.as(JPAExpressions
-                .select(boardKick.pk.count())
-                .from(boardKick)
-                .where(boardKick.board.pk.eq(board.pk).and(boardKick.createdAt.after(cutoff))), "recentKickCount"),
+                    .select(boardKick.pk.count())
+                    .from(boardKick)
+                    .where(boardKick.board.pk.eq(board.pk).and(boardKick.createdAt.after(cutoff))),
+                "recentKickCount"),
             awsFileReference.createdAt
-            ))
+        ))
         .from(awsFileReference)
         .leftJoin(board).on(awsFileReference.referencePk.eq(board.pk))
         .where(
@@ -193,13 +185,15 @@ public class ShortsService {
             ExpressionUtils.as(JPAExpressions
                 .select(newsViewHistory.pk.count())
                 .from(newsViewHistory)
-                .where(newsViewHistory.news.pk.eq(news.pk).and(newsViewHistory.createdAt.after(cutoff))), "recentViewCount"),
+                .where(newsViewHistory.news.pk.eq(news.pk)
+                    .and(newsViewHistory.createdAt.after(cutoff))), "recentViewCount"),
             ExpressionUtils.as(JPAExpressions
-                .select(newsKick.pk.count())
-                .from(newsKick)
-                .where(newsKick.news.pk.eq(news.pk).and(newsKick.createdAt.after(cutoff))), "recentKickCount"),
+                    .select(newsKick.pk.count())
+                    .from(newsKick)
+                    .where(newsKick.news.pk.eq(news.pk).and(newsKick.createdAt.after(cutoff))),
+                "recentKickCount"),
             awsFileReference.createdAt
-            ))
+        ))
         .from(awsFileReference)
         .leftJoin(news).on(awsFileReference.referencePk.eq(news.pk))
         .where(
@@ -216,52 +210,17 @@ public class ShortsService {
     combined.addAll(boardShorts);
     combined.addAll(newsShorts);
 
-    combined = trimS3KeyPrefix(combined);
+    if (limit != null) {
+      return combined.stream()
+          .sorted(
+              Comparator.comparingLong(ShortsDTO::getSortViewCount).reversed()
+                  .thenComparing(Comparator.comparingLong(ShortsDTO::getSortKickCount).reversed())
+          )
+          .limit(limit)
+          .collect(Collectors.toList());
+    }
 
-    Long totalCount = queryFactory
-        .select(awsFileReference.count())
-        .from(awsFileReference)
-        .where(
-            awsFileReference.s3Key.endsWithIgnoreCase(".mp4")
-                .or(awsFileReference.s3Key.endsWithIgnoreCase(".mov"))
-                .or(awsFileReference.s3Key.endsWithIgnoreCase(".avi"))
-                .or(awsFileReference.s3Key.endsWithIgnoreCase(".mkv"))
-        )
-        .fetchOne();
-
-    long total = totalCount != null ? totalCount : 0L;
-
-    // 정렬 조건
-    Comparator<ShortsDTO> comparator = switch (request.getSort()) {
-      case CREATED_ASC -> Comparator.comparing(ShortsDTO::getCreatedAt);
-      case POPULAR -> Comparator.comparingLong(ShortsDTO::getSortViewCount).reversed()
-          .thenComparing(Comparator.comparingLong(ShortsDTO::getSortKickCount).reversed());
-      default -> Comparator.comparing(ShortsDTO::getCreatedAt).reversed(); // 기본: 최신순
-
-    };
-    combined.sort(comparator);
-    return new PageImpl<>(combined, pageable, total);
-  }
-  //endregion
-
-  // region S3Key Prefix 제거
-  /**
-   * ShortsDTO 리스트에서 각 DTO의 s3Key에 포함된 S3 경로 제거
-   */
-  private List<ShortsDTO> trimS3KeyPrefix(List<ShortsDTO> list) {
-    return list.stream()
-        .peek(dto -> {
-          String s3Key = dto.getS3Key();
-          if (s3Key != null) {
-            String trimmed = s3Key
-                .replaceFirst("^dev/board-files/", "")
-                .replaceFirst("^dev/news-files/", "")
-                .replaceFirst("^local/board-files/", "")
-                .replaceFirst("^local/news-files/", "");
-            dto.setS3Key(trimmed);
-          }
-        })
-        .collect(Collectors.toList());
+    return combined;
   }
   //endregion
 
@@ -272,7 +231,7 @@ public class ShortsService {
    * @return ShortsDetailDTO
    */
   @Transactional
-  public ShortsDetailDTO getShortsDetail(AwsFileReference file){
+  public ShortsDetailDTO getShortsDetail(VideoResource file){
     Long viewCount = 0L;
     Long kickCount = 0L;
     Long replyCount = 0L;

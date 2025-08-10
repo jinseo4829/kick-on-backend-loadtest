@@ -1,5 +1,6 @@
 package kr.kickon.api.global.common.entities;
 import jakarta.persistence.*;
+import kr.kickon.api.domain.shorts.dto.ShortsDTO.VideoResource;
 import kr.kickon.api.global.common.enums.GambleStatus;
 import kr.kickon.api.global.common.enums.UsedInType;
 import lombok.*;
@@ -12,7 +13,7 @@ import org.hibernate.annotations.ColumnDefault;
 @Setter
 @SuperBuilder
 @NoArgsConstructor
-public class AwsFileReference extends BaseEntity {
+public class AwsFileReference extends BaseEntity implements VideoResource {
     @Column(length = 512, nullable = false, unique = true, name = "s3_key")
     private String s3Key;
 
@@ -22,4 +23,9 @@ public class AwsFileReference extends BaseEntity {
 
     @Column()
     private Long referencePk;
+
+    @Override
+    public String getVideoUrl() {
+        return s3Key;
+    }
 }
