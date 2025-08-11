@@ -19,6 +19,4 @@ public class FavoriteTeamDTO extends TeamDTO{
     @Schema(description = "리그 영어 이름", example = "K-League")
     private String leagueNameEn;
 
-    @Schema(description = "응원팀이 속한 리그 로고 URL", example = "https://example.com/league-logo.png")
-    private String leagueLogoUrl;
 }
