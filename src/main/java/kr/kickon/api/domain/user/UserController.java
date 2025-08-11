@@ -98,6 +98,7 @@ public class UserController {
                 favoriteTeamDTO.setLeaguePk(league.getPk());
                 favoriteTeamDTO.setLeagueNameEn(league.getNameEn());
                 favoriteTeamDTO.setLeagueNameKr(league.getNameKr());
+                favoriteTeamDTO.setLeagueLogoUrl(league.getLogoUrl());
             }
             teamDTOList.add(favoriteTeamDTO);
         }
