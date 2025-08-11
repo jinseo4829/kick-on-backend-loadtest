@@ -38,6 +38,9 @@ public class TeamDTO {
     @Builder.Default
     private String leagueNameEn = "";
 
+    @Schema(description = "응원팀이 속한 리그 로고 URL", example = "https://example.com/league-logo.png")
+    private String leagueLogoUrl;
+
     public TeamDTO(Team team) {
         this.pk = team.getPk();
         this.nameKr = team.getNameKr();
@@ -55,7 +58,8 @@ public class TeamDTO {
         if (league != null) {
             builder.leaguePk(league.getPk())
                 .leagueNameKr(league.getNameKr())
-                .leagueNameEn(league.getNameEn());
+                .leagueNameEn(league.getNameEn())
+                    .leagueLogoUrl(league.getLogoUrl());
         }
         return builder.build();
     }
