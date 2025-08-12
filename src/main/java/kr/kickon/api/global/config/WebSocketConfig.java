@@ -28,7 +28,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.addEndpoint("/ws")
                 .setAllowedOrigins( "https://dev.kick-on.kr",
                                     "https://kick-on.kr",
-                                    "https://api-dev.kick-on.kr" )// 실서비스는 origin 제한 필요
+                                    "https://api-dev.kick-on.kr",
+                                    "http://localhost:3000")// 실서비스는 origin 제한 필요
                 .withSockJS();          // SockJS fallback 지원
     }
 }
