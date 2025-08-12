@@ -26,7 +26,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // 소켓 연결 경로: 예) wss://kick-on.kr/ws
         registry.addEndpoint("/ws")
-                .setAllowedOrigins("*") // 실서비스는 origin 제한 필요
+                .setAllowedOrigins( "https://dev.kick-on.kr",
+                                    "https://kick-on.kr",
+                                    "https://api-dev.kick-on.kr" )// 실서비스는 origin 제한 필요
                 .withSockJS();          // SockJS fallback 지원
     }
 }
