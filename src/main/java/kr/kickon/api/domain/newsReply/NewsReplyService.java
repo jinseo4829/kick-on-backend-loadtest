@@ -314,7 +314,7 @@ public class NewsReplyService implements BaseService<NewsReply> {
                     parent.getUser(),
                     "NEWS_REPLY_REPLY",
                     writer.getNickname() + "님이 답글을 달았어요.",
-                    redirectUrl + "?replyId=" + parent.getPk()
+                    redirectUrl + "?replyPk=" + parent.getPk()
             );
         }
     }

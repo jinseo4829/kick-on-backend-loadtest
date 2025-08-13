@@ -307,7 +307,7 @@ public class BoardReplyService implements BaseService<BoardReply> {
                     parent.getUser(),
                     "BOARD_REPLY_REPLY",
                     writer.getNickname() + "님이 답글을 달았어요.",
-                    redirectUrl + "?replyId=" + parent.getPk()
+                    redirectUrl + "?replyPk=" + parent.getPk()
             );
         }
     }
