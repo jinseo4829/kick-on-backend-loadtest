@@ -2,7 +2,12 @@ package kr.kickon.api.domain.game;
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.Order;
+import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -513,16 +518,33 @@ public class GameService implements BaseService<Game> {
      * 예측한 게임의 시작일(LocalDate)을 기준으로 날짜별 개수를 집계하여 정렬된 리스트로 반환합니다.
      */
     public List<CalendarDateCountDTO> getMyPredictionDateList(Long userPk) {
-        return userGameGambleService.findByUserPk(userPk).stream()
-                .collect(Collectors.groupingBy(
-                        g -> g.getGame().getStartedAt().toLocalDate(),
-                        Collectors.counting()
+        QUserGameGamble ugg = QUserGameGamble.userGameGamble;
+        QGame game = QGame.game;
+
+        // DATE(game.started_at) → LocalDate로 그룹핑
+        Expression<LocalDate> startDate =
+                Expressions.dateTemplate(LocalDate.class, "DATE({0})", game.startedAt);
+
+        BooleanExpression finished =
+                game.gameStatus.in(GameStatus.HOME, GameStatus.AWAY, GameStatus.DRAW);
+
+        return queryFactory
+                .select(Projections.constructor(
+                        CalendarDateCountDTO.class,
+                        startDate,
+                        // 중복 예측 가능성 있으면 아래 줄을 game.pk.countDistinct().intValue() 로 교체
+                        ugg.count().intValue()
                 ))
-                .entrySet()
-                .stream()
-                .map(entry -> new CalendarDateCountDTO(entry.getKey(), entry.getValue().intValue()))
-                .sorted(Comparator.comparing(CalendarDateCountDTO::getDate))
-                .toList();
+                .from(ugg)
+                .join(ugg.game, game)
+                .where(
+                        ugg.user.pk.eq(userPk),
+                        finished,
+                        game.startedAt.isNotNull() // 널가드 권장
+                )
+                .groupBy(startDate)
+                .orderBy(new OrderSpecifier<>(Order.ASC, startDate)) // asc() 오류 회피 OK
+                .fetch();
     }
     // endregion
 
