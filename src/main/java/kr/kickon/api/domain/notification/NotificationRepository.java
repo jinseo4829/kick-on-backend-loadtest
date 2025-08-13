@@ -6,9 +6,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long>, QuerydslPredicateExecutor<Notification> {
     List<Notification> findByReceiverOrderByCreatedAtDesc(User receiver);
     int countByReceiverAndIsReadIsFalse(User receiver);
+
+    Optional<Object> findByPk(Long pk);
 }
 

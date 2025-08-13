@@ -53,9 +53,9 @@ public class NotificationController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공")
     })
-    @PatchMapping("/{id}/read")
-    public ResponseEntity<ResponseDTO<Void>> readNotification(@PathVariable Long id) {
-        notificationService.markAsRead(id);
+    @PatchMapping("/{notificationPk}/read")
+    public ResponseEntity<ResponseDTO<Void>> readNotification(@PathVariable Long pk) {
+        notificationService.markAsRead(pk);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
     }
     // endregion
