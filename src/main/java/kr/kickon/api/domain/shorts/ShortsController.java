@@ -16,9 +16,8 @@ import kr.kickon.api.domain.shorts.response.GetShortsDetailResponse;
 import kr.kickon.api.domain.shorts.response.GetShortsResponse;
 import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
-import kr.kickon.api.global.common.entities.AwsFileReference;
+import kr.kickon.api.global.common.entities.Shorts;
 import kr.kickon.api.global.common.enums.ResponseCode;
-import kr.kickon.api.global.error.exceptions.BadRequestException;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -76,11 +75,8 @@ public class ShortsController {
           content = @Content(schema = @Schema(implementation = GetShortsDetailResponse.class))),
   })
   public ResponseEntity<ResponseDTO<ShortsDetailDTO>> getShortsDetail(@PathVariable Long pk) {
-    AwsFileReference file = awsFileReferenceService.findByPk(pk);
-    if (file == null) throw new NotFoundException(ResponseCode.NOT_FOUND_AWS_FILE);
-    if (!file.getS3Key().matches(".*\\.(mp4|mov|avi|mkv)$")) {
-      throw new BadRequestException(ResponseCode.INVALID_REQUEST);
-    }
+    Shorts file = shortsService.findByPk(pk);
+    if (file == null) throw new NotFoundException(ResponseCode.NOT_FOUND_SHORTS);
 
     ShortsDetailDTO dto = shortsService.getShortsDetail(file);
     return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, dto));

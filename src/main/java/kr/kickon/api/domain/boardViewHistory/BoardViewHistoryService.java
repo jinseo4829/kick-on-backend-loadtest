@@ -4,6 +4,7 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.time.LocalDateTime;
 import kr.kickon.api.global.common.BaseService;
+import kr.kickon.api.global.common.entities.Board;
 import kr.kickon.api.global.common.entities.BoardViewHistory;
 import kr.kickon.api.global.common.entities.QBoardViewHistory;
 import kr.kickon.api.global.common.enums.DataStatus;
@@ -67,11 +68,11 @@ public class BoardViewHistoryService implements BaseService<BoardViewHistory> {
     /**
      * Board PK로 조회수 계산
      *
-     * @param boardPk 게시글PK
+     * @param board 게시글 엔티티
      * @return Long 조회수
      */
-    public Long countViewsByBoardPk(Long boardPk) {
-        return boardViewHistoryRepository.countByBoard_Pk(boardPk);
+    public Long countViewsByBoardPk(Board board) {
+        return boardViewHistoryRepository.countByBoard_Pk(board.getPk());
     }
     // endregion
 }
