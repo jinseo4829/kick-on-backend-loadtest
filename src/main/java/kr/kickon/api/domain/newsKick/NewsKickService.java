@@ -5,6 +5,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.time.LocalDateTime;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.BoardKick;
+import kr.kickon.api.global.common.entities.News;
 import kr.kickon.api.global.common.entities.NewsKick;
 import kr.kickon.api.global.common.entities.QBoardKick;
 import kr.kickon.api.global.common.entities.QNewsKick;
@@ -76,11 +77,11 @@ public class NewsKickService implements BaseService<NewsKick> {
     /**
      * News PK로 킥 수 계산
      *
-     * @param newsPk 뉴스PK
+     * @param news 뉴스 엔티티
      * @return Long 킥 수
      */
-    public Long countKicksByNewsPk(Long newsPk) {
-        return newsKickRepository.countByNews_PkAndStatus(newsPk, DataStatus.ACTIVATED);
+    public Long countKicksByNewsPk(News news) {
+        return newsKickRepository.countByNews_PkAndStatus(news.getPk(), DataStatus.ACTIVATED);
     }
     // endregion
 }

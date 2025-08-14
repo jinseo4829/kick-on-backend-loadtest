@@ -15,12 +15,14 @@ import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.embeddedLink.EmbeddedLinkService;
 import kr.kickon.api.domain.news.dto.*;
 import kr.kickon.api.domain.newsKick.NewsKickService;
+import kr.kickon.api.domain.shorts.ShortsService;
 import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.domain.teamReporter.TeamReporterService;
 import kr.kickon.api.domain.user.dto.BaseUserDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
+import kr.kickon.api.global.common.enums.ShortsType;
 import kr.kickon.api.global.common.enums.UsedInType;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +46,7 @@ public class NewsService implements BaseService<News> {
     private final AwsService awsService;
     private final EmbeddedLinkService embeddedLinkService;
     private final TeamReporterService teamReporterService;
+    private final ShortsService shortsService;
 
     @Value("${spring.config.activate.on-profile}")
     private String env;
@@ -91,6 +94,11 @@ public class NewsService implements BaseService<News> {
                 UsedInType.NEWS,
                 savedNewsEntity.getPk()
             );
+
+            List<AwsFileReference> videoFiles = awsFileReferenceService.findbyNewsPk(savedNewsEntity.getPk());
+            videoFiles.forEach(awsFile -> {
+                shortsService.save(ShortsType.AWS_FILE, awsFile.getPk());
+            });
         }
 
         if (embeddedLinks != null && embeddedLinks.length > 0) {
@@ -105,6 +113,10 @@ public class NewsService implements BaseService<News> {
                 ).collect(Collectors.toList());
 
             embeddedLinkService.saveAll(links);
+
+            links.forEach(link -> {
+                shortsService.save(ShortsType.EMBEDDED_LINK, link.getPk());
+            });
         }
 
         return savedNewsEntity;

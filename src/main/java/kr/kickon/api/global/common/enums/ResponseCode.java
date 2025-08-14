@@ -60,6 +60,7 @@ public enum ResponseCode {
     NOT_FOUND_REPORT_BOARD(HttpStatus.NOT_FOUND,"NOT_FOUND_REPORT_BOARD", "커뮤니티 게시글 신고 내역이 존재하지 않습니다."),
     NOT_FOUND_REPORT_NEWS(HttpStatus.NOT_FOUND,"NOT_FOUND_REPORT_NEWS", "뉴스 게시글 신고 내역이 존재하지 않습니다."),
     NOT_FOUND_PARTNERS(HttpStatus.NOT_FOUND,"NOT_FOUND_PARTNERS", "해당 파트너스를 찾을 수 없습니다."),
+    NOT_FOUND_SHORTS(HttpStatus.NOT_FOUND,"NOT_FOUND_SHORTS", "해당 쇼츠 파일을 찾을 수 없습니다."),
 
     // ✅ 500 Internal Server Error
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다."),

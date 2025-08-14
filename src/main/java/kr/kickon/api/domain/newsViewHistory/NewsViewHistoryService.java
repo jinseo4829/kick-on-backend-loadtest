@@ -4,6 +4,7 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.time.LocalDateTime;
 import kr.kickon.api.global.common.BaseService;
+import kr.kickon.api.global.common.entities.News;
 import kr.kickon.api.global.common.entities.NewsViewHistory;
 import kr.kickon.api.global.common.entities.QNewsViewHistory;
 import kr.kickon.api.global.common.enums.DataStatus;
@@ -67,11 +68,11 @@ public class NewsViewHistoryService implements BaseService<NewsViewHistory> {
     /**
      * News PK로 조회수 계산
      *
-     * @param newsPk
+     * @param news 엔티티
      * @return Long 조회수
      */
-    public Long countViewsByNewsPk(Long newsPk) {
-        return newsViewHistoryRepository.countByNews_Pk(newsPk);
+    public Long countViewsByNewsPk(News news) {
+        return newsViewHistoryRepository.countByNews_Pk(news.getPk());
     }
     // endregion
 }

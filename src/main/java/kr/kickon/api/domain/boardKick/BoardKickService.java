@@ -68,11 +68,11 @@ public class BoardKickService implements BaseService<BoardKick> {
     /**
      * Board PK로 킥 수 계산
      *
-     * @param boardPk 게시글PK
+     * @param board 게시글 엔티티
      * @return Long 킥 수
      */
-    public Long countKicksByBoardPk(Long boardPk) {
-        return boardKickRepository.countByBoard_PkAndStatus(boardPk, DataStatus.ACTIVATED);
+    public Long countKicksByBoardPk(Board board) {
+        return boardKickRepository.countByBoard_PkAndStatus(board.getPk(), DataStatus.ACTIVATED);
     }
     // endregion
 }

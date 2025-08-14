@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import kr.kickon.api.global.common.ExampleConstants;
-import kr.kickon.api.global.common.entities.AwsFileReference;
+import kr.kickon.api.global.common.entities.Shorts;
 import kr.kickon.api.global.common.enums.UsedInType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -20,7 +20,7 @@ import lombok.experimental.SuperBuilder;
 @Schema(description = "쇼츠 리스트 DTO")
 public class ShortsDTO {
 
-  @Schema(description = "AwsFileReference pk", example = "215")
+  @Schema(description = "shorts pk", example = "215")
   private Long pk;
 
   @Schema(description = "videoUrl", example = ExampleConstants.s3Key)
@@ -50,25 +50,18 @@ public class ShortsDTO {
   @Schema(description = "작성일", example = ExampleConstants.datetime)
   private LocalDateTime createdAt;
 
-  public interface VideoResource {
-    Long getPk();
-    String getVideoUrl();
-    UsedInType getUsedIn();
-    Long getReferencePk();
-    LocalDateTime getCreatedAt();
-  }
-
-  public static ShortsDTO fromEntity(VideoResource video, Long viewCount, Long kickCount, String title) {
+  public static ShortsDTO fromEntity(Shorts shorts, String videoUrl, UsedInType usedIn,
+      Long viewCount, Long kickCount, String title, LocalDateTime createdAt) {
 
     return ShortsDTO.builder()
-        .pk(video.getPk())
-        .videoUrl(video.getVideoUrl())
-        .usedIn(video.getUsedIn())
-        .referencePk(video.getReferencePk())
+        .pk(shorts.getPk())
+        .videoUrl(videoUrl)
+        .usedIn(usedIn)
+        .referencePk(shorts.getReferencePk())
         .title(title)
         .viewCount(viewCount)
         .kickCount(kickCount)
-        .createdAt(video.getCreatedAt())
+        .createdAt(createdAt)
         .build();
   }
 }

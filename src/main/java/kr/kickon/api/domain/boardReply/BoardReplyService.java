@@ -282,11 +282,11 @@ public class BoardReplyService implements BaseService<BoardReply> {
     /**
      * Board PK로 댓글 수 계산
      *
-     * @param boardPk 게시글PK
+     * @param board 게시글 엔티티
      * @return Long 댓글 수
      */
-    public Long countRepliesByBoardPk(Long boardPk) {
-        return boardReplyRepository.countByBoard_PkAndStatus(boardPk, DataStatus.ACTIVATED);
+    public Long countRepliesByBoardPk(Board board) {
+        return boardReplyRepository.countByBoard_PkAndStatus(board.getPk(), DataStatus.ACTIVATED);
     }
     // endregion
 
