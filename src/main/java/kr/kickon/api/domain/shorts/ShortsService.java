@@ -5,6 +5,8 @@ import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.NumberExpression;
+import com.querydsl.core.types.dsl.StringExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -150,19 +152,46 @@ public class ShortsService {
         .then(awsFileReference.usedIn)
         .otherwise(embeddedLink.usedIn);
 
+    NumberExpression<Long> referencePkExpression = new CaseBuilder()
+        .when((shorts.type.eq(ShortsType.AWS_FILE)
+            .and(awsFileReference.usedIn.eq(UsedInType.BOARD)))
+            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
+                .and(embeddedLink.usedIn.eq(UsedInType.BOARD))))
+        .then(board.pk)
+        .when((shorts.type.eq(ShortsType.AWS_FILE)
+            .and(awsFileReference.usedIn.eq(UsedInType.NEWS)))
+            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
+                .and(embeddedLink.usedIn.eq(UsedInType.NEWS))))
+        .then(news.pk)
+        .otherwise((NumberExpression<Long>) null);
+
     // CASE: title
-    Expression<String> titleExpression = new CaseBuilder()
-        .when(board.pk.isNotNull()).then(board.title)
-        .when(news.pk.isNotNull()).then(news.title)
-        .otherwise((String) null);
+    StringExpression titleExpression = new CaseBuilder()
+        .when((shorts.type.eq(ShortsType.AWS_FILE)
+            .and(awsFileReference.usedIn.eq(UsedInType.BOARD)))
+            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
+                .and(embeddedLink.usedIn.eq(UsedInType.BOARD))))
+        .then(board.title)
+        .when((shorts.type.eq(ShortsType.AWS_FILE)
+            .and(awsFileReference.usedIn.eq(UsedInType.NEWS)))
+            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
+                .and(embeddedLink.usedIn.eq(UsedInType.NEWS))))
+        .then(news.title)
+        .otherwise((StringExpression) null);
 
     // CASE: totalViewCount
     Expression<Long> totalViewCountExpression = new CaseBuilder()
-        .when(board.pk.isNotNull())
+        .when((shorts.type.eq(ShortsType.AWS_FILE)
+            .and(awsFileReference.usedIn.eq(UsedInType.BOARD)))
+            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
+                .and(embeddedLink.usedIn.eq(UsedInType.BOARD))))
         .then(JPAExpressions.select(boardViewHistory.pk.count())
             .from(boardViewHistory)
             .where(boardViewHistory.board.pk.eq(board.pk)))
-        .when(news.pk.isNotNull())
+        .when((shorts.type.eq(ShortsType.AWS_FILE)
+            .and(awsFileReference.usedIn.eq(UsedInType.NEWS)))
+            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
+                .and(embeddedLink.usedIn.eq(UsedInType.NEWS))))
         .then(JPAExpressions.select(newsViewHistory.pk.count())
             .from(newsViewHistory)
             .where(newsViewHistory.news.pk.eq(news.pk)))
@@ -170,11 +199,17 @@ public class ShortsService {
 
     // CASE: totalKickCount
     Expression<Long> totalKickCountExpression = new CaseBuilder()
-        .when(board.pk.isNotNull())
+        .when((shorts.type.eq(ShortsType.AWS_FILE)
+            .and(awsFileReference.usedIn.eq(UsedInType.BOARD)))
+            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
+                .and(embeddedLink.usedIn.eq(UsedInType.BOARD))))
         .then(JPAExpressions.select(boardKick.pk.count())
             .from(boardKick)
             .where(boardKick.board.pk.eq(board.pk)))
-        .when(news.pk.isNotNull())
+        .when((shorts.type.eq(ShortsType.AWS_FILE)
+            .and(awsFileReference.usedIn.eq(UsedInType.NEWS)))
+            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
+                .and(embeddedLink.usedIn.eq(UsedInType.NEWS))))
         .then(JPAExpressions.select(newsKick.pk.count())
             .from(newsKick)
             .where(newsKick.news.pk.eq(news.pk)))
@@ -182,12 +217,18 @@ public class ShortsService {
 
     // CASE: recentViewCount
     Expression<Long> recentViewCountExpression = new CaseBuilder()
-        .when(board.pk.isNotNull())
+        .when((shorts.type.eq(ShortsType.AWS_FILE)
+            .and(awsFileReference.usedIn.eq(UsedInType.BOARD)))
+            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
+                .and(embeddedLink.usedIn.eq(UsedInType.BOARD))))
         .then(JPAExpressions.select(boardViewHistory.pk.count())
             .from(boardViewHistory)
             .where(boardViewHistory.board.pk.eq(board.pk)
                 .and(boardViewHistory.createdAt.after(cutoff))))
-        .when(news.pk.isNotNull())
+        .when((shorts.type.eq(ShortsType.AWS_FILE)
+            .and(awsFileReference.usedIn.eq(UsedInType.NEWS)))
+            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
+                .and(embeddedLink.usedIn.eq(UsedInType.NEWS))))
         .then(JPAExpressions.select(newsViewHistory.pk.count())
             .from(newsViewHistory)
             .where(newsViewHistory.news.pk.eq(news.pk)
@@ -196,12 +237,18 @@ public class ShortsService {
 
     // CASE: recentKickCount
     Expression<Long> recentKickCountExpression = new CaseBuilder()
-        .when(board.pk.isNotNull())
+        .when((shorts.type.eq(ShortsType.AWS_FILE)
+            .and(awsFileReference.usedIn.eq(UsedInType.BOARD)))
+            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
+                .and(embeddedLink.usedIn.eq(UsedInType.BOARD))))
         .then(JPAExpressions.select(boardKick.pk.count())
             .from(boardKick)
             .where(boardKick.board.pk.eq(board.pk)
                 .and(boardKick.createdAt.after(cutoff))))
-        .when(news.pk.isNotNull())
+        .when((shorts.type.eq(ShortsType.AWS_FILE)
+            .and(awsFileReference.usedIn.eq(UsedInType.NEWS)))
+            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
+                .and(embeddedLink.usedIn.eq(UsedInType.NEWS))))
         .then(JPAExpressions.select(newsKick.pk.count())
             .from(newsKick)
             .where(newsKick.news.pk.eq(news.pk)
@@ -213,7 +260,7 @@ public class ShortsService {
             shorts.pk,
             videoUrlExpression,
             usedInExpression,
-            shorts.referencePk,
+            referencePkExpression,
             titleExpression,
             totalViewCountExpression,
             totalKickCountExpression,
@@ -291,6 +338,7 @@ public class ShortsService {
     Expression<Long> totalReplyCount;
     Expression<User> userExpression;
     Expression<String> titleExpression;
+    Expression<Long> referencePkExpression;
 
     if (usedInType == UsedInType.BOARD) {
       totalViewCount = JPAExpressions.select(boardViewHistory.pk.count().coalesce(0L))
@@ -304,6 +352,7 @@ public class ShortsService {
           .where(boardReply.board.pk.eq(board.pk));
       userExpression = board.user;
       titleExpression = board.title;
+      referencePkExpression = board.pk;
     } else { // NEWS
       totalViewCount = JPAExpressions.select(newsViewHistory.pk.count().coalesce(0L))
           .from(newsViewHistory)
@@ -316,6 +365,7 @@ public class ShortsService {
           .where(newsReply.news.pk.eq(news.pk));
       userExpression = news.user;
       titleExpression = news.title;
+      referencePkExpression = news.pk;
     }
 
     JPAQuery<ShortsDetailDTO> query = queryFactory
@@ -323,7 +373,7 @@ public class ShortsService {
             shorts.pk,
             videoUrlExpression,
             usedInExpression,
-            shorts.referencePk,
+            referencePkExpression,
             titleExpression,
             totalViewCount,
             totalKickCount,

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import kr.kickon.api.global.common.ExampleConstants;
-import kr.kickon.api.global.common.entities.Shorts;
 import kr.kickon.api.global.common.enums.UsedInType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -50,18 +49,4 @@ public class ShortsDTO {
   @Schema(description = "작성일", example = ExampleConstants.datetime)
   private LocalDateTime createdAt;
 
-  public static ShortsDTO fromEntity(Shorts shorts, String videoUrl, UsedInType usedIn,
-      Long viewCount, Long kickCount, String title, LocalDateTime createdAt) {
-
-    return ShortsDTO.builder()
-        .pk(shorts.getPk())
-        .videoUrl(videoUrl)
-        .usedIn(usedIn)
-        .referencePk(shorts.getReferencePk())
-        .title(title)
-        .viewCount(viewCount)
-        .kickCount(kickCount)
-        .createdAt(createdAt)
-        .build();
-  }
 }

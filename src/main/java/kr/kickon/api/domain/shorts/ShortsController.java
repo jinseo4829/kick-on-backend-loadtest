@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
-import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.shorts.dto.ShortsDTO;
 import kr.kickon.api.domain.shorts.dto.ShortsDetailDTO;
 import kr.kickon.api.domain.shorts.request.GetShortsRequest;
@@ -38,7 +37,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class ShortsController {
 
   private final ShortsService shortsService;
-  private final AwsFileReferenceService awsFileReferenceService;
 
   @GetMapping("/fixed")
   @Operation(summary = "고정 쇼츠 리스트 조회", description = "고정 쇼츠 리스트를 조회합니다. 1)48시간 조회수 2)48시간 기준 킥 수 기준으로 정렬 후 상위 4개만 반환합니다.")
