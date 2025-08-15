@@ -1,7 +1,10 @@
 package kr.kickon.api.domain.shorts.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
 import kr.kickon.api.domain.user.dto.BaseUserDTO;
+import kr.kickon.api.global.common.entities.User;
+import kr.kickon.api.global.common.enums.UsedInType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,4 +25,18 @@ public class ShortsDetailDTO extends ShortsDTO {
   @Schema(description = "유저 정보")
   private BaseUserDTO user;
 
+  public ShortsDetailDTO(Long pk, String videoUrl, UsedInType usedIn, Long referencePk,
+      String title, Long totalViewCount, Long totalKickCount, Long totalReplyCount, LocalDateTime createdAt,
+      User user) {
+    this.setPk(pk);
+    this.setVideoUrl(videoUrl);
+    this.setUsedIn(usedIn);
+    this.setReferencePk(referencePk);
+    this.setTitle(title);
+    this.setViewCount(totalViewCount);
+    this.setKickCount(totalKickCount);
+    this.setCreatedAt(createdAt);
+    this.setReplyCount(totalReplyCount);
+    this.user = new BaseUserDTO(user);
+  }
 }
