@@ -291,9 +291,15 @@ public class BoardReplyService implements BaseService<BoardReply> {
     // endregion
 
     public void sendReplyNotification(Board board, BoardReply parent, User writer) {
+        log.info("sendReplyNotification 실행됨 → boardPk={}, parent={}, writer={}",
+                board.getPk(),
+                parent == null ? "null" : parent.getPk(),
+                writer.getId());
+
         String redirectUrl = "/board/" + board.getPk();
 
         if (parent == null && !board.getUser().equals(writer)) {
+            log.info("board 댓글 알림 발송 대상: {}", board.getUser().getId());
             notificationService.sendNotification(
                     board.getUser(),
                     "BOARD_REPLY",
@@ -303,6 +309,7 @@ public class BoardReplyService implements BaseService<BoardReply> {
         }
 
         if (parent != null && !parent.getUser().equals(writer)) {
+            log.info("board 대댓글 알림 발송 대상: {}", parent.getUser().getId());
             notificationService.sendNotification(
                     parent.getUser(),
                     "BOARD_REPLY_REPLY",
@@ -311,5 +318,6 @@ public class BoardReplyService implements BaseService<BoardReply> {
             );
         }
     }
+
 
 }
