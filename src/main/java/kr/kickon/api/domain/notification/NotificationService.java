@@ -54,13 +54,16 @@ public class NotificationService implements BaseService<Notification>  {
 
         notificationRepository.save(notification);
 
-        // 프론트로 실시간 전송
-        messagingTemplate.convertAndSend(
-                "/topic/notify/" + receiver.getId(),
-                NotificationResponse.from(notification)
-        );
+        String destination = "/topic/notify/" + receiver.getId();
+        NotificationResponse payload = NotificationResponse.from(notification);
 
+        // 로그 찍기
+        log.info("알림 소켓 전송 → destination: {}, payload: {}", destination, payload);
+
+        // 프론트로 실시간 전송 (한 번만)
+        messagingTemplate.convertAndSend(destination, payload);
     }
+
 
     /**
      * 사용자 알림 목록 조회
