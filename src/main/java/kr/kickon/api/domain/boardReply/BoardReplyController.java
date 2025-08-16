@@ -14,6 +14,7 @@ import kr.kickon.api.domain.board.BoardService;
 import kr.kickon.api.domain.boardReply.request.GetBoardRepliesRequest;
 import kr.kickon.api.domain.boardReply.request.PatchBoardReplyRequest;
 import kr.kickon.api.domain.boardReply.response.GetBoardRepliesResponse;
+import kr.kickon.api.domain.user.UserService;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.auth.jwt.user.JwtTokenProvider;
 import kr.kickon.api.global.common.PagedMetaDTO;
@@ -41,11 +42,13 @@ public class BoardReplyController {
     private final BoardReplyService boardReplyService;
     private final UUIDGenerator uuidGenerator;
     private final BoardService boardService;
+    private final UserService userService;
 
     @Operation(summary = "게시글 댓글 생성", description = "회원가입한 유저만 게시글 댓글 생성 가능")
     @PostMapping()
     public ResponseEntity<ResponseDTO<Void>> createBoardReply(@Valid @RequestBody CreateBoardReplyRequest request){
         User user = jwtTokenProvider.getUserFromSecurityContext();
+        user = userService.findByPk(user.getPk());
         Board board = boardService.findByPk(request.getBoard());
         if(board == null) throw new NotFoundException(ResponseCode.NOT_FOUND_BOARD);
 
