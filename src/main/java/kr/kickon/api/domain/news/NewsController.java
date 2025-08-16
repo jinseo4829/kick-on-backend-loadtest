@@ -204,7 +204,7 @@ public class NewsController {
         }else{
             newsData.setTeam(null);
         }
-        newsService.updateNews(newsData, request.getUsedImageKeys());
+        newsService.updateNews(newsData, request.getUsedImageKeys(), request.getUsedVideoKeys(), request.getEmbeddedLinks());
         NewsDetailDTO newsDetailDTO = newsService.getNewsDetailDTOByPk(newsPk,user);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, newsDetailDTO));
     }

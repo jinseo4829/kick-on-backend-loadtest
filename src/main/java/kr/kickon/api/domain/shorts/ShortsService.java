@@ -150,7 +150,11 @@ public class ShortsService {
         .then(Expressions.stringTemplate(
             "CONCAT('https://kickon-files-bucket.s3.ap-northeast-2.amazonaws.com/', {0})",
             awsFileReference.s3Key))
-        .otherwise(embeddedLink.url);
+        .otherwise(
+            Expressions.stringTemplate(
+                "REPLACE({0}, 'youtube.com/embed/', 'youtube.com/watch?v=')",
+                embeddedLink.url
+            ));
 
     Expression<UsedInType> usedInExpression = new CaseBuilder()
         .when(shorts.type.eq(ShortsType.AWS_FILE))
@@ -329,7 +333,11 @@ public class ShortsService {
         .then(Expressions.stringTemplate(
             "CONCAT('https://kickon-files-bucket.s3.ap-northeast-2.amazonaws.com/', {0})",
             awsFileReference.s3Key))
-        .otherwise(embeddedLink.url);
+        .otherwise(
+            Expressions.stringTemplate(
+                "REPLACE({0}, 'youtube.com/embed/', 'youtube.com/watch?v=')",
+                embeddedLink.url
+            ));
 
     Expression<UsedInType> usedInExpression = new CaseBuilder()
         .when(shorts.type.eq(ShortsType.AWS_FILE))
@@ -420,4 +428,10 @@ public class ShortsService {
     shortsRepository.save(shorts);
   }
 
+  @Transactional
+  public void deleteByReferencePkAndType(Long referencePk, ShortsType type) {
+    Shorts shorts = shortsRepository.findByReferencePkAndType(referencePk, type);
+    shorts.setStatus(DataStatus.DEACTIVATED);
+    shortsRepository.save(shorts);
+  }
 }

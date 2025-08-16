@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 import kr.kickon.api.domain.aws.AwsService;
 import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.board.dto.BoardDetailDTO;
@@ -30,8 +31,10 @@ import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
+import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.common.enums.ShortsType;
 import kr.kickon.api.global.common.enums.UsedInType;
+import kr.kickon.api.global.error.exceptions.InternalServerException;
 import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -412,55 +415,127 @@ public class BoardService implements BaseService<Board> {
         boardEntity.setStatus(DataStatus.DEACTIVATED);
         boardRepository.save(boardEntity);
 
-        //이미지 삭제
+        //이미지 및 영상 삭제
             List<AwsFileReference> references = awsFileReferenceService.findbyBoardPk(boardEntity.getPk());
             try (S3Client s3 = S3Client.builder().build()) {
                 for (AwsFileReference file : references) {
+                    shortsService.deleteByReferencePkAndType(file.getPk(), ShortsType.AWS_FILE);
                     awsService.deleteFileFromS3AndDb(s3, file);
                 }
             }
+
+        //연결된 링크 삭제
+        List<EmbeddedLink> embeddedLinks = embeddedLinkService.findByBoardPk(boardEntity.getPk());
+        try {for (EmbeddedLink link : embeddedLinks){
+            shortsService.deleteByReferencePkAndType(link.getPk(), ShortsType.EMBEDDED_LINK);
+            embeddedLinkService.deleteFileFromDb(link);}
+        }catch(Exception e){
+            throw new InternalServerException(ResponseCode.INTERNAL_SERVER_ERROR, e.getCause());
+        }
+
+
     }
     // endregion
 
-    // region {updateBoard} 게시글 수정 시 이미지 키 등록/삭제 처리
+    // region {updateBoard} 게시글 수정 시 이미지 및 영상 키 등록/삭제 처리
     /**
-     * 게시글을 수정하고, 수정된 이미지 키에 따라 기존 S3 이미지 참조를 갱신합니다.
+     *
+     * @param board 수정할 board 엔티티
+     * @param usedImageKeys 사용된 이미지 키 목록
+     * @param usedVideoKeys 사용된 영상 키 목록
+     * @param embeddedLinks 사용된 임베드 링크 목록
+     * @return 저장된 board 엔티티
      */
     @Transactional
-    public Board updateBoard(Board board, String[] usedImageKeys) {
+    public Board updateBoard(Board board, String[] usedImageKeys, String[] usedVideoKeys, String[] embeddedLinks) {
         Board saved = boardRepository.save(board);
-        // 1. 기존 이미지 키 전체 조회
+        // 1. 기존 이미지 및 영상 키 전체 조회
         List<AwsFileReference> references = awsFileReferenceService.findbyBoardPk(saved.getPk());
         Set<String> existingKeys = references.stream()
             .map(AwsFileReference::getS3Key)
             .collect(Collectors.toSet());
 
+        // 기존 링크 전체 조회
+        List<EmbeddedLink> links = embeddedLinkService.findByBoardPk(saved.getPk());
+        Set<String> existingLinks = links.stream()
+            .map(EmbeddedLink::getUrl)
+            .collect(Collectors.toSet());
+
         // 2. 요청으로 들어온 키를 Set으로 변환
-        Set<String> requestedKeys = Optional.ofNullable(usedImageKeys)
-            .map(keys -> Arrays.stream(keys)
-                .map(key -> env + "/board-files/" + key)
-                .collect(Collectors.toSet()))
+        Set<String> requestedKeys = Stream.of(
+                Optional.ofNullable(usedImageKeys).orElse(new String[0]),
+                Optional.ofNullable(usedVideoKeys).orElse(new String[0])
+            )
+            .flatMap(Arrays::stream)
+            .map(key -> env + "/board-files/" + key)
+            .collect(Collectors.toSet());
+
+        Set<String> requestedLinks = Optional.ofNullable(embeddedLinks)
+            .map(arr -> Arrays.stream(arr).collect(Collectors.toSet()))
             .orElse(Collections.emptySet());
 
         // 3. 삭제 대상 = 기존 - 요청
         Set<String> keysToDelete = new HashSet<>(existingKeys);
         keysToDelete.removeAll(requestedKeys);
 
+        Set<String> linksToDelete = new HashSet<>(existingLinks);
+        linksToDelete.removeAll(requestedLinks);
+
         try (S3Client s3 = S3Client.builder().build()) {
             for (AwsFileReference ref : references) {
                 if (keysToDelete.contains(ref.getS3Key())) {
+                    shortsService.deleteByReferencePkAndType(ref.getPk(), ShortsType.AWS_FILE);
                     awsService.deleteFileFromS3AndDb(s3, ref);
                 }
             }
         }
 
-        // 4. 이미지 키들 등록 또는 갱신
-        if (!requestedKeys.isEmpty()) {
-            awsFileReferenceService.updateFilesAsUsed(
-                new ArrayList<>(requestedKeys),
-                UsedInType.BOARD,
-                saved.getPk()
-            );
+        if (!linksToDelete.isEmpty()) {
+            links.stream()
+                .filter(e -> linksToDelete.contains(e.getUrl()))
+                .forEach(link -> {
+                    shortsService.deleteByReferencePkAndType(link.getPk(), ShortsType.EMBEDDED_LINK);
+                    embeddedLinkService.deleteFileFromDb(link);
+                });
+        }
+
+        // 4. 이미지 및 영상 키들 등록 또는 갱신
+        Set<String> keysToAdd = new HashSet<>(requestedKeys);
+        keysToAdd.removeAll(existingKeys);
+
+        Set<String> linksToAdd = new HashSet<>(requestedLinks);
+        linksToAdd.removeAll(existingLinks);
+
+        if (!keysToAdd.isEmpty()) {
+            awsFileReferenceService.updateFilesAsUsed(new ArrayList<>(keysToAdd), UsedInType.BOARD, saved.getPk());
+
+            List<AwsFileReference> videoFiles = awsFileReferenceService.findbyBoardPk(saved.getPk())
+                .stream()
+                .filter(ref -> keysToAdd.contains(ref.getS3Key()))
+                .filter(ref -> {
+                    String key = ref.getS3Key().toLowerCase();
+                    return key.endsWith(".mp4") || key.endsWith(".mov") || key.endsWith(".avi")
+                        || key.endsWith(".mkv");
+                })
+                .toList();
+            videoFiles.forEach(awsFile -> shortsService.save(ShortsType.AWS_FILE, awsFile.getPk()));
+        }
+
+            if (!linksToAdd.isEmpty()) {
+            List<EmbeddedLink> newLinks = linksToAdd.stream()
+                .map(link -> EmbeddedLink.builder()
+                    .id(UUID.randomUUID().toString())
+                    .url(link)
+                    .usedIn(UsedInType.BOARD)
+                    .referencePk(saved.getPk())
+                    .build()
+                ).collect(Collectors.toList());
+
+            embeddedLinkService.saveAll(newLinks);
+
+            newLinks.forEach(link -> {
+                shortsService.save(ShortsType.EMBEDDED_LINK, link.getPk());
+            });
         }
         return saved;
     }
