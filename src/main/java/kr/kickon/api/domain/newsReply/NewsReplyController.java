@@ -14,6 +14,7 @@ import kr.kickon.api.domain.newsReply.request.CreateNewsReplyRequest;
 import kr.kickon.api.domain.newsReply.request.GetNewsRepliesRequest;
 import kr.kickon.api.domain.newsReply.request.PatchNewsReplyRequest;
 import kr.kickon.api.domain.newsReply.response.GetNewsRepliesResponse;
+import kr.kickon.api.domain.user.UserService;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.auth.jwt.user.JwtTokenProvider;
 import kr.kickon.api.global.common.PagedMetaDTO;
@@ -41,11 +42,13 @@ public class NewsReplyController {
     private final UserFavoriteTeamService userFavoriteTeamService;
     private final UUIDGenerator uuidGenerator;
     private final NewsService newsService;
+    private final UserService userService;
 
     @Operation(summary = "뉴스 댓글 생성", description = "회원가입한 유저만 뉴스 댓글 생성 가능")
     @PostMapping()
     public ResponseEntity<ResponseDTO<Void>> createNewsReply(@Valid @RequestBody CreateNewsReplyRequest request){
         User user = jwtTokenProvider.getUserFromSecurityContext();
+        user = userService.findByPk(user.getPk());
         News news = newsService.findByPk(request.getNews());
         if(news == null) throw new NotFoundException(ResponseCode.NOT_FOUND_NEWS);
         List<UserFavoriteTeam> userFavoriteTeams = userFavoriteTeamService.findAllByUserPk(user.getPk());
