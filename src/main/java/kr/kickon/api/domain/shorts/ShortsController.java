@@ -58,12 +58,14 @@ public class ShortsController {
   public ResponseEntity<ResponseDTO<List<ShortsDTO>>> getShorts(@Valid @ModelAttribute GetShortsRequest request) {
     Pageable pageable = request.toPageable();
     Page<ShortsDTO> shortsPage = shortsService.getShortsWithPagination(request, pageable);
-    return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, shortsPage.getContent(),
-        new PagedMetaDTO(
-        shortsPage.getNumber() + 1,
-        shortsPage.getSize(),
-        shortsPage.getTotalElements()
-    )));
+    PagedMetaDTO meta = PagedMetaDTO.builder()
+        .currentPage(shortsPage.getNumber() + 1)  // 1-based
+        .pageSize(shortsPage.getSize())
+        .totalItems(shortsPage.getTotalElements())
+        .totalPages(shortsPage.getTotalPages())
+        .hasNext(shortsPage.hasNext())
+        .build();
+    return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, shortsPage.getContent(), meta));
   }
 
   @GetMapping("/{pk}")
