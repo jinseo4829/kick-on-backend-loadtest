@@ -12,6 +12,7 @@ import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.annotation.Nullable;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -80,9 +81,7 @@ public class ShortsService {
    * - 1) 조회수 2) 킥 수 기준으로 내림차순 정렬 후 상위 4개만 반환합니다.
    * * @return ShortsDTO 리스트
    */
-  public List<ShortsDTO> getFixedShorts() {
-    return queryShorts(4);
-  }
+  public List<ShortsDTO> getFixedShorts() {return queryShorts(4);}
   // endregion
 
   // region 쇼츠 리스트 조회
@@ -99,14 +98,13 @@ public class ShortsService {
     Long totalCount = queryFactory
         .select(shorts.count())
         .from(shorts)
+        .where(shorts.status.eq(DataStatus.ACTIVATED))
         .fetchOne();
 
     long total = totalCount != null ? totalCount : 0L;
 
-    ShortsSortType sortType = request.getSort();
-    if (sortType == null) {
-      sortType = ShortsSortType.CREATED_DESC; // 기본 정렬 기준
-    }
+    ShortsSortType sortType = Optional.ofNullable(request.getSort()).orElse(ShortsSortType.CREATED_DESC);
+
     // 정렬 조건
     Comparator<ShortsDTO> comparator = switch (sortType) {
       case CREATED_ASC -> Comparator.comparing(ShortsDTO::getCreatedAt);
@@ -114,8 +112,15 @@ public class ShortsService {
           .thenComparing(Comparator.comparingLong(ShortsDTO::getSortKickCount).reversed());
       default -> Comparator.comparing(ShortsDTO::getCreatedAt).reversed(); // 기본: 최신순
     };
-    combined.sort(comparator);
-    return new PageImpl<>(combined, pageable, total);
+
+    List<ShortsDTO> sortedShorts = combined.stream()
+        .sorted(comparator)
+        .toList();
+
+    int start = (int) pageable.getOffset();
+    int end = Math.min(start + pageable.getPageSize(), sortedShorts.size());
+    List<ShortsDTO> pageContent = start > end ? Collections.emptyList() : sortedShorts.subList(start, end);
+    return new PageImpl<>(pageContent, pageable, total);
   }
   //endregion
 
@@ -281,8 +286,8 @@ public class ShortsService {
             .and(awsFileReference.referencePk.eq(news.pk))
             .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
                 .and(embeddedLink.referencePk.eq(news.pk))))
-        .fetch();
-
+        .where(shorts.status.eq(DataStatus.ACTIVATED))
+    .fetch();
 
     if (limit != null) {
       return result.stream()
@@ -293,7 +298,6 @@ public class ShortsService {
           .limit(limit)
           .collect(Collectors.toList());
     }
-
     return result;
   }
   //endregion
@@ -382,7 +386,8 @@ public class ShortsService {
             userExpression
         ))
         .from(shorts)
-        .where(shorts.pk.eq(file.getPk()));
+        .where(shorts.status.eq(DataStatus.ACTIVATED)
+        .and(shorts.pk.eq(file.getPk())));
 
     query.leftJoin(awsFileReference).on(shorts.type.eq(ShortsType.AWS_FILE)
         .and(shorts.referencePk.eq(awsFileReference.pk)));
