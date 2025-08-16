@@ -451,7 +451,7 @@ public class BoardService implements BaseService<Board> {
             .collect(Collectors.toSet());
 
         // 기존 링크 전체 조회
-        List<EmbeddedLink> links = embeddedLinkService.findByBoardPk(board.getPk());
+        List<EmbeddedLink> links = embeddedLinkService.findByBoardPk(saved.getPk());
         Set<String> existingLinks = links.stream()
             .map(EmbeddedLink::getUrl)
             .collect(Collectors.toSet());
@@ -522,7 +522,7 @@ public class BoardService implements BaseService<Board> {
                     .id(UUID.randomUUID().toString())
                     .url(link)
                     .usedIn(UsedInType.BOARD)
-                    .referencePk(board.getPk())
+                    .referencePk(saved.getPk())
                     .build()
                 ).collect(Collectors.toList());
 
