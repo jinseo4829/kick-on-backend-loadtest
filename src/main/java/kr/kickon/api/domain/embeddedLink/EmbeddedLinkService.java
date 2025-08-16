@@ -1,9 +1,16 @@
 package kr.kickon.api.domain.embeddedLink;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import kr.kickon.api.global.common.entities.AwsFileReference;
+import kr.kickon.api.global.common.entities.Board;
 import kr.kickon.api.global.common.entities.EmbeddedLink;
 import kr.kickon.api.global.common.entities.QAwsFileReference;
 import kr.kickon.api.global.common.entities.QEmbeddedLink;
@@ -12,6 +19,7 @@ import kr.kickon.api.global.common.enums.UsedInType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -21,8 +29,9 @@ public class EmbeddedLinkService {
   private final EmbeddedLinkRepository embeddedLinkRepository;
 
   public EmbeddedLink findByPk(Long pk) {
-    BooleanExpression predicate = QEmbeddedLink.embeddedLink.pk.eq(pk).and(QEmbeddedLink.embeddedLink.status.eq(
-        DataStatus.ACTIVATED));
+    BooleanExpression predicate = QEmbeddedLink.embeddedLink.pk.eq(pk)
+        .and(QEmbeddedLink.embeddedLink.status.eq(
+            DataStatus.ACTIVATED));
     Optional<EmbeddedLink> embeddedLink = embeddedLinkRepository.findOne(predicate);
     return embeddedLink.orElse(null);
   }
@@ -31,14 +40,21 @@ public class EmbeddedLinkService {
     embeddedLinkRepository.saveAll(links);
   }
 
-  public List<EmbeddedLink> findByBoardPk(Long boardPk){
-    return embeddedLinkRepository.findByUsedInEqualsAndReferencePkEquals(UsedInType.BOARD, boardPk);
+  public List<EmbeddedLink> findByBoardPk(Long boardPk) {
+    return embeddedLinkRepository.findByUsedInEqualsAndReferencePkEqualsAndStatus(UsedInType.BOARD, boardPk, DataStatus.ACTIVATED);
   }
 
-  public List<EmbeddedLink> findByNewsPk(Long newsPk){
-    return embeddedLinkRepository.findByUsedInEqualsAndReferencePkEquals(UsedInType.NEWS, newsPk);
+  public List<EmbeddedLink> findByNewsPk(Long newsPk) {
+    return embeddedLinkRepository.findByUsedInEqualsAndReferencePkEqualsAndStatus(UsedInType.NEWS, newsPk, DataStatus.ACTIVATED);
   }
+
   public void save(EmbeddedLink embeddedLink) {
     embeddedLinkRepository.save(embeddedLink);
   }
+
+  public void deleteFileFromDb(EmbeddedLink embeddedLink) {
+    embeddedLink.setStatus(DataStatus.DEACTIVATED);
+    save(embeddedLink);
+  }
+
 }

@@ -161,7 +161,8 @@ public class BoardController {
         }else{
             boardData.setTeam(null);
         }
-        boardService.updateBoard(boardData, request.getUsedImageKeys());
+        boardService.updateBoard(boardData, request.getUsedImageKeys(), request.getUsedVideoKeys(),
+            request.getEmbeddedLinks());
         BoardDetailDTO boardDetailDTO = boardService.getBoardDetailDTOByPk(boardPk,user);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, boardDetailDTO));
     }
