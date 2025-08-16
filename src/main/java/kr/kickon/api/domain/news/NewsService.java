@@ -495,12 +495,14 @@ public class NewsService implements BaseService<News> {
     }
     // endregion
 
-    // region {updateNews} 뉴스 수정 처리 + 이미지 키 정리
+    // region {updateNews} 뉴스 수정 처리 + 이미지 및 영상 키 정리
     /**
      * 뉴스 수정 처리 + 이미지 키 정리
      *
      * @param news 수정할 뉴스 엔티티
      * @param usedImageKeys 사용된 이미지 키 목록
+     * @param usedVideoKeys 사용된 영상 키 목록
+     * @param embeddedLinks 사용된 임베드 링크 목록
      * @return 저장된 뉴스 엔티티
      */
     @Transactional
@@ -513,7 +515,7 @@ public class NewsService implements BaseService<News> {
             .collect(Collectors.toSet());
 
         // 기존 링크 전체 조회
-        List<EmbeddedLink> links = embeddedLinkService.findByBoardPk(saved.getPk());
+        List<EmbeddedLink> links = embeddedLinkService.findByNewsPk(saved.getPk());
         Set<String> existingLinks = links.stream()
             .map(EmbeddedLink::getUrl)
             .collect(Collectors.toSet());
@@ -557,7 +559,6 @@ public class NewsService implements BaseService<News> {
         }
 
         // 4. 이미지 키들 등록 또는 갱신
-
         Set<String> keysToAdd = new HashSet<>(requestedKeys);
         keysToAdd.removeAll(existingKeys);
 
@@ -567,7 +568,7 @@ public class NewsService implements BaseService<News> {
         if (!keysToAdd.isEmpty()) {
             awsFileReferenceService.updateFilesAsUsed(new ArrayList<>(keysToAdd), UsedInType.NEWS, saved.getPk());
 
-            List<AwsFileReference> videoFiles = awsFileReferenceService.findbyBoardPk(saved.getPk())
+            List<AwsFileReference> videoFiles = awsFileReferenceService.findbyNewsPk(saved.getPk())
                 .stream()
                 .filter(ref -> keysToAdd.contains(ref.getS3Key()))
                 .filter(ref -> {

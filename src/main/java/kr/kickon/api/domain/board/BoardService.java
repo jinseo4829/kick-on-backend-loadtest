@@ -437,9 +437,14 @@ public class BoardService implements BaseService<Board> {
     }
     // endregion
 
-    // region {updateBoard} 게시글 수정 시 이미지 키 등록/삭제 처리
+    // region {updateBoard} 게시글 수정 시 이미지 및 영상 키 등록/삭제 처리
     /**
-     * 게시글을 수정하고, 수정된 이미지 키에 따라 기존 S3 이미지 참조를 갱신합니다.
+     *
+     * @param board 수정할 board 엔티티
+     * @param usedImageKeys 사용된 이미지 키 목록
+     * @param usedVideoKeys 사용된 영상 키 목록
+     * @param embeddedLinks 사용된 임베드 링크 목록
+     * @return 저장된 board 엔티티
      */
     @Transactional
     public Board updateBoard(Board board, String[] usedImageKeys, String[] usedVideoKeys, String[] embeddedLinks) {
