@@ -299,7 +299,7 @@ public class NewsReplyService implements BaseService<NewsReply> {
         String redirectUrl = "/news/" + news.getPk();
 
         // 뉴스 글에 대한 댓글 (부모가 없음)
-        if (parent == null && !news.getUser().equals(writer)) {
+        if (parent == null && !news.getUser().getPk().equals(writer.getPk())) {
             notificationService.sendNotification(
                     news.getUser(),
                     "NEWS_REPLY",
@@ -309,7 +309,7 @@ public class NewsReplyService implements BaseService<NewsReply> {
         }
 
         // 대댓글
-        if (parent != null && !parent.getUser().equals(writer)) {
+        if (parent != null && !parent.getUser().getPk().equals(writer.getPk())) {
             notificationService.sendNotification(
                     parent.getUser(),
                     "NEWS_REPLY_REPLY",

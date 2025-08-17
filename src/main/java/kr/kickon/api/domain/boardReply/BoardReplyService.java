@@ -298,7 +298,7 @@ public class BoardReplyService implements BaseService<BoardReply> {
 
         String redirectUrl = "/board/" + board.getPk();
 
-        if (parent == null && !board.getUser().equals(writer)) {
+        if (parent == null && !board.getUser().getPk().equals(writer.getPk())) {
             log.info("board 댓글 알림 발송 대상: {}", board.getUser().getId());
             notificationService.sendNotification(
                     board.getUser(),
@@ -308,7 +308,7 @@ public class BoardReplyService implements BaseService<BoardReply> {
             );
         }
 
-        if (parent != null && !parent.getUser().equals(writer)) {
+        if (parent != null && !parent.getUser().getPk().equals(writer.getPk())) {
             log.info("board 대댓글 알림 발송 대상: {}", parent.getUser().getId());
             notificationService.sendNotification(
                     parent.getUser(),
