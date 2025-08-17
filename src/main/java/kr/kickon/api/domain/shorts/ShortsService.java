@@ -214,14 +214,16 @@ public class ShortsService {
                 .and(embeddedLink.usedIn.eq(UsedInType.BOARD))))
         .then(JPAExpressions.select(boardKick.pk.count())
             .from(boardKick)
-            .where(boardKick.board.pk.eq(board.pk)))
+            .where(boardKick.board.pk.eq(board.pk)
+                .and(boardKick.status.eq(DataStatus.ACTIVATED))))
         .when((shorts.type.eq(ShortsType.AWS_FILE)
             .and(awsFileReference.usedIn.eq(UsedInType.NEWS)))
             .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
                 .and(embeddedLink.usedIn.eq(UsedInType.NEWS))))
         .then(JPAExpressions.select(newsKick.pk.count())
             .from(newsKick)
-            .where(newsKick.news.pk.eq(news.pk)))
+            .where(newsKick.news.pk.eq(news.pk)
+                .and(newsKick.status.eq(DataStatus.ACTIVATED))))
         .otherwise(0L);
 
     // CASE: recentViewCount
@@ -253,7 +255,8 @@ public class ShortsService {
         .then(JPAExpressions.select(boardKick.pk.count())
             .from(boardKick)
             .where(boardKick.board.pk.eq(board.pk)
-                .and(boardKick.createdAt.after(cutoff))))
+                .and(boardKick.createdAt.after(cutoff))
+            .and(boardKick.status.eq(DataStatus.ACTIVATED))))
         .when((shorts.type.eq(ShortsType.AWS_FILE)
             .and(awsFileReference.usedIn.eq(UsedInType.NEWS)))
             .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
@@ -261,7 +264,8 @@ public class ShortsService {
         .then(JPAExpressions.select(newsKick.pk.count())
             .from(newsKick)
             .where(newsKick.news.pk.eq(news.pk)
-                .and(newsKick.createdAt.after(cutoff))))
+                .and(newsKick.createdAt.after(cutoff))
+            .and(newsKick.status.eq(DataStatus.ACTIVATED))))
         .otherwise(0L);
 
     List<ShortsDTO> result = queryFactory
@@ -351,6 +355,7 @@ public class ShortsService {
     Expression<User> userExpression;
     Expression<String> titleExpression;
     Expression<Long> referencePkExpression;
+    Expression<Boolean> isKicked;
 
     if (usedInType == UsedInType.BOARD) {
       totalViewCount = JPAExpressions.select(boardViewHistory.pk.count().coalesce(0L))
@@ -358,26 +363,42 @@ public class ShortsService {
           .where(boardViewHistory.board.pk.eq(board.pk));
       totalKickCount = JPAExpressions.select(boardKick.pk.count().coalesce(0L))
           .from(boardKick)
-          .where(boardKick.board.pk.eq(board.pk));
+          .where(boardKick.board.pk.eq(board.pk)
+              .and(boardKick.status.eq(DataStatus.ACTIVATED)));
       totalReplyCount = JPAExpressions.select(boardReply.pk.count().coalesce(0L))
           .from(boardReply)
-          .where(boardReply.board.pk.eq(board.pk));
+          .where(boardReply.board.pk.eq(board.pk)
+              .and(boardReply.status.eq(DataStatus.ACTIVATED)));
       userExpression = board.user;
       titleExpression = board.title;
       referencePkExpression = board.pk;
+      isKicked = JPAExpressions
+          .selectOne()
+          .from(boardKick)
+          .where(boardKick.board.pk.eq(board.pk)
+              .and(boardKick.status.eq(DataStatus.ACTIVATED)))
+          .exists();
     } else { // NEWS
       totalViewCount = JPAExpressions.select(newsViewHistory.pk.count().coalesce(0L))
           .from(newsViewHistory)
           .where(newsViewHistory.news.pk.eq(news.pk));
       totalKickCount = JPAExpressions.select(newsKick.pk.count().coalesce(0L))
           .from(newsKick)
-          .where(newsKick.news.pk.eq(news.pk));
+          .where(newsKick.news.pk.eq(news.pk)
+              .and(newsKick.status.eq(DataStatus.ACTIVATED)));
       totalReplyCount = JPAExpressions.select(newsReply.pk.count().coalesce(0L))
           .from(newsReply)
-          .where(newsReply.news.pk.eq(news.pk));
+          .where(newsReply.news.pk.eq(news.pk)
+              .and(newsReply.status.eq(DataStatus.ACTIVATED)));
       userExpression = news.user;
       titleExpression = news.title;
       referencePkExpression = news.pk;
+      isKicked = JPAExpressions
+          .selectOne()
+          .from(newsKick)
+          .where(newsKick.news.pk.eq(news.pk)
+          .and(newsKick.status.eq(DataStatus.ACTIVATED)))
+          .exists();
     }
 
     JPAQuery<ShortsDetailDTO> query = queryFactory
@@ -391,7 +412,8 @@ public class ShortsService {
             totalKickCount,
             totalReplyCount,
             shorts.createdAt,
-            userExpression
+            userExpression,
+            isKicked
         ))
         .from(shorts)
         .where(shorts.status.eq(DataStatus.ACTIVATED)

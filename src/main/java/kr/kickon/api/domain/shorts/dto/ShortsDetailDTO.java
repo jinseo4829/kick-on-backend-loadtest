@@ -25,9 +25,12 @@ public class ShortsDetailDTO extends ShortsDTO {
   @Schema(description = "유저 정보")
   private BaseUserDTO user;
 
+  @Schema(description = "킥 눌렀는지 여부", example = "true")
+  private Boolean isKicked = false;
+
   public ShortsDetailDTO(Long pk, String videoUrl, UsedInType usedIn, Long referencePk,
       String title, Long totalViewCount, Long totalKickCount, Long totalReplyCount, LocalDateTime createdAt,
-      User user) {
+      User user, Boolean isKicked) {
     this.setPk(pk);
     this.setVideoUrl(videoUrl);
     this.setUsedIn(usedIn);
@@ -38,5 +41,6 @@ public class ShortsDetailDTO extends ShortsDTO {
     this.setCreatedAt(createdAt);
     this.setReplyCount(totalReplyCount);
     this.user = new BaseUserDTO(user);
+    this.setIsKicked(isKicked);
   }
 }
