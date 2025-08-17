@@ -103,4 +103,8 @@ public class UserFavoriteTeamService implements BaseService<UserFavoriteTeam> {
                 .fetch();
     }
 
+    public boolean isUserFavoriteTeam(User user, Long teamPk) {
+        return userFavoriteTeamRepository.existsByUserAndTeamPkAndStatus(user, teamPk, DataStatus.ACTIVATED);
+    }
+
 }

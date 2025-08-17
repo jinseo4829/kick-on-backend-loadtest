@@ -731,11 +731,21 @@ public class GameService implements BaseService<Game> {
         String redirectUrl = "/gamble/" + game.getPk();
 
         for (User user : usersToNotify) {
+            // ✅ 유저가 응원하는 팀이 home인지 away인지 확인
+            String teamLogo = null;
+            if (userFavoriteTeamService.isUserFavoriteTeam(user, game.getHomeTeam().getPk())) {
+                teamLogo = game.getHomeTeam().getLogoUrl();
+            } else if (userFavoriteTeamService.isUserFavoriteTeam(user, game.getAwayTeam().getPk())) {
+                teamLogo = game.getAwayTeam().getLogoUrl();
+            }
+
+            // ✅ 알림 전송 시 teamLogo 같이 넘김
             notificationService.sendNotification(
                     user,
                     "GAME_RESULT",
                     game.getHomeTeam().getNameKr() + " vs " + game.getAwayTeam().getNameKr() + " 경기가 종료됐어요. 승부예측결과를 확인해 보세요.",
-                    redirectUrl
+                    redirectUrl,
+                    teamLogo   // <-- 새로 추가
             );
         }
     }
