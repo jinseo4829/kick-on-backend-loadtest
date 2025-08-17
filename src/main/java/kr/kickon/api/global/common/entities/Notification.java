@@ -5,13 +5,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Table(name = "Notification")
 @Entity
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class Notification extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -5,6 +5,7 @@ import kr.kickon.api.domain.notification.response.NotificationResponse;
 import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
+import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -21,6 +22,7 @@ public class NotificationService implements BaseService<Notification>  {
 
     private final NotificationRepository notificationRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final UUIDGenerator uuidGenerator;
 
     // region {findById} Notification UUID 기반 조회
     @Override
@@ -44,7 +46,9 @@ public class NotificationService implements BaseService<Notification>  {
      * 알림 생성 + WebSocket 실시간 전송
      */
     public void sendNotification(User receiver, String type, String content, String redirectUrl) {
+        String id = uuidGenerator.generateUniqueUUID(this::findById);
         Notification notification = Notification.builder()
+                .id(id)
                 .receiver(receiver)
                 .type(type)
                 .content(content)
