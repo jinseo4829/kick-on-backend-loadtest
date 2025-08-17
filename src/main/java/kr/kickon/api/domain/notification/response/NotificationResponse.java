@@ -20,8 +20,14 @@ public class NotificationResponse {
     private boolean read;
     private String relativeTime;
     private String absoluteTime;
+    private String teamLogo;
 
     public static NotificationResponse from(Notification notification) {
+        return from(notification, null);
+    }
+
+    // teamLogo를 외부에서 넣어줄 수 있는 오버로드 추가
+    public static NotificationResponse from(Notification notification, String teamLogo) {
         return NotificationResponse.builder()
                 .pk(notification.getPk())
                 .type(notification.getType())
@@ -30,6 +36,7 @@ public class NotificationResponse {
                 .read(notification.isRead())
                 .relativeTime(toRelativeTime(notification.getCreatedAt()))
                 .absoluteTime(notification.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy년 M월 d일 a h:mm")))
+                .teamLogo(teamLogo) // ✅ 로고 세팅
                 .build();
     }
 

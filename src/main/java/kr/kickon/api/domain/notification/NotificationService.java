@@ -45,7 +45,15 @@ public class NotificationService implements BaseService<Notification>  {
     /**
      * 알림 생성 + WebSocket 실시간 전송
      */
-    public void sendNotification(User receiver, String type, String content, String redirectUrl) {
+
+    public void sendNotification(User receiver,
+                                 String type,
+                                 String content,
+                                 String redirectUrl) {
+        sendNotification(receiver, type, content, redirectUrl, null); // teamLogo 없이
+    }
+
+    public void sendNotification(User receiver, String type, String content, String redirectUrl, String teamLogo) {
         String id = uuidGenerator.generateUniqueUUID(this::findById);
         Notification notification = Notification.builder()
                 .id(id)
@@ -59,7 +67,7 @@ public class NotificationService implements BaseService<Notification>  {
         notificationRepository.save(notification);
 
         String destination = "/topic/notify/" + receiver.getId();
-        NotificationResponse payload = NotificationResponse.from(notification);
+        NotificationResponse payload = NotificationResponse.from(notification, teamLogo);
 
         // 로그 찍기
         log.info("알림 소켓 전송 → destination: {}, payload: {}", destination, payload);
@@ -67,7 +75,6 @@ public class NotificationService implements BaseService<Notification>  {
         // 프론트로 실시간 전송 (한 번만)
         messagingTemplate.convertAndSend(destination, payload);
     }
-
 
     /**
      * 사용자 알림 목록 조회
