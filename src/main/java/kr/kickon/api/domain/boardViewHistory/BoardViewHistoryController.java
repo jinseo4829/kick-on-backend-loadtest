@@ -11,7 +11,6 @@ import kr.kickon.api.global.common.entities.BoardViewHistory;
 import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +24,6 @@ import org.springframework.web.bind.annotation.*;
 public class BoardViewHistoryController {
     private final JwtTokenProvider jwtTokenProvider;
     private final BoardViewHistoryService boardViewHistoryService;
-    private final UUIDGenerator uuidGenerator;
     private final BoardService boardService;
 
     @Operation(summary = "게시글 뷰 생성", description = "비회원도 생성 가능")
@@ -37,10 +35,7 @@ public class BoardViewHistoryController {
 
         if(board==null) throw new NotFoundException(ResponseCode.NOT_FOUND_BOARD);
 
-        String id = uuidGenerator.generateUniqueUUID(boardViewHistoryService::findById);
-
         BoardViewHistory.BoardViewHistoryBuilder builder = BoardViewHistory.builder()
-                .id(id)
                 .board(board);
 
         if(user!=null) builder.user(user);

@@ -7,11 +7,9 @@ import kr.kickon.api.admin.migration.dto.ApiGamesDTO;
 import kr.kickon.api.domain.userGameGamble.dto.GambleCountDTO;
 import kr.kickon.api.domain.userPointDetail.UserPointDetailService;
 import kr.kickon.api.domain.userPointEvent.UserPointEventService;
-import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.*;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -30,23 +28,20 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class UserGameGambleService implements BaseService<UserGameGamble> {
+public class UserGameGambleService {
     private final UserGameGambleRepository userGameGambleRepository;
     private final JPAQueryFactory queryFactory;
-    private final UUIDGenerator uuidGenerator;
     public static String[] ScheduledStatus = {"TBD", "NS"};
     public static String[] FinishedStatus = {"FT", "AET", "PEN"};
     private final UserPointEventService userPointEventService;
     private final UserPointDetailService userPointDetailService;
 
-    @Override
     public UserGameGamble findById(String uuid) {
         BooleanExpression predicate = QUserGameGamble.userGameGamble.id.eq(uuid).and(QUserGameGamble.userGameGamble.status.eq(DataStatus.ACTIVATED));
         Optional<UserGameGamble> userGameGamble = userGameGambleRepository.findOne(predicate);
         return userGameGamble.orElse(null);
     }
 
-    @Override
     public UserGameGamble findByPk(Long pk) {
         BooleanExpression predicate = QUserGameGamble.userGameGamble.pk.eq(pk).and(QUserGameGamble.userGameGamble.status.eq(DataStatus.ACTIVATED));
         Optional<UserGameGamble> userGameGamble = userGameGambleRepository.findOne(predicate);
@@ -134,27 +129,13 @@ public class UserGameGambleService implements BaseService<UserGameGamble> {
 
             if (points > 0) {
                 // 포인트를 UserPointDetail에 추가
-                String userPointEventId = "";
-                String userPointDetailId = "";
-                do {
-                    userPointDetailId = uuidGenerator.generateUniqueUUID(userPointDetailService::findById);
-                    // 이미 생성된 ID가 배열에 있는지 확인
-                } while (userPointDetailIds.contains(userPointDetailId)); // 중복이 있을 경우 다시 생성
-                do {
-                    userPointEventId = uuidGenerator.generateUniqueUUID(userPointDetailService::findById);
-                    // 이미 생성된 ID가 배열에 있는지 확인
-                } while (userPointEventIds.contains(userPointEventId)); // 중복이 있을 경우 다시 생성
-                userPointDetailIds.add(userPointDetailId);
-                userPointEventIds.add(userPointEventId);
                 UserPointEvent userPointEvent = UserPointEvent.builder()
-                        .id(userPointEventId)
                         .point(points)
                         .pointStatus(PointStatus.SAVE)
                         .user(userGameGamble.getUser())
                         .category(PointCategory.GAMBLE)
                         .build();
                 UserPointDetail userPointDetail = UserPointDetail.builder()
-                        .id(userPointDetailId)
                         .pointStatus(PointStatus.SAVE)
                         .user(userGameGamble.getUser())
                         .point(points)

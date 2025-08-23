@@ -1,25 +1,15 @@
 package kr.kickon.api.domain.embeddedLink;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import kr.kickon.api.global.common.entities.AwsFileReference;
-import kr.kickon.api.global.common.entities.Board;
 import kr.kickon.api.global.common.entities.EmbeddedLink;
-import kr.kickon.api.global.common.entities.QAwsFileReference;
 import kr.kickon.api.global.common.entities.QEmbeddedLink;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.UsedInType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j

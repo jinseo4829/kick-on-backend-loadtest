@@ -19,24 +19,16 @@ import java.util.Optional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class ActualSeasonService implements BaseService<ActualSeason> {
+public class ActualSeasonService {
     private final ActualSeasonRepository actualSeasonRepository;
     private final JPAQueryFactory queryFactory;
-    private final UUIDGenerator uuidGenerator;
 //    public List<User> findUserByEmail(String email){
 //        // JPAQueryFactory
 //        return queryFactory.selectFrom(QUser.user)
 //                .where(QUser.user.email.eq(email))
 //                .fetch();
 //    }
-    @Override
-    public ActualSeason findById(String uuid) {
-        BooleanExpression predicate = QActualSeason.actualSeason.id.eq(uuid).and(QActualSeason.actualSeason.status.eq(DataStatus.ACTIVATED));
-        Optional<ActualSeason> actualSeason = actualSeasonRepository.findOne(predicate);
-        return actualSeason.orElse(null);
-    }
 
-    @Override
     public ActualSeason findByPk(Long pk) {
         BooleanExpression predicate = QActualSeason.actualSeason.pk.eq(pk).and(QActualSeason.actualSeason.status.eq(DataStatus.ACTIVATED));
         Optional<ActualSeason> actualSeason = actualSeasonRepository.findOne(predicate);

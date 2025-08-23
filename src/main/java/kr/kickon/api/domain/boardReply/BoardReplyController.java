@@ -23,7 +23,6 @@ import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.ForbiddenException;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -40,7 +39,6 @@ public class BoardReplyController {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserFavoriteTeamService userFavoriteTeamService;
     private final BoardReplyService boardReplyService;
-    private final UUIDGenerator uuidGenerator;
     private final BoardService boardService;
     private final UserService userService;
 
@@ -62,9 +60,7 @@ public class BoardReplyController {
             }
         }
 
-        String id = uuidGenerator.generateUniqueUUID(boardReplyService::findById);
         BoardReply.BoardReplyBuilder boardReplyBuilder = BoardReply.builder()
-                .id(id)
                 .user(user)
                 .board(board)
                 .contents(request.getContents());

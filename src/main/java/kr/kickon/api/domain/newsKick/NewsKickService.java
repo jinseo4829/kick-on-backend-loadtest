@@ -20,28 +20,13 @@ import java.util.Optional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class NewsKickService implements BaseService<NewsKick> {
+public class NewsKickService{
     private final NewsKickRepository newsKickRepository;
-    private final JPAQueryFactory queryFactory;
-    private final UUIDGenerator uuidGenerator;
-
-    // region {findById} UUID 기준으로 활성화된 뉴스 킥 조회
-    /**
-     * UUID 기준으로 활성화된 뉴스 킥 조회
-     */
-    @Override
-    public NewsKick findById(String uuid) {
-        BooleanExpression predicate = QNewsKick.newsKick.id.eq(uuid).and(QNewsKick.newsKick.status.eq(DataStatus.ACTIVATED));
-        Optional<NewsKick> newsKickEntity = newsKickRepository.findOne(predicate);
-        return newsKickEntity.orElse(null);
-    }
-    // endregion
 
     // region {findByPk} PK 기준으로 활성화된 뉴스 킥 조회
     /**
      * PK 기준으로 활성화된 뉴스 킥 조회
      */
-    @Override
     public NewsKick findByPk(Long pk) {
         BooleanExpression predicate = QNewsKick.newsKick.pk.eq(pk).and(QNewsKick.newsKick.status.eq(DataStatus.ACTIVATED));
         Optional<NewsKick> newsKickEntity = newsKickRepository.findOne(predicate);

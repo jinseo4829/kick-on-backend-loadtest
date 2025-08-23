@@ -26,10 +26,8 @@ import java.util.Optional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class AwsFileReferenceService implements BaseService<AwsFileReference> {
+public class AwsFileReferenceService{
     private final AwsFileReferenceRepository awsFileReferenceRepository;
-    private final JPAQueryFactory queryFactory;
-    private final UUIDGenerator uuidGenerator;
 
     //    public List<User> findUserByEmail(String email){
 //        // JPAQueryFactory
@@ -37,14 +35,6 @@ public class AwsFileReferenceService implements BaseService<AwsFileReference> {
 //                .where(QUser.user.email.eq(email))
 //                .fetch();
 //    }
-    @Override
-    public AwsFileReference findById(String uuid) {
-        BooleanExpression predicate = QAwsFileReference.awsFileReference.id.eq(uuid).and(QAwsFileReference.awsFileReference.status.eq(DataStatus.ACTIVATED));
-        Optional<AwsFileReference> awsFileReference = awsFileReferenceRepository.findOne(predicate);
-        return awsFileReference.orElse(null);
-    }
-
-    @Override
     public AwsFileReference findByPk(Long pk) {
         BooleanExpression predicate = QAwsFileReference.awsFileReference.pk.eq(pk).and(QAwsFileReference.awsFileReference.status.eq(DataStatus.ACTIVATED));
         Optional<AwsFileReference> awsFileReference = awsFileReferenceRepository.findOne(predicate);

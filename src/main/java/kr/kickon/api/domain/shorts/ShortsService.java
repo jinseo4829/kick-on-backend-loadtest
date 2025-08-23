@@ -16,7 +16,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.embeddedLink.EmbeddedLinkService;
@@ -443,7 +442,6 @@ public class ShortsService {
   @Transactional
   public void save(ShortsType type, Long referencePk) {
     Shorts shorts = Shorts.builder()
-        .id(UUID.randomUUID().toString())
         .type(type)
         .referencePk(referencePk)
         .build();

@@ -62,9 +62,7 @@ public class BoardController {
     @PostMapping()
     public ResponseEntity<ResponseDTO<BoardDetailDTO>> createBoard(@Valid @RequestBody CreateBoardRequest request){
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        String id = uuidGenerator.generateUniqueUUID(boardService::findById);
         Board board = Board.builder()
-                .id(id)
                 .user(user)
                 .contents(request.getContents())
                 .title(request.getTitle())

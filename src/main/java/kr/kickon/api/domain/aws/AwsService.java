@@ -8,7 +8,6 @@ import kr.kickon.api.global.common.enums.UsedInType;
 import kr.kickon.api.global.error.exceptions.BadRequestException;
 import kr.kickon.api.global.error.exceptions.InternalServerException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
@@ -22,8 +21,6 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 import java.net.URL;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -52,7 +49,6 @@ public class AwsService{
             AwsFileReference duplicatedFile = awsFileReferenceService.findByKey(keyName);
             if (duplicatedFile == null) {
                 AwsFileReference awsFileReference = AwsFileReference.builder()
-                        .id(UUID.randomUUID().toString())
                         .s3Key(keyName)
                         .usedIn(UsedInType.TEMP)
                         .build();

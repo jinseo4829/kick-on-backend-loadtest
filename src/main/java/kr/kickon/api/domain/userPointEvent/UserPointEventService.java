@@ -20,18 +20,10 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class UserPointEventService implements BaseService<UserPointEvent> {
+public class UserPointEventService{
     private final UserPointEventRepository userPointEventRepository;
     private final JPAQueryFactory queryFactory;
 
-    @Override
-    public UserPointEvent findById(String uuid) {
-        BooleanExpression predicate = QNews.news.id.eq(uuid).and(QUserPointEvent.userPointEvent.status.eq(DataStatus.ACTIVATED));
-        Optional<UserPointEvent> userPointEvent = userPointEventRepository.findOne(predicate);
-        return userPointEvent.orElse(null);
-    }
-
-    @Override
     public UserPointEvent findByPk(Long pk) {
         BooleanExpression predicate = QNews.news.pk.eq(pk).and(QUserPointEvent.userPointEvent.status.eq(DataStatus.ACTIVATED));
         Optional<UserPointEvent> userPointEvent = userPointEventRepository.findOne(predicate);

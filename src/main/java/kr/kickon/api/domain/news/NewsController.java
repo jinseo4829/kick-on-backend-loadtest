@@ -45,7 +45,6 @@ public class NewsController {
     private final UserFavoriteTeamService userFavoriteTeamService;
     private final JwtTokenProvider jwtTokenProvider;
     private final TeamService teamService;
-    private final UUIDGenerator uuidGenerator;
     private final LeagueService leagueService;
 
     @Operation(summary = "홈화면 함께 볼만한 뉴스 리스트 조회", description = "응원팀이 있다면 관련 최신 게시글 기준으로 3개 리스트 반환")
@@ -97,12 +96,7 @@ public class NewsController {
     public ResponseEntity<ResponseDTO<NewsDetailDTO>> createNews(@Valid @RequestBody CreateNewsRequest request){
         User user = jwtTokenProvider.getUserFromSecurityContext();
 
-        String id = uuidGenerator.generateUniqueUUID(newsService::findById);
-
-
-
         News news = News.builder()
-                .id(id)
                 .user(user)
                 .category(request.getCategory())
                 .contents(request.getContents())

@@ -248,9 +248,7 @@ public class UserService implements BaseService<User> {
                 UserFavoriteTeam uft = teamMap.get(teamPk);
                 if (uft == null) {
                     // 새 팀 추가
-                    String id = uuidGenerator.generateUniqueUUID(userFavoriteTeamService::findById);
                     uft = UserFavoriteTeam.builder()
-                            .id(id)
                             .user(user)
                             .team(team)
                             .priorityNum(i + 1)

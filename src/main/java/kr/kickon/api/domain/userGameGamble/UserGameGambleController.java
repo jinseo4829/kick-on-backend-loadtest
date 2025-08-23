@@ -3,6 +3,7 @@ package kr.kickon.api.domain.userGameGamble;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import kr.kickon.api.domain.game.GameService;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.domain.userGameGamble.request.UserGameGamblePatchRequest;
@@ -39,7 +40,6 @@ public class UserGameGambleController {
     private final UserFavoriteTeamService userFavoriteTeamService;
     private final GameService gameService;
     private final JwtTokenProvider jwtTokenProvider;
-    private final UUIDGenerator uuidGenerator;
 
     @PostMapping()
     @Operation(summary = "승부예측 생성", description = "게임과 유저를 기반으로 승부예측 생성")
@@ -67,12 +67,10 @@ public class UserGameGambleController {
             result = PredictedResult.AWAY;
         }
 
-        String id = uuidGenerator.generateUniqueUUID(userGameGambleService::findById);
-
         UserGameGamble gamble = UserGameGamble.builder()
                 .user(user)
                 .game(game)
-                .id(id)
+                .id(UUID.randomUUID().toString())
                 .predictedAwayScore(request.getPredictedAwayScore())
                 .predictedHomeScore(request.getPredictedHomeScore())
                 .predictedResult(result)

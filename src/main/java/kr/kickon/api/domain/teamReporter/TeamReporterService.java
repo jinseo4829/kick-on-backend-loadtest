@@ -15,19 +15,9 @@ import java.util.Optional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class TeamReporterService implements BaseService<TeamReporter> {
+public class TeamReporterService {
     private final TeamReporterRepository teamReporterRepository;
-    private final JPAQueryFactory queryFactory;
-    private final UUIDGenerator uuidGenerator;
 
-    @Override
-    public TeamReporter findById(String uuid) {
-        BooleanExpression predicate = QTeamReporter.teamReporter.id.eq(uuid).and(QTeamReporter.teamReporter.status.eq(DataStatus.ACTIVATED));
-        Optional<TeamReporter> teamReporter = teamReporterRepository.findOne(predicate);
-        return teamReporter.orElse(null);
-    }
-
-    @Override
     public TeamReporter findByPk(Long pk) {
         BooleanExpression predicate = QTeamReporter.teamReporter.pk.eq(pk).and(QTeamReporter.teamReporter.status.eq(DataStatus.ACTIVATED));
         Optional<TeamReporter> teamReporter = teamReporterRepository.findOne(predicate);

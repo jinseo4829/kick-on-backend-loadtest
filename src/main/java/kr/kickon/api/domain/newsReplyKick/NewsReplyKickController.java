@@ -29,7 +29,6 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class NewsReplyKickController {
     private final JwtTokenProvider jwtTokenProvider;
-    private final UUIDGenerator uuidGenerator;
     private final NewsReplyService newsReplyService;
     private final NewsReplyKickService newsReplyKickService;
 
@@ -45,9 +44,7 @@ public class NewsReplyKickController {
         // 뉴스 댓글 킥 이미 있는지 체크
         NewsReplyKick newsReplyKick = newsReplyKickService.findByNewsReplyAndUser(newsReply.getPk(), user.getPk());
         if(newsReplyKick==null){
-            String id = uuidGenerator.generateUniqueUUID(newsReplyService::findById);
             newsReplyKickService.save(NewsReplyKick.builder()
-                    .id(id)
                     .newsReply(newsReply)
                     .user(user).build());
         }else{

@@ -11,7 +11,6 @@ import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +26,6 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class BoardReplyKickController {
     private final JwtTokenProvider jwtTokenProvider;
-    private final UUIDGenerator uuidGenerator;
     private final BoardReplyService boardReplyService;
     private final BoardReplyKickService boardReplyKickService;
 
@@ -43,9 +41,7 @@ public class BoardReplyKickController {
         // 게시글 댓글 킥 이미 있는지 체크
         BoardReplyKick boardReplyKick = boardReplyKickService.findByBoardReplyAndUser(boardReply.getPk(), user.getPk());
         if(boardReplyKick==null){
-            String id = uuidGenerator.generateUniqueUUID(boardReplyService::findById);
             boardReplyKickService.save(BoardReplyKick.builder()
-                    .id(id)
                     .boardReply(boardReply)
                     .user(user).build());
         }else{

@@ -30,10 +30,9 @@ import java.util.Optional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class TeamService implements BaseService<Team> {
+public class TeamService{
     private final TeamRepository teamRepository;
     private final JPAQueryFactory queryFactory;
-    private final UUIDGenerator uuidGenerator;
 //    public List<User> findUserByEmail(String email){
 //        // JPAQueryFactory
 //        return queryFactory.selectFrom(QUser.user)
@@ -41,24 +40,10 @@ public class TeamService implements BaseService<Team> {
 //                .fetch();
 //    }
 
-    // region {findById} 팀 UUID를 기반으로 활성화된 팀 엔티티를 조회합니다.
-    /**
-     * 팀 UUID를 기반으로 활성화된 팀 엔티티를 조회합니다.
-     */
-    @Override
-    public Team findById(String uuid) {
-        BooleanExpression predicate = QTeam.team.id.eq(uuid)
-                .and(QTeam.team.status.eq(DataStatus.ACTIVATED));
-        Optional<Team> team = teamRepository.findOne(predicate);
-        return team.orElse(null);
-    }
-    // endregion
-
     // region {findByPk} 팀 PK를 기반으로 활성화된 팀 엔티티를 조회합니다.
     /**
      * 팀 PK를 기반으로 활성화된 팀 엔티티를 조회합니다.
      */
-    @Override
     public Team findByPk(Long pk) {
         BooleanExpression predicate = QTeam.team.pk.eq(pk).and(QTeam.team.status.eq(DataStatus.ACTIVATED));
         Optional<Team> team = teamRepository.findOne(predicate);

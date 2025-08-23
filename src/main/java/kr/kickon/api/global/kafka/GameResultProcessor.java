@@ -1,6 +1,7 @@
 package kr.kickon.api.global.kafka;
 
 import jakarta.transaction.Transactional;
+import java.util.UUID;
 import kr.kickon.api.domain.gambleSeasonPoint.GambleSeasonPointService;
 import kr.kickon.api.domain.gambleSeasonRanking.GambleSeasonRankingService;
 import kr.kickon.api.domain.gambleSeasonTeam.GambleSeasonTeamService;
@@ -13,7 +14,6 @@ import kr.kickon.api.domain.userPointEvent.UserPointEventService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.*;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -37,7 +37,6 @@ public class GameResultProcessor {
     private final GameService gameService;
     private final UserGameGambleService userGameGambleService;
     private final TeamService teamService;
-    private final UUIDGenerator uuidGenerator;
     private final UserPointDetailService userPointDetailService;
     private final UserPointEventService userPointEventService;
     private final GambleSeasonPointService gambleSeasonPointService;
@@ -99,10 +98,8 @@ public class GameResultProcessor {
             awayTeam = teamService.findByApiId(apiData.getAwayTeamId());
             if(homeTeam == null || awayTeam==null){}
             else{
-                String id = uuidGenerator.generateUniqueUUID(gameService::findById);
-
                 game = Game.builder()
-                        .id(id)
+                        .id(UUID.randomUUID().toString())
                         .gameStatus(gameStatus)
                         .awayPenaltyScore(apiData.getAwayPenaltyScore())
                         .homePenaltyScore(apiData.getHomePenaltyScore())
@@ -124,8 +121,6 @@ public class GameResultProcessor {
     private void processUserPredictions(Game game, ApiGamesDTO apiGamesDTO, GameStatus gameStatus) {
         // 유저 Gamble Status 업데이트 하는거임
         List<UserGameGamble> userGameGambles = userGameGambleService.findByGameApiId(game.getApiId());
-        List<String> userPointEventIds = new ArrayList<>();
-        List<String> userPointDetailIds = new ArrayList<>();
         for(UserGameGamble userGameGamble : userGameGambles) {
             PredictedResult predictedResult = userGameGamble.getPredictedResult();
             GambleStatus gambleStatus;
@@ -158,27 +153,13 @@ public class GameResultProcessor {
 
             if (points > 0) {
                 // 포인트를 UserPointDetail에 추가
-                String userPointEventId = "";
-                String userPointDetailId = "";
-                do {
-                    userPointDetailId = uuidGenerator.generateUniqueUUID(userPointDetailService::findById);
-                    // 이미 생성된 ID가 배열에 있는지 확인
-                } while (userPointDetailIds.contains(userPointDetailId)); // 중복이 있을 경우 다시 생성
-                do {
-                    userPointEventId = uuidGenerator.generateUniqueUUID(userPointDetailService::findById);
-                    // 이미 생성된 ID가 배열에 있는지 확인
-                } while (userPointEventIds.contains(userPointEventId)); // 중복이 있을 경우 다시 생성
-                userPointDetailIds.add(userPointDetailId);
-                userPointEventIds.add(userPointEventId);
                 UserPointEvent userPointEvent = UserPointEvent.builder()
-                        .id(userPointEventId)
                         .point(points)
                         .pointStatus(PointStatus.SAVE)
                         .user(userGameGamble.getUser())
                         .category(PointCategory.GAMBLE)
                         .build();
                 UserPointDetail userPointDetail = UserPointDetail.builder()
-                        .id(userPointDetailId)
                         .pointStatus(PointStatus.SAVE)
                         .user(userGameGamble.getUser())
                         .point(points)
@@ -201,8 +182,6 @@ public class GameResultProcessor {
         List<UserGameGamble> awayTeamGambles = userGameGambles.stream()
                 .filter(g -> g.getSupportingTeam().getApiId().equals(apiGamesDTO.getAwayTeamId()))
                 .toList();
-        String homeGambleSeasonPointId = uuidGenerator.generateUniqueUUID(gambleSeasonPointService::findById);
-        String awayGambleSeasonPointId = uuidGenerator.generateUniqueUUID(gambleSeasonPointService::findById);
         GambleSeasonTeam homeGambleSeasonTeam = gambleSeasonTeamService.getRecentOperatingByTeamPk(game.getHomeTeam().getPk());
 //            System.out.println(homeGambleSeasonTeam.getTeam());
         if(homeGambleSeasonTeam != null){
@@ -219,7 +198,6 @@ public class GameResultProcessor {
                 gambleSeasonPointService.save(homeGambleSeasonPoint);
             }else{
                 homeGambleSeasonPoint = GambleSeasonPoint.builder()
-                        .id(homeGambleSeasonPointId)
                         .gambleSeason(homeGambleSeasonTeam.getGambleSeason())
                         .averagePoints((int) Math.round(homeAvgPoints * 1000))
                         .team(homeTeam)
@@ -233,7 +211,6 @@ public class GameResultProcessor {
                 gambleSeasonPointService.save(awayGambleSeasonPoint);
             }else{
                 awayGambleSeasonPoint = GambleSeasonPoint.builder()
-                        .id(awayGambleSeasonPointId)
                         .gambleSeason(homeGambleSeasonTeam.getGambleSeason())
                         .averagePoints((int) Math.round(awayAvgPoints * 1000))
                         .team(awayTeam)

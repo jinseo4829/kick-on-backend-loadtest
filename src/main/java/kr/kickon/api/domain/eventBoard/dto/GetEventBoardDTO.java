@@ -9,8 +9,8 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor // 추가 필요!
 public class GetEventBoardDTO{
-    @Schema(description = "ID", example = "fbfa7463-8315-472a-84ae-594697296719")
-    private String id;
+    @Schema(description = "pk", example = "1")
+    private Long pk;
 
     @Schema(description = "게시글 이름", example = "2024-05-02-맨시티-리버풀-손흥민-메인")
     private String title;
@@ -26,6 +26,6 @@ public class GetEventBoardDTO{
 
     @Override
     public String toString() {
-        return "GetEventBoardDTO [id=" + id + ", title=" + title + ", thumbnailUrl=" + thumbnailUrl + ", embeddedUrl=" + embeddedUrl + ", orderNum=" + orderNum + "]";
+        return "GetEventBoardDTO [pk=" + pk + ", title=" + title + ", thumbnailUrl=" + thumbnailUrl + ", embeddedUrl=" + embeddedUrl + ", orderNum=" + orderNum + "]";
     }
 }

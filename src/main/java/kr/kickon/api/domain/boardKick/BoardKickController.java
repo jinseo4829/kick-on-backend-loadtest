@@ -46,9 +46,7 @@ public class BoardKickController {
         // 게시글 킥 이미 있는지 체크
         BoardKick boardKick = boardKickService.findByBoardAndUser(board.getPk(), user.getPk());
         if(boardKick==null){
-            String id = uuidGenerator.generateUniqueUUID(boardService::findById);
             boardKickService.save(BoardKick.builder()
-                    .id(id)
                     .board(board)
                     .user(user).build());
         }else{

@@ -12,7 +12,6 @@ import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.enums.ReportStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +27,6 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class ReportNewsController {
     private final JwtTokenProvider jwtTokenProvider;
-    private final UUIDGenerator uuidGenerator;
     private final NewsService newsService;
     private final ReportNewsService reportNewsService;
 
@@ -41,9 +39,7 @@ public class ReportNewsController {
 
         if(news==null) throw new NotFoundException(ResponseCode.NOT_FOUND_BOARD);
 
-        String id = uuidGenerator.generateUniqueUUID(reportNewsService::findById);
         reportNewsService.save(ReportNews.builder()
-                .id(id)
                 .reportedNews(news)
                 .reportStatus(ReportStatus.REPORTED)
                 .user(user)

@@ -32,11 +32,10 @@ import software.amazon.awssdk.services.s3.S3Client;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class NewsReplyService implements BaseService<NewsReply> {
+public class NewsReplyService{
     private final NewsReplyRepository newsReplyRepository;
     private final JPAQueryFactory queryFactory;
     private final NewsReplyKickService newsReplyKickService;
-    private final UUIDGenerator uuidGenerator;
     private final AwsFileReferenceService awsFileReferenceService;
     private final AwsService awsService;
     private final NotificationService notificationService;
@@ -45,21 +44,6 @@ public class NewsReplyService implements BaseService<NewsReply> {
     @Value("${spring.config.activate.on-profile}")
     private String env;
 
-    // region {findById} UUID 기준으로 활성화된 뉴스 댓글 조회
-    /**
-     * UUID 기준으로 활성화된 뉴스 댓글 조회
-     *
-     * @param uuid UUID
-     * @return NewsReply 또는 null
-     */
-    @Override
-    public NewsReply findById(String uuid) {
-        BooleanExpression predicate = QNewsReply.newsReply.id.eq(uuid).and(QNewsReply.newsReply.status.eq(DataStatus.ACTIVATED));
-        Optional<NewsReply> newsReplyEntity = newsReplyRepository.findOne(predicate);
-        return newsReplyEntity.orElse(null);
-    }
-    // endregion
-
     // region {findByPk} PK 기준으로 활성화된 뉴스 댓글 조회
     /**
      * PK 기준으로 활성화된 뉴스 댓글 조회
@@ -67,7 +51,6 @@ public class NewsReplyService implements BaseService<NewsReply> {
      * @param pk 댓글 PK
      * @return NewsReply 또는 null
      */
-    @Override
     public NewsReply findByPk(Long pk) {
         BooleanExpression predicate = QNewsReply.newsReply.pk.eq(pk).and(QNewsReply.newsReply.status.eq(DataStatus.ACTIVATED));
         Optional<NewsReply> newsReplyEntity = newsReplyRepository.findOne(predicate);

@@ -1,12 +1,9 @@
 package kr.kickon.api.admin.root;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.jpa.impl.JPAQueryFactory;
-import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.Admin;
 import kr.kickon.api.global.common.entities.QAdmin;
 import kr.kickon.api.global.common.enums.DataStatus;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -18,20 +15,10 @@ import java.util.Optional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class AdminService implements BaseService<Admin> {
+public class AdminService{
     private final AdminRepository adminRepository;
-    private final JPAQueryFactory queryFactory;
-    private final UUIDGenerator uuidGenerator;
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    @Override
-    public Admin findById(String uuid) {
-        BooleanExpression predicate = QAdmin.admin.id.eq(uuid).and(QAdmin.admin.status.eq(DataStatus.ACTIVATED));
-        Optional<Admin> admin = adminRepository.findOne(predicate);
-        return admin.orElse(null);
-    }
-
-    @Override
     public Admin findByPk(Long pk) {
         BooleanExpression predicate = QAdmin.admin.pk.eq(pk).and(QAdmin.admin.status.eq(DataStatus.ACTIVATED));
         Optional<Admin> admin = adminRepository.findOne(predicate);

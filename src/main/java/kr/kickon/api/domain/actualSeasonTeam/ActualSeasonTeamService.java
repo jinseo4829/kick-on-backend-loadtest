@@ -5,7 +5,6 @@ import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.domain.team.dto.SeasonTeamDTO;
@@ -30,19 +29,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class ActualSeasonTeamService implements BaseService<ActualSeasonTeam> {
+public class ActualSeasonTeamService{
     private final ActualSeasonTeamRepository actualSeasonTeamRepository;
     private final JPAQueryFactory queryFactory;
-    private final UUIDGenerator uuidGenerator;
     private final TeamService teamService;
-    @Override
-    public ActualSeasonTeam findById(String uuid) {
-        BooleanExpression predicate = QActualSeasonTeam.actualSeasonTeam.id.eq(uuid).and(QActualSeasonTeam.actualSeasonTeam.status.eq(DataStatus.ACTIVATED));
-        Optional<ActualSeasonTeam> actualSeasonTeam = actualSeasonTeamRepository.findOne(predicate);
-        return actualSeasonTeam.orElse(null);
-    }
 
-    @Override
     public ActualSeasonTeam findByPk(Long pk) {
         BooleanExpression predicate = QActualSeasonTeam.actualSeasonTeam.pk.eq(pk).and(QActualSeasonTeam.actualSeasonTeam.status.eq(DataStatus.ACTIVATED));
         Optional<ActualSeasonTeam> actualSeasonTeam = actualSeasonTeamRepository.findOne(predicate);
@@ -158,7 +149,6 @@ public class ActualSeasonTeamService implements BaseService<ActualSeasonTeam> {
                 throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
             }
             ActualSeasonTeam actualSeasonTeam = ActualSeasonTeam.builder()
-                .id(UUID.randomUUID().toString())
                 .actualSeason(season)
                 .team(team)
                 .status(DataStatus.ACTIVATED)
@@ -188,7 +178,6 @@ public class ActualSeasonTeamService implements BaseService<ActualSeasonTeam> {
         ActualSeasonTeam actualSeasonTeam = findLatestByTeam(team.getPk());
         if (actualSeasonTeam == null) {
             actualSeasonTeam = ActualSeasonTeam.builder()
-                .id(UUID.randomUUID().toString())
                 .actualSeason(actualSeason)
                 .team(team)
                 .build();

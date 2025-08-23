@@ -15,18 +15,9 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class UserPointDetailService implements BaseService<UserPointDetail> {
+public class UserPointDetailService {
     private final UserPointDetailRepository userPointDetailRepository;
-    private final JPAQueryFactory queryFactory;
 
-    @Override
-    public UserPointDetail findById(String uuid) {
-        BooleanExpression predicate = QUserPointDetail.userPointDetail.id.eq(uuid).and(QUserPointDetail.userPointDetail.status.eq(DataStatus.ACTIVATED));
-        Optional<UserPointDetail> userPointDetail = userPointDetailRepository.findOne(predicate);
-        return userPointDetail.orElse(null);
-    }
-
-    @Override
     public UserPointDetail findByPk(Long pk) {
         BooleanExpression predicate = QUserPointDetail.userPointDetail.pk.eq(pk).and(QUserPointDetail.userPointDetail.status.eq(DataStatus.ACTIVATED));
         Optional<UserPointDetail> userPointDetail = userPointDetailRepository.findOne(predicate);

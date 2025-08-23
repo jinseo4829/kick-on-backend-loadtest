@@ -2,13 +2,9 @@ package kr.kickon.api.domain.boardReplyKick;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import kr.kickon.api.global.common.BaseService;
-import kr.kickon.api.global.common.entities.BoardKick;
 import kr.kickon.api.global.common.entities.BoardReplyKick;
-import kr.kickon.api.global.common.entities.QBoardKick;
 import kr.kickon.api.global.common.entities.QBoardReplyKick;
 import kr.kickon.api.global.common.enums.DataStatus;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,24 +14,9 @@ import java.util.Optional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class BoardReplyKickService implements BaseService<BoardReplyKick> {
+public class BoardReplyKickService{
     private final BoardReplyKickRepository boardReplyKickRepository;
     private final JPAQueryFactory queryFactory;
-
-    // region {findById} ID 기반 댓글 킥 조회
-    /**
-     * UUID 기반으로 활성 상태의 댓글 킥을 조회합니다.
-     *
-     * @param uuid 댓글 킥의 UUID
-     * @return BoardReplyKick 엔티티 (없으면 null)
-     */
-    @Override
-    public BoardReplyKick findById(String uuid) {
-        BooleanExpression predicate = QBoardReplyKick.boardReplyKick.id.eq(uuid).and(QBoardReplyKick.boardReplyKick.status.eq(DataStatus.ACTIVATED));
-        Optional<BoardReplyKick> boardReplyKickEntity = boardReplyKickRepository.findOne(predicate);
-        return boardReplyKickEntity.orElse(null);
-    }
-    // endregion
 
     // region {findByPk} PK 기반 댓글 킥 조회
     /**
@@ -44,7 +25,6 @@ public class BoardReplyKickService implements BaseService<BoardReplyKick> {
      * @param pk 댓글 킥의 PK
      * @return BoardReplyKick 엔티티 (없으면 null)
      */
-    @Override
     public BoardReplyKick findByPk(Long pk) {
         BooleanExpression predicate = QBoardReplyKick.boardReplyKick.pk.eq(pk).and(QBoardReplyKick.boardReplyKick.status.eq(DataStatus.ACTIVATED));
         Optional<BoardReplyKick> boardReplyKickEntity = boardReplyKickRepository.findOne(predicate);

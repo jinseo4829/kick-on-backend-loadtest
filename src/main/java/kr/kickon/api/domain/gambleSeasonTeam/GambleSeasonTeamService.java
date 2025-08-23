@@ -1,19 +1,13 @@
 package kr.kickon.api.domain.gambleSeasonTeam;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import kr.kickon.api.domain.gambleSeasonTeam.GambleSeasonTeamRepository;
 import kr.kickon.api.domain.team.TeamService;
 import kr.kickon.api.domain.team.dto.SeasonTeamDTO;
-import kr.kickon.api.domain.team.dto.TeamDTO;
-import kr.kickon.api.global.common.BaseService;
-import kr.kickon.api.global.common.entities.ActualSeason;
-import kr.kickon.api.global.common.entities.ActualSeasonTeam;
 import kr.kickon.api.global.common.entities.GambleSeason;
 import kr.kickon.api.global.common.entities.GambleSeasonTeam;
 import kr.kickon.api.global.common.entities.QGambleSeasonTeam;
@@ -22,7 +16,6 @@ import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.OperatingStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,22 +26,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class GambleSeasonTeamService implements BaseService<GambleSeasonTeam> {
+public class GambleSeasonTeamService{
 
     private final GambleSeasonTeamRepository gambleSeasonTeamRepository;
-    private final JPAQueryFactory queryFactory;
-    private final UUIDGenerator uuidGenerator;
     private final TeamService teamService;
 
-    @Override
-    public GambleSeasonTeam findById(String uuid) {
-        BooleanExpression predicate = QGambleSeasonTeam.gambleSeasonTeam.id.eq(uuid)
-            .and(QGambleSeasonTeam.gambleSeasonTeam.status.eq(DataStatus.ACTIVATED));
-        Optional<GambleSeasonTeam> gambleSeasonTeam = gambleSeasonTeamRepository.findOne(predicate);
-        return gambleSeasonTeam.orElse(null);
-    }
-
-    @Override
     public GambleSeasonTeam findByPk(Long pk) {
         BooleanExpression predicate = QGambleSeasonTeam.gambleSeasonTeam.pk.eq(pk)
             .and(QGambleSeasonTeam.gambleSeasonTeam.status.eq(DataStatus.ACTIVATED));
@@ -117,7 +99,6 @@ public class GambleSeasonTeamService implements BaseService<GambleSeasonTeam> {
                 throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
             }
             GambleSeasonTeam gambleSeasonTeam = GambleSeasonTeam.builder()
-                .id(UUID.randomUUID().toString())
                 .gambleSeason(gambleseason)
                 .team(team)
                 .status(DataStatus.ACTIVATED)
@@ -146,7 +127,6 @@ public class GambleSeasonTeamService implements BaseService<GambleSeasonTeam> {
         GambleSeasonTeam gambleSeasonTeam = getRecentOperatingByTeamPk(team.getPk());
         if (gambleSeasonTeam == null) {
             gambleSeasonTeam = GambleSeasonTeam.builder()
-                .id(UUID.randomUUID().toString())
                 .gambleSeason(gambleSeason)
                 .team(team)
                 .build();
