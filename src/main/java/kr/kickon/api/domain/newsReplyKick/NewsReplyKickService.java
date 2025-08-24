@@ -2,11 +2,9 @@ package kr.kickon.api.domain.newsReplyKick;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.NewsReplyKick;
 import kr.kickon.api.global.common.entities.QNewsReplyKick;
 import kr.kickon.api.global.common.enums.DataStatus;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,25 +14,9 @@ import java.util.Optional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class NewsReplyKickService implements BaseService<NewsReplyKick> {
+public class NewsReplyKickService{
     private final NewsReplyKickRepository newsReplyKickRepository;
     private final JPAQueryFactory queryFactory;
-    private final UUIDGenerator uuidGenerator;
-
-    // region {findById} UUID로 NewsReplyKick 조회 (활성 상태만)
-    /**
-     * UUID로 NewsReplyKick 조회 (활성 상태만)
-     *
-     * @param uuid 식별자
-     * @return NewsReplyKick 또는 null
-     */
-    @Override
-    public NewsReplyKick findById(String uuid) {
-        BooleanExpression predicate = QNewsReplyKick.newsReplyKick.id.eq(uuid).and(QNewsReplyKick.newsReplyKick.status.eq(DataStatus.ACTIVATED));
-        Optional<NewsReplyKick> newsReplyKick = newsReplyKickRepository.findOne(predicate);
-        return newsReplyKick.orElse(null);
-    }
-    // endregion
 
     // region {findByPk} PK로 NewsReplyKick 조회 (활성 상태만)
     /**
@@ -43,7 +25,6 @@ public class NewsReplyKickService implements BaseService<NewsReplyKick> {
      * @param pk 기본키
      * @return NewsReplyKick 또는 null
      */
-    @Override
     public NewsReplyKick findByPk(Long pk) {
         BooleanExpression predicate = QNewsReplyKick.newsReplyKick.pk.eq(pk).and(QNewsReplyKick.newsReplyKick.status.eq(DataStatus.ACTIVATED));
         Optional<NewsReplyKick> newsReplyKick = newsReplyKickRepository.findOne(predicate);

@@ -3,7 +3,6 @@ package kr.kickon.api.admin.migration;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.kickon.api.domain.actualSeason.ActualSeasonService;
-import kr.kickon.api.domain.actualSeasonTeam.ActualSeasonTeamService;
 import kr.kickon.api.domain.country.CountryService;
 import kr.kickon.api.domain.gambleSeasonRanking.GambleSeasonRankingService;
 import kr.kickon.api.domain.game.GameService;
@@ -85,7 +84,6 @@ public class MigrationController {
 
             // AI 유저의 응원팀 설정
             UserFavoriteTeam favoriteTeam = UserFavoriteTeam.builder()
-                    .id(UUID.randomUUID().toString())
                     .user(aiUser)
                     .team(team)
                     .priorityNum(1)

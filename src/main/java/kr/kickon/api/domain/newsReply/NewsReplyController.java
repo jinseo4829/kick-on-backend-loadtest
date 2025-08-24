@@ -23,7 +23,6 @@ import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.ForbiddenException;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -40,7 +39,6 @@ public class NewsReplyController {
     private final JwtTokenProvider jwtTokenProvider;
     private final NewsReplyService newsReplyService;
     private final UserFavoriteTeamService userFavoriteTeamService;
-    private final UUIDGenerator uuidGenerator;
     private final NewsService newsService;
     private final UserService userService;
 
@@ -60,9 +58,7 @@ public class NewsReplyController {
                 throw new ForbiddenException(ResponseCode.FORBIDDEN);
             }
         }
-        String id = uuidGenerator.generateUniqueUUID(newsReplyService::findById);
         NewsReply.NewsReplyBuilder newsReplyBuilder = NewsReply.builder()
-                .id(id)
                 .user(user)
                 .contents(request.getContents())
                 .news(news);

@@ -20,14 +20,12 @@ import kr.kickon.api.domain.shorts.ShortsService;
 import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.domain.teamReporter.TeamReporterService;
 import kr.kickon.api.domain.user.dto.BaseUserDTO;
-import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.common.enums.ShortsType;
 import kr.kickon.api.global.common.enums.UsedInType;
 import kr.kickon.api.global.error.exceptions.InternalServerException;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,10 +38,9 @@ import software.amazon.awssdk.services.s3.S3Client;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class NewsService implements BaseService<News> {
+public class NewsService{
     private final NewsRepository newsRepository;
     private final JPAQueryFactory queryFactory;
-    private final UUIDGenerator uuidGenerator;
     private final NewsKickService newsKickService;
     private final AwsFileReferenceService awsFileReferenceService;
     private final AwsService awsService;
@@ -54,17 +51,7 @@ public class NewsService implements BaseService<News> {
     @Value("${spring.config.activate.on-profile}")
     private String env;
 
-    // region {findById} UUID 기반 단건 조회
-    @Override
-    public News findById(String uuid) {
-        BooleanExpression predicate = QNews.news.id.eq(uuid).and(QNews.news.status.eq(DataStatus.ACTIVATED));
-        Optional<News> newsEntity = newsRepository.findOne(predicate);
-        return newsEntity.orElse(null);
-    }
-    // endregion
-
     // region {findByPk} PK 기반 단건 조회
-    @Override
     public News findByPk(Long pk) {
         BooleanExpression predicate = QNews.news.pk.eq(pk).and(QNews.news.status.eq(DataStatus.ACTIVATED));
         Optional<News> newsEntity = newsRepository.findOne(predicate);
@@ -108,7 +95,6 @@ public class NewsService implements BaseService<News> {
             List<EmbeddedLink> links = Arrays.stream(embeddedLinks)
                 .distinct()
                 .map(link -> EmbeddedLink.builder()
-                    .id(UUID.randomUUID().toString())
                     .url(link)
                     .usedIn(UsedInType.NEWS)
                     .referencePk(savedNewsEntity.getPk())
@@ -583,7 +569,6 @@ public class NewsService implements BaseService<News> {
         if (!linksToAdd.isEmpty()) {
             List<EmbeddedLink> newLinks = linksToAdd.stream()
                 .map(link -> EmbeddedLink.builder()
-                    .id(UUID.randomUUID().toString())
                     .url(link)
                     .usedIn(UsedInType.NEWS)
                     .referencePk(saved.getPk())

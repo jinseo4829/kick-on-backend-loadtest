@@ -1,6 +1,5 @@
 package kr.kickon.api.domain.board;
 
-import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
@@ -12,13 +11,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Stream;
 import kr.kickon.api.domain.aws.AwsService;
 import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.board.dto.BoardDetailDTO;
-import kr.kickon.api.domain.board.dto.BoardListDTO;
-import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
 import kr.kickon.api.domain.board.dto.BoardListDTO;
 import kr.kickon.api.domain.board.dto.PaginatedBoardListDTO;
 import kr.kickon.api.domain.embeddedLink.EmbeddedLinkService;
@@ -28,14 +24,12 @@ import kr.kickon.api.domain.teamReporter.TeamReporterService;
 import kr.kickon.api.domain.user.dto.BaseUserDTO;
 import kr.kickon.api.domain.boardKick.BoardKickService;
 import kr.kickon.api.domain.team.dto.TeamDTO;
-import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.common.enums.ShortsType;
 import kr.kickon.api.global.common.enums.UsedInType;
 import kr.kickon.api.global.error.exceptions.InternalServerException;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -51,11 +45,10 @@ import software.amazon.awssdk.services.s3.S3Client;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class BoardService implements BaseService<Board> {
+public class BoardService{
     private final BoardRepository boardRepository;
     private final JPAQueryFactory queryFactory;
     private final BoardKickService boardKickService;
-    private final UUIDGenerator uuidGenerator;
     private final AwsFileReferenceService awsFileReferenceService;
     private final AwsService awsService;
     private final PartnersService partnersService;
@@ -65,23 +58,10 @@ public class BoardService implements BaseService<Board> {
     @Value("${spring.config.activate.on-profile}")
     private String env;
 
-    // region {findById} uuid 기준으로 게시글 조회
-    /**
-     * UUID를 기반으로 활성화된 게시글을 조회합니다.
-     */
-    @Override
-    public Board findById(String uuid) {
-        BooleanExpression predicate = QBoard.board.id.eq(uuid).and(QBoard.board.status.eq(DataStatus.ACTIVATED));
-        Optional<Board> board = boardRepository.findOne(predicate);
-        return board.orElse(null);
-    }
-    // endregion
-
     // region {findByPk} PK 기준으로 게시글 조회
     /**
      * PK를 기반으로 활성화된 게시글을 조회합니다.
      */
-    @Override
     public Board findByPk(Long pk) {
         BooleanExpression predicate = QBoard.board.pk.eq(pk).and(QBoard.board.status.eq(DataStatus.ACTIVATED));
         Optional<Board> board = boardRepository.findOne(predicate);
@@ -130,7 +110,6 @@ public class BoardService implements BaseService<Board> {
             List<EmbeddedLink> links = Arrays.stream(embeddedLinks)
                 .distinct()
                 .map(link -> EmbeddedLink.builder()
-                    .id(UUID.randomUUID().toString())
                     .url(link)
                     .usedIn(UsedInType.BOARD)
                     .referencePk(boardEntity.getPk())
@@ -524,7 +503,6 @@ public class BoardService implements BaseService<Board> {
             if (!linksToAdd.isEmpty()) {
             List<EmbeddedLink> newLinks = linksToAdd.stream()
                 .map(link -> EmbeddedLink.builder()
-                    .id(UUID.randomUUID().toString())
                     .url(link)
                     .usedIn(UsedInType.BOARD)
                     .referencePk(saved.getPk())

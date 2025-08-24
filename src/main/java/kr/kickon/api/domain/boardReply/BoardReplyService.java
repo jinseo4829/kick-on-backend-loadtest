@@ -5,10 +5,6 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.transaction.Transactional;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 import kr.kickon.api.domain.aws.AwsService;
 import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.boardReply.dto.PaginatedReplyListDTO;
@@ -17,11 +13,9 @@ import kr.kickon.api.domain.boardReplyKick.BoardReplyKickService;
 import kr.kickon.api.domain.notification.NotificationService;
 import kr.kickon.api.domain.teamReporter.TeamReporterService;
 import kr.kickon.api.domain.user.dto.BaseUserDTO;
-import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.UsedInType;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,11 +30,10 @@ import software.amazon.awssdk.services.s3.S3Client;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class BoardReplyService implements BaseService<BoardReply> {
+public class BoardReplyService{
     private final BoardReplyRepository boardReplyRepository;
     private final BoardReplyKickService boardReplyKickService;
     private final JPAQueryFactory queryFactory;
-    private final UUIDGenerator uuidGenerator;
     private final AwsFileReferenceService awsFileReferenceService;
     private final AwsService awsService;
     private final NotificationService notificationService;
@@ -48,23 +41,10 @@ public class BoardReplyService implements BaseService<BoardReply> {
     @Value("${spring.config.activate.on-profile}")
     private String env;
 
-    // region {findById} BoardReply UUID로 조회
-    /**
-     * BoardReply의 UUID로 단건 조회
-     */
-    @Override
-    public BoardReply findById(String uuid) {
-        BooleanExpression predicate = QBoardReply.boardReply.id.eq(uuid).and(QBoardReply.boardReply.status.eq(DataStatus.ACTIVATED));
-        Optional<BoardReply> boardReply = boardReplyRepository.findOne(predicate);
-        return boardReply.orElse(null);
-    }
-    // endregion
-
     // region {findByPk} BoardReply PK로 조회
     /**
      * BoardReply의 PK로 단건 조회
      */
-    @Override
     public BoardReply findByPk(Long pk) {
         BooleanExpression predicate = QBoardReply.boardReply.pk.eq(pk).and(QBoardReply.boardReply.status.eq(DataStatus.ACTIVATED));
         Optional<BoardReply> boardReply = boardReplyRepository.findOne(predicate);

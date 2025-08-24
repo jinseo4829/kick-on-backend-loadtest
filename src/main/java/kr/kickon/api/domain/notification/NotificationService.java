@@ -2,10 +2,8 @@ package kr.kickon.api.domain.notification;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import kr.kickon.api.domain.notification.response.NotificationResponse;
-import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -18,23 +16,12 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class NotificationService implements BaseService<Notification>  {
+public class NotificationService{
 
     private final NotificationRepository notificationRepository;
     private final SimpMessagingTemplate messagingTemplate;
-    private final UUIDGenerator uuidGenerator;
-
-    // region {findById} Notification UUID 기반 조회
-    @Override
-    public Notification findById(String uuid) {
-        BooleanExpression predicate = QNotification.notification.id.eq(uuid).and(QNotification.notification.status.eq(DataStatus.ACTIVATED));
-        Optional<Notification> notificationEntity = notificationRepository.findOne(predicate);
-        return notificationEntity.orElse(null);
-    }
-    // endregion
 
     // region {findByPk} Notification PK 기반 조회
-    @Override
     public Notification findByPk(Long pk) {
         BooleanExpression predicate = QNotification.notification.pk.eq(pk).and(QNotification.notification.status.eq(DataStatus.ACTIVATED));
         Optional<Notification> notificationEntity = notificationRepository.findOne(predicate);
@@ -54,9 +41,7 @@ public class NotificationService implements BaseService<Notification>  {
     }
 
     public void sendNotification(User receiver, String type, String content, String redirectUrl, String teamLogo) {
-        String id = uuidGenerator.generateUniqueUUID(this::findById);
         Notification notification = Notification.builder()
-                .id(id)
                 .receiver(receiver)
                 .type(type)
                 .content(content)

@@ -5,13 +5,11 @@ import jakarta.persistence.*;
 import kr.kickon.api.global.common.enums.DataStatus;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.ColumnDefault;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Getter
 @Setter
@@ -25,9 +23,6 @@ public abstract class BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Schema(description = "각 데이터의 PK값", example = "1")
     private Long pk;
-
-    @Column(unique = true, nullable = false)
-    private String id;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

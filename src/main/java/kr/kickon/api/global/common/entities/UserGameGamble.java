@@ -3,7 +3,6 @@ package kr.kickon.api.global.common.entities;
 import jakarta.persistence.*;
 import kr.kickon.api.global.common.enums.GambleStatus;
 import kr.kickon.api.global.common.enums.PredictedResult;
-import kr.kickon.api.global.common.enums.UserAccountStatus;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,6 +17,10 @@ import org.hibernate.annotations.ColumnDefault;
 @SuperBuilder
 @NoArgsConstructor
 public class UserGameGamble extends BaseEntity {
+
+    @Column(unique = true, nullable = false)
+    private String id;
+
     @Column(nullable = false)
     private Integer predictedHomeScore;
 

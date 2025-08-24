@@ -11,7 +11,6 @@ import kr.kickon.api.global.common.entities.NewsViewHistory;
 import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +27,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class NewsViewHistoryController {
     private final JwtTokenProvider jwtTokenProvider;
     private final NewsViewHistoryService newsViewHistoryService;
-    private final UUIDGenerator uuidGenerator;
     private final NewsService newsService;
 
     @Operation(summary = "뉴스 뷰 생성", description = "비회원도 생성 가능")
@@ -40,10 +38,7 @@ public class NewsViewHistoryController {
 
         if(news==null) throw new NotFoundException(ResponseCode.NOT_FOUND_BOARD);
 
-        String id = uuidGenerator.generateUniqueUUID(newsViewHistoryService::findById);
-
         NewsViewHistory.NewsViewHistoryBuilder builder = NewsViewHistory.builder()
-                .id(id)
                 .news(news);
 
         if(user!=null) builder.user(user);

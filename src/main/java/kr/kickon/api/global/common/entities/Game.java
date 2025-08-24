@@ -17,6 +17,10 @@ import java.time.LocalDateTime;
 @SuperBuilder
 @NoArgsConstructor
 public class Game extends BaseEntity {
+
+    @Column(unique = true, nullable = false)
+    private String id;
+
     @Column
     private Long apiId;
 

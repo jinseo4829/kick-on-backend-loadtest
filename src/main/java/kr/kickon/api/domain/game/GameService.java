@@ -22,7 +22,6 @@ import kr.kickon.api.domain.game.dto.GameDTO;
 import kr.kickon.api.domain.game.response.CalendarDateCountDTO;
 import kr.kickon.api.domain.game.response.MyPredictionStatsResponse;
 import kr.kickon.api.domain.game.response.PredictOpenResponse;
-import kr.kickon.api.domain.league.LeagueService;
 import kr.kickon.api.domain.league.dto.LeagueDTO;
 import kr.kickon.api.domain.notification.NotificationService;
 import kr.kickon.api.domain.team.TeamService;
@@ -31,11 +30,9 @@ import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.domain.userGameGamble.UserGameGambleService;
 import kr.kickon.api.domain.userGameGamble.dto.UserGameGambleDTO;
 import kr.kickon.api.domain.userPointEvent.UserPointEventService;
-import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.*;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -44,10 +41,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -55,7 +50,7 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class GameService implements BaseService<Game> {
+public class GameService{
     private final GameRepository gameRepository;
     private final UserGameGambleService userGameGambleService;
     private final UserPointEventService userPointEventService;
@@ -66,17 +61,7 @@ public class GameService implements BaseService<Game> {
     private final UserFavoriteTeamService userFavoriteTeamService;
     private final NotificationService notificationService;
 
-    // region {findById} Game UUID 기반 조회
-    @Override
-    public Game findById(String uuid) {
-        BooleanExpression predicate = QGame.game.id.eq(uuid).and(QGame.game.status.eq(DataStatus.ACTIVATED));
-        Optional<Game> gameEntity = gameRepository.findOne(predicate);
-        return gameEntity.orElse(null);
-    }
-    // endregion
-
     // region {findByPk} Game PK 기반 조회
-    @Override
     public Game findByPk(Long pk) {
         BooleanExpression predicate = QGame.game.pk.eq(pk).and(QGame.game.status.eq(DataStatus.ACTIVATED));
         Optional<Game> gameEntity = gameRepository.findOne(predicate);

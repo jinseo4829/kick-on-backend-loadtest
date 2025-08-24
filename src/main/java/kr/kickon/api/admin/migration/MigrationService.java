@@ -18,7 +18,6 @@ import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.GameStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -40,7 +39,6 @@ public class MigrationService {
     private final LeagueService leagueService;
     private final TeamService teamService;
     private final ActualSeasonService actualSeasonService;
-    private final UUIDGenerator uuidGenerator;
     private final ActualSeasonTeamService actualSeasonTeamService;
     private final GameService gameService;
     private final UserGameGambleService userGameGambleService;
@@ -49,7 +47,7 @@ public class MigrationService {
     private final GambleSeasonService gambleSeasonService;
     private final GambleSeasonTeamService gambleSeasonTeamService;
 
-    public MigrationService(@Value("${api.key}") String apiKey, LeagueService leagueService, TeamService teamService, ActualSeasonService actualSeasonService, UUIDGenerator uuidGenerator, ActualSeasonTeamService actualSeasonTeamService, GameService gameService, ActualSeasonRankingService actualSeasonRankingService, UserGameGambleService userGameGambleService, GambleSeasonPointService gambleSeasonPointService, GambleSeasonRankingService gambleSeasonRankingService, GambleSeasonService gambleSeasonService, GambleSeasonTeamService gambleSeasonTeamService) {
+    public MigrationService(@Value("${api.key}") String apiKey, LeagueService leagueService, TeamService teamService, ActualSeasonService actualSeasonService, ActualSeasonTeamService actualSeasonTeamService, GameService gameService, ActualSeasonRankingService actualSeasonRankingService, UserGameGambleService userGameGambleService, GambleSeasonPointService gambleSeasonPointService, GambleSeasonRankingService gambleSeasonRankingService, GambleSeasonService gambleSeasonService, GambleSeasonTeamService gambleSeasonTeamService) {
         this.gambleSeasonService = gambleSeasonService;
         ExchangeStrategies exchangeStrategies = ExchangeStrategies.builder()
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(-1)) // to unlimited memory size
@@ -63,7 +61,6 @@ public class MigrationService {
         this.leagueService = leagueService;
         this.teamService = teamService;
         this.actualSeasonService = actualSeasonService;
-        this.uuidGenerator = uuidGenerator;
         this.actualSeasonTeamService = actualSeasonTeamService;
         this.gameService = gameService;
         this.actualSeasonRankingService = actualSeasonRankingService;
@@ -75,27 +72,12 @@ public class MigrationService {
 
     @Transactional
     public void saveRankings(List<ApiRankingDTO> list) {
-        // 랭킹 아이디 체크
-        List<String> rankingIds = new ArrayList<>();
         list.forEach(apiData -> {
             ActualSeasonRanking existActualSeasonRanking = actualSeasonRankingService.findByActualSeasonAndTeam(apiData.getActualSeason().getPk(),apiData.getTeam().getPk());
 
             ActualSeasonRanking actualSeasonRanking;
             if(existActualSeasonRanking == null) {
-                String rankingId = "";
-                do {
-                    try{
-                        rankingId = uuidGenerator.generateUniqueUUID(leagueService::findById);
-                    }catch (NotFoundException ignore2){
-                    }
-                    // 이미 생성된 ID가 배열에 있는지 확인
-                    if(!rankingIds.contains(rankingId)) {
-                        break;
-                    }
-                } while (true); // 중복이 있을 경우 다시 생성
-                rankingIds.add(rankingId);
                 actualSeasonRanking = ActualSeasonRanking.builder()
-                        .id(rankingId)
                         .actualSeason(apiData.getActualSeason())
                         .season(apiData.getSeason())
                         .loses(apiData.getLoses())
@@ -125,8 +107,6 @@ public class MigrationService {
 
     @Transactional
     public void saveGames(List<ApiGamesDTO> list){
-        // 게임 아이디 체크
-        List<String> gameIds = new ArrayList<>();
         List<String> scheduledStatus = new ArrayList<>(Arrays.asList(GameService.ScheduledStatus));
         List<String> finishedStatus = new ArrayList<>(Arrays.asList(GameService.FinishedStatus));
         
@@ -147,21 +127,8 @@ public class MigrationService {
                 awayTeam = Optional.ofNullable(teamService.findByApiId(apiData.getAwayTeamId()));
                 if (homeTeam.isEmpty() || awayTeam.isEmpty()) {
                 } else {
-                    String gameId = "";
-                    do {
-                        try {
-                            gameId = uuidGenerator.generateUniqueUUID(leagueService::findById);
-                        } catch (NotFoundException ignore2) {
-                        }
-                        // 이미 생성된 ID가 배열에 있는지 확인
-                        if (!gameIds.contains(gameId)) {
-                            break;
-                        }
-                    } while (true); // 중복이 있을 경우 다시 생성
-                    gameIds.add(gameId);
-
                     game = Game.builder()
-                            .id(gameId)
+                            .id(UUID.randomUUID().toString())
                             .gameStatus(gameStatus)
                             .awayPenaltyScore(apiData.getAwayPenaltyScore())
                             .homePenaltyScore(apiData.getHomePenaltyScore())
@@ -183,12 +150,9 @@ public class MigrationService {
 
     @Transactional
     public void saveLeagueAndSeason(List<ApiLeagueAndSeasonDTO> list){
-        List<String> leagueIds = new ArrayList<>();
-        List<String> seasonIds = new ArrayList<>();
         list.forEach(apiData -> {
             ApiLeagueDTO apiLeague = apiData.getLeague();
             ApiSeasonDTO apiSeason = apiData.getSeason();
-            String leagueId="", actualSeasonId = "";
             League league;
             ActualSeason actualSeason;
             try {
@@ -198,20 +162,7 @@ public class MigrationService {
                 league.setLogoUrl(apiLeague.getLogo());
                 leagueService.save(league);
             }catch (NotFoundException e) {
-                // 중복되지 않는 ID를 생성할 때까지 반복
-                do {
-                    try{
-                        leagueId = uuidGenerator.generateUniqueUUID(leagueService::findById);
-                    }catch (NotFoundException ignore){
-                    }
-                    // 이미 생성된 ID가 배열에 있는지 확인
-                    if(!leagueIds.contains(leagueId)) {
-                        break;
-                    }
-                } while (true); // 중복이 있을 경우 다시 생성
-                leagueIds.add(leagueId);
                 league = League.builder()
-                        .id(leagueId)
                         .apiId(apiLeague.getId())
                         .type(apiLeague.getType())
                         .logoUrl(apiLeague.getLogo())
@@ -220,20 +171,7 @@ public class MigrationService {
             }
             actualSeason = actualSeasonService.findByYearAndLeague(apiSeason.getYear(),league.getPk());
             if(actualSeason == null) {
-                // 중복되지 않는 ID를 생성할 때까지 반복
-                do {
-                    try{
-                        actualSeasonId = uuidGenerator.generateUniqueUUID(actualSeasonService::findById);
-                    }catch (NotFoundException ignore){
-                    }
-                    // 이미 생성된 ID가 배열에 있는지 확인
-                    if(!seasonIds.contains(actualSeasonId)) {
-                        break;
-                    }
-                } while (true); // 중복이 있을 경우 다시 생성
-                seasonIds.add(actualSeasonId);
                 actualSeason = ActualSeason.builder()
-                        .id(actualSeasonId)
                         .operatingStatus(apiSeason.getOperatingStatus())
                         .year(apiSeason.getYear())
                         .league(league)
@@ -254,11 +192,9 @@ public class MigrationService {
 
     @Transactional
     public void saveTeamsAndSeasonTeams(List<ApiTeamDTO> apiTeams){
-        List<String> ids = new ArrayList<>();
         List<String> actualSeasonTeamIds = new ArrayList<>();
 
         apiTeams.forEach(apiTeam -> {
-            String id="";
 
             Team team = teamService.findByApiId(apiTeam.getId());
             Team teamObj;
@@ -270,20 +206,7 @@ public class MigrationService {
                 teamObj.setLogoUrl(apiTeam.getLogo());
                 teamObj = teamService.save(teamObj);
             }else{
-                // 중복되지 않는 ID를 생성할 때까지 반복
-                do {
-                    try{
-                        id = uuidGenerator.generateUniqueUUID(teamService::findById);
-                    }catch (NotFoundException ignore){
-                    }
-                    // 이미 생성된 ID가 배열에 있는지 확인
-                    if(!ids.contains(id)) {
-                        break;
-                    }
-                } while (true); // 중복이 있을 경우 다시 생성
-                ids.add(id);
                 teamObj = Team.builder()
-                        .id(id)
                         .nameEn(apiTeam.getName())
                         .code(apiTeam.getCode())
                         .logoUrl(apiTeam.getLogo())
@@ -296,20 +219,7 @@ public class MigrationService {
             try {
                 actualSeasonTeamService.findByActualSeasonTeam(actualSeason,teamObj.getPk());
             }catch (NotFoundException e){
-                String actualSeasonTeamId="";
-                do {
-                    try{
-                        actualSeasonTeamId = uuidGenerator.generateUniqueUUID(actualSeasonTeamService::findById);
-                    }catch (NotFoundException ignore){
-                    }
-                    // 이미 생성된 ID가 배열에 있는지 확인
-                    if(!actualSeasonTeamIds.contains(actualSeasonTeamId)) {
-                        break;
-                    }
-                } while (true); // 중복이 있을 경우 다시 생성
-                actualSeasonTeamIds.add(actualSeasonTeamId);
                 ActualSeasonTeam actualSeasonObj = ActualSeasonTeam.builder()
-                        .id(actualSeasonTeamId)
                         .team(teamObj)
                         .actualSeason(actualSeason)
                         .build();

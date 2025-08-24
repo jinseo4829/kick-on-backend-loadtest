@@ -1,16 +1,12 @@
 package kr.kickon.api.domain.gambleSeasonRanking;
 
-import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import kr.kickon.api.domain.actualSeasonRanking.dto.GetActualSeasonRankingDTO;
 import kr.kickon.api.domain.gambleSeasonPoint.GambleSeasonPointService;
 import kr.kickon.api.domain.gambleSeasonRanking.dto.GetGambleSeasonRankingDTO;
-import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.GameStatus;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,20 +17,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class GambleSeasonRankingService implements BaseService<GambleSeasonRanking> {
+public class GambleSeasonRankingService{
     private final GambleSeasonRankingRepository gambleSeasonRankingRepository;
     private final JPAQueryFactory queryFactory;
-    private final UUIDGenerator uuidGenerator;
     private final GambleSeasonPointService gambleSeasonPointService;
 
-    @Override
-    public GambleSeasonRanking findById(String uuid) {
-        BooleanExpression predicate = QGambleSeasonRanking.gambleSeasonRanking.id.eq(uuid).and(QGambleSeasonRanking.gambleSeasonRanking.status.eq(DataStatus.ACTIVATED));
-        Optional<GambleSeasonRanking> gambleSeasonRanking = gambleSeasonRankingRepository.findOne(predicate);
-        return gambleSeasonRanking.orElse(null);
-    }
-
-    @Override
     public GambleSeasonRanking findByPk(Long pk) {
         BooleanExpression predicate = QGambleSeasonRanking.gambleSeasonRanking.pk.eq(pk).and(QGambleSeasonRanking.gambleSeasonRanking.status.eq(DataStatus.ACTIVATED));
         Optional<GambleSeasonRanking> gambleSeasonRanking = gambleSeasonRankingRepository.findOne(predicate);
@@ -179,7 +166,6 @@ public class GambleSeasonRankingService implements BaseService<GambleSeasonRanki
 
         // 새 랭킹 생성
         GambleSeasonRanking newRanking = GambleSeasonRanking.builder()
-            .id(UUID.randomUUID().toString())
             .gambleSeason(newSeason)
             .team(team)
             .rankOrder(0)

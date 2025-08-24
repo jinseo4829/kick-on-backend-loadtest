@@ -18,6 +18,10 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class User extends BaseEntity{
+
+    @Column(unique = true, nullable = false)
+    private String id;
+
     @Column(nullable = false, length = 255)
     private String providerId;
 

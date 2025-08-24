@@ -12,6 +12,7 @@ import org.hibernate.annotations.Type;
 @Getter
 @Setter
 public class EventBoard extends BaseEntity {
+
     @Column(nullable = false, length = 100)
     private String title;
 

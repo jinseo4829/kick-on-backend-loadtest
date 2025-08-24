@@ -5,7 +5,6 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import kr.kickon.api.admin.gambleSeason.dto.GambleSeasonDetailDTO;
 import kr.kickon.api.admin.gambleSeason.dto.SeasonListDTO;
 import kr.kickon.api.admin.gambleSeason.request.CreateGambleSeasonRequest;
@@ -160,7 +159,6 @@ public class AdminGambleSeasonService {
     }
 
     GambleSeason gambleSeason = GambleSeason.builder()
-        .id(UUID.randomUUID().toString())
         .actualSeason(actualSeasonEntity)
         .title(request.getTitle())
         .startedAt(LocalDateTime.parse(request.getStartedAt()))

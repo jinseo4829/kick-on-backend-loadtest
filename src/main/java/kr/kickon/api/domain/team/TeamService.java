@@ -8,7 +8,6 @@ import jakarta.transaction.Transactional;
 import java.util.stream.Collectors;
 import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.domain.team.request.TeamListFilterRequest;
-import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.League;
 import kr.kickon.api.global.common.entities.QActualSeason;
 import kr.kickon.api.global.common.entities.QActualSeasonTeam;
@@ -16,7 +15,6 @@ import kr.kickon.api.global.common.entities.QLeague;
 import kr.kickon.api.global.common.entities.QTeam;
 import kr.kickon.api.global.common.entities.Team;
 import kr.kickon.api.global.common.enums.DataStatus;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -30,10 +28,9 @@ import java.util.Optional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class TeamService implements BaseService<Team> {
+public class TeamService{
     private final TeamRepository teamRepository;
     private final JPAQueryFactory queryFactory;
-    private final UUIDGenerator uuidGenerator;
 //    public List<User> findUserByEmail(String email){
 //        // JPAQueryFactory
 //        return queryFactory.selectFrom(QUser.user)
@@ -41,24 +38,10 @@ public class TeamService implements BaseService<Team> {
 //                .fetch();
 //    }
 
-    // region {findById} 팀 UUID를 기반으로 활성화된 팀 엔티티를 조회합니다.
-    /**
-     * 팀 UUID를 기반으로 활성화된 팀 엔티티를 조회합니다.
-     */
-    @Override
-    public Team findById(String uuid) {
-        BooleanExpression predicate = QTeam.team.id.eq(uuid)
-                .and(QTeam.team.status.eq(DataStatus.ACTIVATED));
-        Optional<Team> team = teamRepository.findOne(predicate);
-        return team.orElse(null);
-    }
-    // endregion
-
     // region {findByPk} 팀 PK를 기반으로 활성화된 팀 엔티티를 조회합니다.
     /**
      * 팀 PK를 기반으로 활성화된 팀 엔티티를 조회합니다.
      */
-    @Override
     public Team findByPk(Long pk) {
         BooleanExpression predicate = QTeam.team.pk.eq(pk).and(QTeam.team.status.eq(DataStatus.ACTIVATED));
         Optional<Team> team = teamRepository.findOne(predicate);

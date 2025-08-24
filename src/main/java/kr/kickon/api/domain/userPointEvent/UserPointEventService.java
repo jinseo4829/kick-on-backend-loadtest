@@ -4,9 +4,7 @@ import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import io.jsonwebtoken.lang.Collections;
 import kr.kickon.api.domain.userPointEvent.dto.UserRankingDTO;
-import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.*;
 import lombok.RequiredArgsConstructor;
@@ -14,24 +12,15 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class UserPointEventService implements BaseService<UserPointEvent> {
+public class UserPointEventService{
     private final UserPointEventRepository userPointEventRepository;
     private final JPAQueryFactory queryFactory;
 
-    @Override
-    public UserPointEvent findById(String uuid) {
-        BooleanExpression predicate = QNews.news.id.eq(uuid).and(QUserPointEvent.userPointEvent.status.eq(DataStatus.ACTIVATED));
-        Optional<UserPointEvent> userPointEvent = userPointEventRepository.findOne(predicate);
-        return userPointEvent.orElse(null);
-    }
-
-    @Override
     public UserPointEvent findByPk(Long pk) {
         BooleanExpression predicate = QNews.news.pk.eq(pk).and(QUserPointEvent.userPointEvent.status.eq(DataStatus.ACTIVATED));
         Optional<UserPointEvent> userPointEvent = userPointEventRepository.findOne(predicate);

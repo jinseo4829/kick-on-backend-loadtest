@@ -9,7 +9,6 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 import kr.kickon.api.admin.partners.dto.PartnersDetailDTO;
 import kr.kickon.api.admin.partners.dto.PartnersListDTO;
 import kr.kickon.api.admin.partners.request.CreatePartnersRequest;
@@ -190,7 +189,6 @@ public class AdminPartnersService {
     if (team == null) throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
 
     Partners partners = Partners.builder()
-        .id(UUID.randomUUID().toString())
         .user(user)
         .name(request.getName())
         .partnersEmail(request.getPartnersEmail())

@@ -13,7 +13,6 @@ import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +28,6 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class NewsKickController {
     private final JwtTokenProvider jwtTokenProvider;
-    private final UUIDGenerator uuidGenerator;
     private final NewsService newsService;
     private final NewsKickService newsKickService;
 
@@ -46,9 +44,7 @@ public class NewsKickController {
         // 게시글 킥 이미 있는지 체크
         NewsKick newsKick = newsKickService.findByNewsAndUser(news.getPk(), user.getPk());
         if(newsKick==null){
-            String id = uuidGenerator.generateUniqueUUID(newsService::findById);
             newsKickService.save(NewsKick.builder()
-                    .id(id)
                     .news(news)
                     .user(user).build());
         }else{

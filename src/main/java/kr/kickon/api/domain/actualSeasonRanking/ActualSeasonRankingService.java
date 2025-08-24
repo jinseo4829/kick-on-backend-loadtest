@@ -3,14 +3,9 @@ package kr.kickon.api.domain.actualSeasonRanking;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import java.util.UUID;
 import kr.kickon.api.domain.actualSeasonRanking.dto.GetActualSeasonRankingDTO;
-import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
-import kr.kickon.api.global.common.enums.ResponseCode;
-import kr.kickon.api.global.error.exceptions.NotFoundException;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,19 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class ActualSeasonRankingService implements BaseService<ActualSeasonRanking> {
+public class ActualSeasonRankingService{
     private final ActualSeasonRankingRepository actualSeasonRankingRepository;
     private final JPAQueryFactory queryFactory;
-    private final UUIDGenerator uuidGenerator;
 
-    @Override
-    public ActualSeasonRanking findById(String uuid) {
-        BooleanExpression predicate = QActualSeasonRanking.actualSeasonRanking.id.eq(uuid).and(QActualSeasonRanking.actualSeasonRanking.status.eq(DataStatus.ACTIVATED));
-        Optional<ActualSeasonRanking> actualSeasonRanking = actualSeasonRankingRepository.findOne(predicate);
-        return actualSeasonRanking.orElse(null);
-    }
-
-    @Override
     public ActualSeasonRanking findByPk(Long pk) {
         BooleanExpression predicate = QActualSeasonRanking.actualSeasonRanking.pk.eq(pk).and(QActualSeasonRanking.actualSeasonRanking.status.eq(DataStatus.ACTIVATED));
         Optional<ActualSeasonRanking> actualSeasonRanking = actualSeasonRankingRepository.findOne(predicate);
@@ -92,7 +78,6 @@ public class ActualSeasonRankingService implements BaseService<ActualSeasonRanki
 
         // 새 랭킹 생성
         ActualSeasonRanking newRanking = ActualSeasonRanking.builder()
-            .id(UUID.randomUUID().toString())
             .actualSeason(newSeason)
             .team(team)
             .rankOrder(0)
