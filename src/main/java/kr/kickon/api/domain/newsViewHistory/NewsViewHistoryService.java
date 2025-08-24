@@ -1,7 +1,6 @@
 package kr.kickon.api.domain.newsViewHistory;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
-import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.News;
 import kr.kickon.api.global.common.entities.NewsViewHistory;
 import kr.kickon.api.global.common.entities.QNewsViewHistory;

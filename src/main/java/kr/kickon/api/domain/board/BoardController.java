@@ -23,7 +23,6 @@ import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.ForbiddenException;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -40,7 +39,6 @@ public class BoardController {
     private final BoardService boardService;
     private final JwtTokenProvider jwtTokenProvider;
     private final TeamService teamService;
-    private final UUIDGenerator uuidGenerator;
 
     @Operation(summary = "홈화면 함께 볼만한 게시글 리스트 조회", description = "응원팀 여부에 상관없이 최신 게시글 기준으로 10개 리스트 반환")
     @ApiResponses({

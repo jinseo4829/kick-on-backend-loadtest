@@ -25,8 +25,6 @@ import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
-import kr.kickon.api.global.error.exceptions.BadRequestException;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -47,8 +45,6 @@ public class UserController {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserFavoriteTeamService userFavoriteTeamService;
     private final ActualSeasonTeamService actualSeasonTeamService;
-    private final TeamService teamService;
-    private final UUIDGenerator uuidGenerator;
     private final PartnersService partnersService;
     private final TeamReporterService teamReporterService;
 

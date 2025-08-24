@@ -4,7 +4,6 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.transaction.Transactional;
-import kr.kickon.api.admin.user.dto.UserListDTO;
 import kr.kickon.api.admin.user.request.UserFilterRequest;
 import kr.kickon.api.domain.aws.AwsService;
 import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
@@ -13,12 +12,10 @@ import kr.kickon.api.domain.user.request.PatchUserRequest;
 import kr.kickon.api.domain.user.request.PrivacyUpdateRequest;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.global.auth.oauth.dto.OAuth2UserInfo;
-import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.*;
 import kr.kickon.api.global.error.exceptions.BadRequestException;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -37,10 +34,9 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class UserService implements BaseService<User> {
+public class UserService{
     private final UserRepository userRepository;
     private final JPAQueryFactory queryFactory;
-    private final UUIDGenerator uuidGenerator;
     private final TeamService teamService;
     private final UserFavoriteTeamService userFavoriteTeamService;
     private final AwsFileReferenceService awsFileReferenceService;
@@ -63,7 +59,6 @@ public class UserService implements BaseService<User> {
      * 사용자 UUID 기준으로 유저를 조회합니다.
      * - status는 ACTIVATED인 사용자만 조회합니다.
      */
-    @Override
     public User findById(String uuid) {
         BooleanExpression predicate = QUser.user.id.eq(uuid).and(QUser.user.status.eq(DataStatus.ACTIVATED));
         Optional<User> userEntity = userRepository.findOne(predicate);
@@ -311,9 +306,8 @@ public class UserService implements BaseService<User> {
     // region {saveSocialUser} 소셜 로그인 유저 저장
     @Transactional
     public User saveSocialUser(OAuth2UserInfo oAuth2UserInfo){
-        String id = uuidGenerator.generateUniqueUUID(this::findById);
         User UserEntity = User.builder()
-                .id(id)
+                .id(UUID.randomUUID().toString())
                 .provider(oAuth2UserInfo.getProvider())
                 .providerId(oAuth2UserInfo.getProviderId())
                 .email(oAuth2UserInfo.getEmail())

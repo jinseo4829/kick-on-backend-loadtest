@@ -18,7 +18,6 @@ import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.GameStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -48,7 +47,7 @@ public class MigrationService {
     private final GambleSeasonService gambleSeasonService;
     private final GambleSeasonTeamService gambleSeasonTeamService;
 
-    public MigrationService(@Value("${api.key}") String apiKey, LeagueService leagueService, TeamService teamService, ActualSeasonService actualSeasonService, UUIDGenerator uuidGenerator, ActualSeasonTeamService actualSeasonTeamService, GameService gameService, ActualSeasonRankingService actualSeasonRankingService, UserGameGambleService userGameGambleService, GambleSeasonPointService gambleSeasonPointService, GambleSeasonRankingService gambleSeasonRankingService, GambleSeasonService gambleSeasonService, GambleSeasonTeamService gambleSeasonTeamService) {
+    public MigrationService(@Value("${api.key}") String apiKey, LeagueService leagueService, TeamService teamService, ActualSeasonService actualSeasonService, ActualSeasonTeamService actualSeasonTeamService, GameService gameService, ActualSeasonRankingService actualSeasonRankingService, UserGameGambleService userGameGambleService, GambleSeasonPointService gambleSeasonPointService, GambleSeasonRankingService gambleSeasonRankingService, GambleSeasonService gambleSeasonService, GambleSeasonTeamService gambleSeasonTeamService) {
         this.gambleSeasonService = gambleSeasonService;
         ExchangeStrategies exchangeStrategies = ExchangeStrategies.builder()
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(-1)) // to unlimited memory size

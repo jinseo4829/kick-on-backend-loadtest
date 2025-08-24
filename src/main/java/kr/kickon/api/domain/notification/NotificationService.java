@@ -2,10 +2,8 @@ package kr.kickon.api.domain.notification;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import kr.kickon.api.domain.notification.response.NotificationResponse;
-import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.DataStatus;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;

@@ -14,7 +14,6 @@ import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.enums.DataStatus;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +29,6 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class BoardKickController {
     private final JwtTokenProvider jwtTokenProvider;
-    private final UUIDGenerator uuidGenerator;
     private final BoardService boardService;
     private final BoardKickService boardKickService;
     private final UserFavoriteTeamService userFavoriteTeamService;

@@ -2,7 +2,6 @@ package kr.kickon.api.domain.newsReplyKick;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import kr.kickon.api.global.common.BaseService;
 import kr.kickon.api.global.common.entities.NewsReplyKick;
 import kr.kickon.api.global.common.entities.QNewsReplyKick;
 import kr.kickon.api.global.common.enums.DataStatus;

@@ -1,16 +1,11 @@
 package kr.kickon.api.domain.newsKick;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.jpa.impl.JPAQueryFactory;
-import java.time.LocalDateTime;
-import kr.kickon.api.global.common.BaseService;
-import kr.kickon.api.global.common.entities.BoardKick;
+
 import kr.kickon.api.global.common.entities.News;
 import kr.kickon.api.global.common.entities.NewsKick;
-import kr.kickon.api.global.common.entities.QBoardKick;
 import kr.kickon.api.global.common.entities.QNewsKick;
 import kr.kickon.api.global.common.enums.DataStatus;
-import kr.kickon.api.global.util.UUIDGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
