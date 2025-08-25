@@ -110,6 +110,9 @@ dependencies {
 	//websocket
 	implementation("org.springframework.boot:spring-boot-starter-websocket")
 
+	// 그라파나, 프로메테우스
+	implementation("org.springframework.boot:spring-boot-starter-actuator")
+	implementation("io.micrometer:micrometer-registry-prometheus")
 }
 
 tasks.withType<Test> {
