@@ -100,3 +100,14 @@ aws:
     profile-separator: _
     name: kickon
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus  # prometheus 엔드포인트 노출
+  endpoint:
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: myapp  # 메트릭에 앱 이름 태그 추가
