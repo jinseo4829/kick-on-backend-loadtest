@@ -28,8 +28,11 @@ public class ShortsDetailDTO extends ShortsDTO {
   @Schema(description = "킥 눌렀는지 여부", example = "true")
   private Boolean isKicked = false;
 
+  @Schema(description = "다음 shorts pk", example = "216")
+  private Long nextPk;
+
   public ShortsDetailDTO(Long pk, String videoUrl, UsedInType usedIn, Long referencePk,
-      String title, Long totalViewCount, Long totalKickCount, Long totalReplyCount, LocalDateTime createdAt,
+      String title, Long totalViewCount, Long totalKickCount, Long recentViewCount, Long recentKickCount, Long totalReplyCount, LocalDateTime createdAt,
       User user, Boolean isKicked) {
     this.setPk(pk);
     this.setVideoUrl(videoUrl);
@@ -38,9 +41,12 @@ public class ShortsDetailDTO extends ShortsDTO {
     this.setTitle(title);
     this.setViewCount(totalViewCount);
     this.setKickCount(totalKickCount);
+    this.setRecentViewCount(recentViewCount);
+    this.setRecentKickCount(recentKickCount);
     this.setCreatedAt(createdAt);
     this.setReplyCount(totalReplyCount);
     this.user = new BaseUserDTO(user);
     this.setIsKicked(isKicked);
+    this.setNextPk(nextPk);
   }
 }

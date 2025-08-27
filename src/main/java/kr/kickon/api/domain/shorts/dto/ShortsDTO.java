@@ -40,11 +40,11 @@ public class ShortsDTO {
   @Schema(description = "킥 수", example = "10")
   private Long kickCount;
 
-  @JsonIgnore
-  private Long sortViewCount;
+  @Schema(description = "48시간 이내 조회 수", example = "10")
+  private Long recentViewCount;
 
-  @JsonIgnore
-  private Long sortKickCount;
+  @Schema(description = "48시간 이내 킥 수", example = "10")
+  private Long recentKickCount;
 
   @Schema(description = "작성일", example = ExampleConstants.datetime)
   private LocalDateTime createdAt;
