@@ -17,6 +17,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import kr.kickon.api.domain.awsFileReference.AwsFileReferenceService;
 import kr.kickon.api.domain.embeddedLink.EmbeddedLinkService;
 import kr.kickon.api.domain.shorts.dto.ShortsDTO;
@@ -107,9 +109,10 @@ public class ShortsService {
     // 정렬 조건
     Comparator<ShortsDTO> comparator = switch (sortType) {
       case CREATED_ASC -> Comparator.comparing(ShortsDTO::getCreatedAt);
-      case POPULAR -> Comparator.comparingLong(ShortsDTO::getSortViewCount).reversed()
-          .thenComparing(Comparator.comparingLong(ShortsDTO::getSortKickCount).reversed());
-      default -> Comparator.comparing(ShortsDTO::getCreatedAt).reversed(); // 기본: 최신순
+      case POPULAR -> Comparator.comparingLong(ShortsDTO::getRecentViewCount).reversed()
+                        .thenComparing(Comparator.comparingLong(ShortsDTO::getRecentKickCount).reversed())
+                        .thenComparing(Comparator.comparing(ShortsDTO::getCreatedAt).reversed()); // 최신순
+        default -> Comparator.comparing(ShortsDTO::getCreatedAt).reversed(); // 기본: 최신순
     };
 
     List<ShortsDTO> sortedShorts = combined.stream()
@@ -299,8 +302,9 @@ public class ShortsService {
     if (limit != null) {
       return result.stream()
           .sorted(
-              Comparator.comparingLong(ShortsDTO::getSortViewCount).reversed()
-                  .thenComparing(Comparator.comparingLong(ShortsDTO::getSortKickCount).reversed())
+              Comparator.comparingLong(ShortsDTO::getRecentViewCount).reversed()
+                  .thenComparing(Comparator.comparingLong(ShortsDTO::getRecentKickCount).reversed())
+                  .thenComparing(Comparator.comparing(ShortsDTO::getCreatedAt).reversed()) // 최신순
           )
           .limit(limit)
           .collect(Collectors.toList());
@@ -316,7 +320,7 @@ public class ShortsService {
    * @return ShortsDetailDTO
    */
   @Transactional
-  public ShortsDetailDTO getShortsDetail(Shorts file) {
+  public ShortsDetailDTO getShortsDetail(Shorts file, ShortsSortType sortType) {
     QAwsFileReference awsFileReference = QAwsFileReference.awsFileReference;
     QBoard board = QBoard.board;
     QNews news = QNews.news;
@@ -350,11 +354,15 @@ public class ShortsService {
     // 공통 서브쿼리
     Expression<Long> totalViewCount;
     Expression<Long> totalKickCount;
+    Expression<Long> recentViewCount;
+    Expression<Long> recentKickCount;
     Expression<Long> totalReplyCount;
     Expression<User> userExpression;
     Expression<String> titleExpression;
     Expression<Long> referencePkExpression;
     Expression<Boolean> isKicked;
+
+    LocalDateTime cutoff = LocalDateTime.now().minusHours(48);
 
     if (usedInType == UsedInType.BOARD) {
       totalViewCount = JPAExpressions.select(boardViewHistory.pk.count().coalesce(0L))
@@ -368,6 +376,14 @@ public class ShortsService {
           .from(boardReply)
           .where(boardReply.board.pk.eq(board.pk)
               .and(boardReply.status.eq(DataStatus.ACTIVATED)));
+      recentViewCount = JPAExpressions.select(boardViewHistory.pk.count().coalesce(0L))
+              .from(boardViewHistory)
+              .where(boardViewHistory.board.pk.eq(board.pk)
+                      .and(boardViewHistory.createdAt.after(cutoff)));
+      recentKickCount = JPAExpressions.select(boardKick.pk.count().coalesce(0L))
+              .from(boardKick)
+              .where(boardKick.board.pk.eq(board.pk)
+                      .and(boardKick.createdAt.after(cutoff)));
       userExpression = board.user;
       titleExpression = board.title;
       referencePkExpression = board.pk;
@@ -389,6 +405,14 @@ public class ShortsService {
           .from(newsReply)
           .where(newsReply.news.pk.eq(news.pk)
               .and(newsReply.status.eq(DataStatus.ACTIVATED)));
+      recentViewCount = JPAExpressions.select(newsViewHistory.pk.count().coalesce(0L))
+                .from(newsViewHistory)
+                .where(newsViewHistory.news.pk.eq(news.pk)
+                        .and(newsViewHistory.createdAt.after(cutoff)));
+      recentKickCount = JPAExpressions.select(newsKick.pk.count().coalesce(0L))
+                .from(newsKick)
+                .where(newsKick.news.pk.eq(news.pk)
+                        .and(newsKick.createdAt.after(cutoff)));
       userExpression = news.user;
       titleExpression = news.title;
       referencePkExpression = news.pk;
@@ -409,19 +433,20 @@ public class ShortsService {
             titleExpression,
             totalViewCount,
             totalKickCount,
+            recentViewCount,
+            recentKickCount,
             totalReplyCount,
             shorts.createdAt,
             userExpression,
             isKicked
         ))
         .from(shorts)
+        .leftJoin(awsFileReference).on(shorts.type.eq(ShortsType.AWS_FILE)
+           .and(shorts.referencePk.eq(awsFileReference.pk)))
+        .leftJoin(embeddedLink).on(shorts.type.eq(ShortsType.EMBEDDED_LINK)
+           .and(shorts.referencePk.eq(embeddedLink.pk)))
         .where(shorts.status.eq(DataStatus.ACTIVATED)
         .and(shorts.pk.eq(file.getPk())));
-
-    query.leftJoin(awsFileReference).on(shorts.type.eq(ShortsType.AWS_FILE)
-        .and(shorts.referencePk.eq(awsFileReference.pk)));
-    query.leftJoin(embeddedLink).on(shorts.type.eq(ShortsType.EMBEDDED_LINK)
-        .and(shorts.referencePk.eq(embeddedLink.pk)));
 
     if (usedInType == UsedInType.BOARD) {
       query.leftJoin(board).on(shorts.type.eq(ShortsType.AWS_FILE)
@@ -435,7 +460,51 @@ public class ShortsService {
               .and(embeddedLink.referencePk.eq(news.pk))));
     }
 
-    return query.fetchOne();
+      ShortsDetailDTO dto = query.fetchOne();
+      if (sortType == ShortsSortType.POPULAR) {
+          // 2. 전체 리스트 불러오기
+          List<ShortsDTO> all = queryShorts(null);
+
+          // 3. Comparator 적용
+          all.sort(
+                  Comparator.comparingLong(ShortsDTO::getRecentViewCount).reversed()
+                          .thenComparing(Comparator.comparingLong(ShortsDTO::getRecentKickCount).reversed())
+                          .thenComparing(Comparator.comparing(ShortsDTO::getCreatedAt).reversed()) // 최신순
+          );
+
+          // 4. 현재 idx 찾고, 그 다음 pk 꺼내기
+          int idx = IntStream.range(0, all.size())
+                  .filter(i -> all.get(i).getPk().equals(file.getPk()))
+                  .findFirst()
+                  .orElse(-1);
+
+          if (idx != -1 && idx + 1 < all.size()) {
+              dto.setNextPk(all.get(idx + 1).getPk());
+          } else {
+              dto.setNextPk(null); // 마지막 영상이면 없음
+          }
+      } else if (sortType == ShortsSortType.CREATED_DESC) {
+          // createdAt DESC로 뒤에 있는 쇼츠 찾기
+          Shorts next = queryFactory
+                  .selectFrom(QShorts.shorts)
+                  .where(QShorts.shorts.status.eq(DataStatus.ACTIVATED)
+                          .and(QShorts.shorts.createdAt.before(file.getCreatedAt())))
+                  .orderBy(QShorts.shorts.createdAt.desc())
+                  .fetchFirst();
+          dto.setNextPk(next != null ? next.getPk() : null);
+
+      } else if (sortType == ShortsSortType.CREATED_ASC) {
+          // createdAt ASC로 뒤에 있는 쇼츠 찾기
+          Shorts next = queryFactory
+                  .selectFrom(QShorts.shorts)
+                  .where(QShorts.shorts.status.eq(DataStatus.ACTIVATED)
+                          .and(QShorts.shorts.createdAt.after(file.getCreatedAt())))
+                  .orderBy(QShorts.shorts.createdAt.asc())
+                  .fetchFirst();
+          dto.setNextPk(next != null ? next.getPk() : null);
+      }
+
+      return dto;
   }
   //endregion
 

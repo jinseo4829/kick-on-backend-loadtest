@@ -17,17 +17,14 @@ import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.Shorts;
 import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.common.enums.ShortsSortType;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -39,7 +36,7 @@ public class ShortsController {
   private final ShortsService shortsService;
 
   @GetMapping("/fixed")
-  @Operation(summary = "고정 쇼츠 리스트 조회", description = "고정 쇼츠 리스트를 조회합니다. 1)48시간 조회수 2)48시간 기준 킥 수 기준으로 정렬 후 상위 4개만 반환합니다.")
+  @Operation(summary = "고정 쇼츠 리스트 조회", description = "고정 쇼츠 리스트를 조회합니다. 1)48시간 조회수 2)48시간 기준 킥 수 3)최신순 기준으로 정렬 후 상위 4개만 반환합니다.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "성공",
           content = @Content(schema = @Schema(implementation = GetShortsResponse.class))),
@@ -69,16 +66,16 @@ public class ShortsController {
   }
 
   @GetMapping("/{pk}")
-  @Operation(summary = "쇼츠 상세 조회", description = "pk값으로 쇼츠를 조회합니다. 영상 파일만 조회 가능합니다.")
+  @Operation(summary = "쇼츠 상세 조회", description = "pk값으로 쇼츠를 조회합니다. 최신순, 인기순, 등록순으로 다음 영상 pk 하나를 가져옵니다.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "성공",
           content = @Content(schema = @Schema(implementation = GetShortsDetailResponse.class))),
   })
-  public ResponseEntity<ResponseDTO<ShortsDetailDTO>> getShortsDetail(@PathVariable Long pk) {
+  public ResponseEntity<ResponseDTO<ShortsDetailDTO>> getShortsDetail(@PathVariable Long pk, @RequestParam(defaultValue = "CREATED_DESC") ShortsSortType sort) {
     Shorts file = shortsService.findByPk(pk);
     if (file == null) throw new NotFoundException(ResponseCode.NOT_FOUND_SHORTS);
 
-    ShortsDetailDTO dto = shortsService.getShortsDetail(file);
+    ShortsDetailDTO dto = shortsService.getShortsDetail(file, sort);
     return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, dto));
   }
 }
