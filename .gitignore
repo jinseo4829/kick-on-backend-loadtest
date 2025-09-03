@@ -40,3 +40,4 @@ out/
 src/main/resources/application.yml
 
 /src/main/generated/
+/src/test/java/kr/kickon/api/board/BoardControllerTest.java
