@@ -118,7 +118,9 @@ public class NewsService{
         QNewsKick newsKick = QNewsKick.newsKick;
         QNewsViewHistory newsViewHistory = QNewsViewHistory.newsViewHistory;
         QNewsReply newsReply = QNewsReply.newsReply;
+        QNewsReply parentNewsReply = new QNewsReply("parentNewsReply"); // newsReplyParent를 위한 Q타입 인스턴스 생성
         QUser user = QUser.user;
+        QUser parentNewsReplyUser = new QUser("parentNewsReplyUser");
         QTeam team = QTeam.team;
         return queryFactory.select(news, user, team,
                         newsKick.pk.countDistinct().coalesce(0L).as("kickCount"),
@@ -129,9 +131,13 @@ public class NewsService{
                 .leftJoin(team).on(news.team.pk.eq(team.pk))
                 .leftJoin(newsKick).on(news.pk.eq(newsKick.news.pk).and(newsKick.status.eq(DataStatus.ACTIVATED)))
                 .leftJoin(newsViewHistory).on(news.pk.eq(newsViewHistory.news.pk).and(newsViewHistory.status.eq(DataStatus.ACTIVATED)))
-                .leftJoin(newsReply).on(news.pk.eq(newsReply.news.pk).and(newsReply.status.eq(DataStatus.ACTIVATED)))
+                .leftJoin(newsReply).on(news.pk.eq(newsReply.news.pk).and(newsReply.status.eq(DataStatus.ACTIVATED)).and(newsReply.user.status.eq(DataStatus.ACTIVATED)))
+                .leftJoin(newsReply.parentNewsReply, parentNewsReply)
+                .leftJoin(parentNewsReply.user, parentNewsReplyUser)
                 .where(news.status.eq(DataStatus.ACTIVATED)
-                        .and(user.status.eq(DataStatus.ACTIVATED)));
+                        .and(user.status.eq(DataStatus.ACTIVATED))
+                        .and(parentNewsReply.isNull().or(parentNewsReplyUser.status.eq(DataStatus.ACTIVATED)))
+                );
     }
     // endregion
 
