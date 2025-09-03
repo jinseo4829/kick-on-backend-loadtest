@@ -137,7 +137,9 @@ public class BoardService{
         QBoardKick boardKick = QBoardKick.boardKick;
         QBoardViewHistory boardViewHistory = QBoardViewHistory.boardViewHistory;
         QBoardReply boardReply = QBoardReply.boardReply;
+        QBoardReply parentBoardReply = new QBoardReply("parentBoardReply");
         QUser user = QUser.user;
+        QUser parentBoardReplyUser = new QUser("parentBoardReplyUser");
         QTeam team = QTeam.team;
         return queryFactory.select(board, user, team,
                         boardKick.pk.countDistinct().coalesce(0L).as("kickCount"),
@@ -148,9 +150,13 @@ public class BoardService{
                 .leftJoin(team).on(board.team.pk.eq(team.pk))
                 .leftJoin(boardKick).on(board.pk.eq(boardKick.board.pk).and(boardKick.status.eq(DataStatus.ACTIVATED)))
                 .leftJoin(boardViewHistory).on(board.pk.eq(boardViewHistory.board.pk).and(boardViewHistory.status.eq(DataStatus.ACTIVATED)))
-                .leftJoin(boardReply).on(board.pk.eq(boardReply.board.pk).and(boardReply.status.eq(DataStatus.ACTIVATED)))
+                .leftJoin(boardReply).on(board.pk.eq(boardReply.board.pk).and(boardReply.status.eq(DataStatus.ACTIVATED)).and(boardReply.user.status.eq(DataStatus.ACTIVATED)))
+                .leftJoin(boardReply.parentBoardReply, parentBoardReply)
+                .leftJoin(parentBoardReply.user, parentBoardReplyUser)
                 .where(board.status.eq(DataStatus.ACTIVATED)
-                        .and(user.status.eq(DataStatus.ACTIVATED)));
+                        .and(user.status.eq(DataStatus.ACTIVATED))
+                        .and(parentBoardReply.isNull().or(parentBoardReplyUser.status.eq(DataStatus.ACTIVATED)))
+                );
     }
     //#endregion
 
