@@ -3,9 +3,14 @@ package kr.kickon.api.domain.board.dto;
 import kr.kickon.api.domain.board.dto.BoardListDTO;
 import kr.kickon.api.global.common.PagedMetaDTO;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.util.List;
 
 @Getter
+@Setter
+@NoArgsConstructor
 public class PaginatedBoardListDTO extends PagedMetaDTO {
     List<BoardListDTO> boardList;
     public PaginatedBoardListDTO(Integer currentPage, Integer pageSize, Long totalItems, List<BoardListDTO> boards) {

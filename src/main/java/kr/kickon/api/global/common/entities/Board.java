@@ -3,6 +3,7 @@ package kr.kickon.api.global.common.entities;
 import jakarta.persistence.*;
 import kotlin.reflect.KType;
 import kr.kickon.api.global.common.converters.BooleanConverter;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -16,6 +17,7 @@ import org.hibernate.annotations.Type;
 @Setter
 @SuperBuilder
 @NoArgsConstructor
+@AllArgsConstructor
 public class Board extends BaseEntity {
     @Column(nullable = false, length = 100)
     private String title;

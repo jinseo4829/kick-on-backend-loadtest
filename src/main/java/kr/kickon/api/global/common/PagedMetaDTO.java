@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class PagedMetaDTO {
     private Integer currentPage; // 현재 페이지
     private Integer pageSize;    // 페이지 크기
