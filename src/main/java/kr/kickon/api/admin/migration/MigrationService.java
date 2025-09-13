@@ -216,9 +216,8 @@ public class MigrationService {
             }
             ActualSeason actualSeason = actualSeasonService.findByYearAndLeague(apiTeam.getYear(),apiTeam.getLeaguePk());
             if(actualSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_ACTUAL_SEASON);
-            try {
-                actualSeasonTeamService.findByActualSeasonTeam(actualSeason,teamObj.getPk());
-            }catch (NotFoundException e){
+            ActualSeasonTeam actualSeasonTeam = actualSeasonTeamService.findByActualSeasonTeam(actualSeason,teamObj.getPk());
+            if(actualSeasonTeam == null) {
                 ActualSeasonTeam actualSeasonObj = ActualSeasonTeam.builder()
                         .team(teamObj)
                         .actualSeason(actualSeason)
