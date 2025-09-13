@@ -373,6 +373,8 @@ public class MigrationService {
                 .map(League::getApiId) // League 객체에서 api_id 추출
                 .toList();
         List<ApiLeagueAndSeasonDTO> list = new ArrayList<>();
+        ObjectMapper objectMapper = new ObjectMapper();
+
         for(Country country : countries){
             Map<String, Object> response = webClient.get().uri(uriBuilder ->
                             uriBuilder.path("/leagues")
@@ -384,30 +386,24 @@ public class MigrationService {
                     .block();
             List<Map<String, Object>> responseList = (List<Map<String, Object>>) response.get("response");
             list.addAll(responseList.stream()
+                    .filter(responseData -> {
+                        Map<String, Object> leagueData = (Map<String, Object>) responseData.get("league");
+                        if (leagueData == null || leagueData.get("id") == null) return false;
+                        Long leagueId = Long.valueOf(leagueData.get("id").toString());
+                        return leagueIds.contains(leagueId);
+                    })
                     .map(responseData -> {
-                        Object leagueData = responseData.get("league");
+                        Map<String, Object> leagueData = (Map<String, Object>) responseData.get("league");
                         List<Object> seasonData = (List<Object>) responseData.get("seasons");
-                        ApiLeagueDTO apiLeagueDTO = null;
+
+                        ApiLeagueDTO apiLeagueDTO = objectMapper.convertValue(leagueData, ApiLeagueDTO.class);
                         ApiSeasonDTO apiSeasonDTO = null;
-
-                        // Map을 ApiLeagueDTO로 변환
-                        if (leagueData instanceof Map) {
-                            ObjectMapper objectMapper = new ObjectMapper();
-                            apiLeagueDTO = objectMapper.convertValue(leagueData, ApiLeagueDTO.class);
-                        }
-                        if(apiLeagueDTO != null){
-                            System.out.println(apiLeagueDTO);
-                            // Map을 ApiSeasonDTO로 변환
-                            if (seasonData.get(0) instanceof Map) {
-                                ObjectMapper objectMapper = new ObjectMapper();
-                                apiSeasonDTO = objectMapper.convertValue(seasonData.get(0), ApiSeasonDTO.class);
-                            }
+                        if (seasonData != null && !seasonData.isEmpty() && seasonData.get(0) instanceof Map) {
+                            apiSeasonDTO = objectMapper.convertValue(seasonData.get(0), ApiSeasonDTO.class);
                         }
 
-                        // ApiLeagueAndSeasonDTO 객체 반환
                         return new ApiLeagueAndSeasonDTO(apiLeagueDTO, apiSeasonDTO);
                     })
-                    .filter(responseData -> leagueIds.contains(responseData.getLeague().getId()))
                     .toList());
         }
         return list;
