@@ -86,7 +86,7 @@ public class AdminPartnersController {
       @ApiResponse(responseCode = "200", description = "성공",
           content = @Content(schema = @Schema(implementation = GetPartnersDetailResponse.class))),
   })
-  public ResponseEntity<ResponseDTO<PartnersDetailDTO>> createPartners(@RequestBody CreatePartnersRequest request) {
+  public ResponseEntity<ResponseDTO<PartnersDetailDTO>> createPartners(@Valid @RequestBody CreatePartnersRequest request) {
     PartnersDetailDTO responseDto = adminpartnersService.createPartners(request);
     return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, responseDto));
   }

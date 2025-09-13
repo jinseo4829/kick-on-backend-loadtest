@@ -10,10 +10,13 @@ import kr.kickon.api.global.common.enums.ContractStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
 @Data
 @Builder(toBuilder = true)
 @Schema(name = "AdminPartnersListDTO", description = "파트너스 리스트 조회 응답 DTO")
 @AllArgsConstructor
+@NoArgsConstructor
 public class PartnersListDTO {
 
   @Schema(description = "파트너스 PK", example = ExampleConstants.userPk)
