@@ -1,13 +1,11 @@
 package kr.kickon.api.domain.shorts;
 
+import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Projections;
-import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.core.types.dsl.CaseBuilder;
-import com.querydsl.core.types.dsl.Expressions;
-import com.querydsl.core.types.dsl.NumberExpression;
-import com.querydsl.core.types.dsl.StringExpression;
+import com.querydsl.core.types.dsl.*;
 import com.querydsl.jpa.JPAExpressions;
+import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.annotation.Nullable;
@@ -48,6 +46,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StopWatch;
 
 @Service
 @Slf4j
@@ -82,7 +81,17 @@ public class ShortsService {
    * - 1) 조회수 2) 킥 수 기준으로 내림차순 정렬 후 상위 4개만 반환합니다.
    * * @return ShortsDTO 리스트
    */
-  public List<ShortsDTO> getFixedShorts() {return queryShorts(4);}
+  public List<ShortsDTO> getFixedShorts() {
+      StopWatch stopWatch = new StopWatch();
+      stopWatch.start();
+
+      List<ShortsDTO> result = queryShorts(4);
+
+      stopWatch.stop();
+      log.info("getFixedShorts() 실행 시간: {} ms", stopWatch.getTotalTimeMillis());
+
+      return result;
+  }
   // endregion
 
   // region 쇼츠 리스트 조회
@@ -146,6 +155,52 @@ public class ShortsService {
     // 게시글/뉴스 각각의 48시간 기준 조회수, 킥 수를 가져옵니다.
     LocalDateTime cutoff = LocalDateTime.now().minusHours(48);
 
+      // 1. Board 관련 조회수/킥 수 집계
+      Expression<Tuple> boardAggregates = JPAExpressions
+              .select(
+                      boardViewHistory.board.pk.as("boardPk"),
+                      boardViewHistory.pk.count().as("totalViewCount"),
+                      JPAExpressions.select(boardViewHistory.pk.count())
+                              .from(boardViewHistory)
+                              .where(boardViewHistory.board.pk.eq(board.pk)
+                                      .and(boardViewHistory.createdAt.after(cutoff))
+                              .as("recentViewCount")),
+                      boardKick.pk.count().as("totalKickCount"),
+                      JPAExpressions.select(boardKick.pk.count())
+                              .from(boardKick)
+                              .where(boardKick.board.pk.eq(board.pk)
+                                      .and(boardKick.status.eq(DataStatus.ACTIVATED))
+                                      .and(boardKick.createdAt.after(cutoff))
+                              .as("recentKickCount")
+              ))
+              .from(board)
+              .leftJoin(boardViewHistory).on(boardViewHistory.board.pk.eq(board.pk))
+              .leftJoin(boardKick).on(boardKick.board.pk.eq(board.pk))
+              .groupBy(board.pk);
+
+      // 2. News 관련 조회수/킥 수 집계
+      Expression<Tuple> newsAggregates = JPAExpressions
+              .select(
+                      newsViewHistory.news.pk.as("newsPk"),
+                      newsViewHistory.pk.count().as("totalViewCount"),
+                      JPAExpressions.select(newsViewHistory.pk.count())
+                              .from(newsViewHistory)
+                              .where(newsViewHistory.news.pk.eq(news.pk)
+                                      .and(newsViewHistory.createdAt.after(cutoff))
+                              .as("recentViewCount")),
+                      newsKick.pk.count().as("totalKickCount"),
+                      JPAExpressions.select(newsKick.pk.count())
+                              .from(newsKick)
+                              .where(newsKick.news.pk.eq(news.pk)
+                                      .and(newsKick.status.eq(DataStatus.ACTIVATED))
+                                      .and(newsKick.createdAt.after(cutoff))
+                              .as("recentKickCount")
+              ))
+              .from(news)
+              .leftJoin(newsViewHistory).on(newsViewHistory.news.pk.eq(news.pk))
+              .leftJoin(newsKick).on(newsKick.news.pk.eq(news.pk))
+              .groupBy(news.pk);
+
     // 공통 expression
     Expression<String> videoUrlExpression = new CaseBuilder()
         .when(shorts.type.eq(ShortsType.AWS_FILE))
@@ -189,6 +244,7 @@ public class ShortsService {
                 .and(embeddedLink.usedIn.eq(UsedInType.NEWS))))
         .then(news.title)
         .otherwise((StringExpression) null);
+
 
     // CASE: totalViewCount
     Expression<Long> totalViewCountExpression = new CaseBuilder()
@@ -270,6 +326,7 @@ public class ShortsService {
             .and(newsKick.status.eq(DataStatus.ACTIVATED))))
         .otherwise(0L);
 
+
     List<ShortsDTO> result = queryFactory
         .select(Projections.constructor(ShortsDTO.class,
             shorts.pk,
@@ -279,9 +336,9 @@ public class ShortsService {
             titleExpression,
             totalViewCountExpression,
             totalKickCountExpression,
-            recentViewCountExpression,
-            recentKickCountExpression,
-            shorts.createdAt
+                recentViewCountExpression,
+                recentKickCountExpression,
+                shorts.createdAt
         ))
         .from(shorts)
         .leftJoin(awsFileReference).on(shorts.type.eq(ShortsType.AWS_FILE)
@@ -296,7 +353,22 @@ public class ShortsService {
             .and(awsFileReference.referencePk.eq(news.pk))
             .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
                 .and(embeddedLink.referencePk.eq(news.pk))))
-        .where(shorts.status.eq(DataStatus.ACTIVATED))
+            .leftJoin(boardViewHistory).on(
+                    board.pk.eq(boardViewHistory.board.pk)
+            )
+            .leftJoin(newsViewHistory).on(
+                    news.pk.eq(newsViewHistory.news.pk)
+            )
+            .leftJoin(boardKick).on(
+                    board.pk.eq(boardKick.board.pk).and(boardKick.status.eq(DataStatus.ACTIVATED))
+            )
+            .leftJoin(newsKick).on(
+                    news.pk.eq(newsKick.news.pk).and(newsKick.status.eq(DataStatus.ACTIVATED))
+            )
+            .where(shorts.status.eq(DataStatus.ACTIVATED))
+            .groupBy(
+                    shorts.pk, awsFileReference.pk, embeddedLink.pk, board.pk, news.pk
+            )
     .fetch();
 
     if (limit != null) {
