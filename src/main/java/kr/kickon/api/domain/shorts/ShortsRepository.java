@@ -28,33 +28,33 @@ public interface ShortsRepository extends JpaRepository<Shorts, Long>, QuerydslP
                COUNT(DISTINCT bvh.pk) + COUNT(DISTINCT nvh.pk) AS totalViewCount,
                COUNT(DISTINCT bk.pk) + COUNT(DISTINCT nk.pk) AS totalKickCount,
                (SELECT COUNT(*)
-                FROM boardViewHistory bv
+                FROM BoardViewHistory bv
                 WHERE bv.board_pk = b.pk
                   AND bv.created_at > NOW() - INTERVAL 48 HOUR) +
                (SELECT COUNT(*)
-                FROM newsViewHistory nv
+                FROM NewsViewHistory nv
                 WHERE nv.news_pk = n.pk
                   AND nv.created_at > NOW() - INTERVAL 48 HOUR) AS recentViewCount,
                (SELECT COUNT(*)
-                FROM boardKick bk2
+                FROM BoardKick bk2
                 WHERE bk2.board_pk = b.pk
                   AND bk2.status = 'ACTIVATED'
                   AND bk2.created_at > NOW() - INTERVAL 48 HOUR) +
                (SELECT COUNT(*)
-                FROM newsKick nk2
+                FROM NewsKick nk2
                 WHERE nk2.news_pk = n.pk
                   AND nk2.status = 'ACTIVATED'
                   AND nk2.created_at > NOW() - INTERVAL 48 HOUR) AS recentKickCount,
                s.created_at AS createdAt
-        FROM shorts s
-        LEFT JOIN awsFileReference afr ON (s.type = 'AWS_FILE' AND s.reference_pk = afr.pk)
-        LEFT JOIN embeddedLink el ON (s.type = 'EMBEDDED_LINK' AND s.reference_pk = el.pk)
-        LEFT JOIN board b ON (afr.reference_pk = b.pk OR el.reference_pk = b.pk)
-        LEFT JOIN news n ON (afr.reference_pk = n.pk OR el.reference_pk = n.pk)
-        LEFT JOIN boardViewHistory bvh ON b.pk = bvh.board_pk
-        LEFT JOIN boardKick bk ON b.pk = bk.board_pk AND bk.status = 'ACTIVATED'
-        LEFT JOIN newsViewHistory nvh ON n.pk = nvh.news_pk
-        LEFT JOIN newsKick nk ON n.pk = nk.news_pk AND nk.status = 'ACTIVATED'
+        FROM Shorts s
+        LEFT JOIN AwsFileReference afr ON (s.type = 'AWS_FILE' AND s.reference_pk = afr.pk AND afr.status = 'ACTIVATED')
+        LEFT JOIN EmbeddedLink el ON (s.type = 'EMBEDDED_LINK' AND s.reference_pk = el.pk AND el.status = 'ACTIVATED')
+        LEFT JOIN Board b ON ((afr.reference_pk = b.pk OR el.reference_pk = b.pk) AND b.status = 'ACTIVATED')
+        LEFT JOIN News n ON ((afr.reference_pk = n.pk OR el.reference_pk = n.pk) AND n.status = 'ACTIVATED') 
+        LEFT JOIN BoardViewHistory bvh ON b.pk = bvh.board_pk
+        LEFT JOIN BoardKick bk ON b.pk = bk.board_pk AND bk.status = 'ACTIVATED'
+        LEFT JOIN NewsViewHistory nvh ON n.pk = nvh.news_pk
+        LEFT JOIN NewsKick nk ON n.pk = nk.news_pk AND nk.status = 'ACTIVATED'
         WHERE s.status = 'ACTIVATED'
         GROUP BY s.pk, afr.s3_key, el.url, afr.used_in, el.used_in, b.pk, n.pk, b.title, n.title, s.created_at
         ORDER BY recentViewCount DESC, recentKickCount DESC, s.created_at DESC
@@ -75,33 +75,33 @@ public interface ShortsRepository extends JpaRepository<Shorts, Long>, QuerydslP
                COUNT(DISTINCT bvh.pk) + COUNT(DISTINCT nvh.pk) AS totalViewCount,
                COUNT(DISTINCT bk.pk) + COUNT(DISTINCT nk.pk) AS totalKickCount,
                (SELECT COUNT(*)
-                FROM boardViewHistory bv
+                FROM BoardViewHistory bv
                 WHERE bv.board_pk = b.pk
                   AND bv.created_at > NOW() - INTERVAL 48 HOUR) +
                (SELECT COUNT(*)
-                FROM newsViewHistory nv
+                FROM NewsViewHistory nv
                 WHERE nv.news_pk = n.pk
                   AND nv.created_at > NOW() - INTERVAL 48 HOUR) AS recentViewCount,
                (SELECT COUNT(*)
-                FROM boardKick bk2
+                FROM BoardKick bk2
                 WHERE bk2.board_pk = b.pk
                   AND bk2.status = 'ACTIVATED'
                   AND bk2.created_at > NOW() - INTERVAL 48 HOUR) +
                (SELECT COUNT(*)
-                FROM newsKick nk2
+                FROM NewsKick nk2
                 WHERE nk2.news_pk = n.pk
                   AND nk2.status = 'ACTIVATED'
                   AND nk2.created_at > NOW() - INTERVAL 48 HOUR) AS recentKickCount,
                s.created_at AS createdAt
-        FROM shorts s
-        LEFT JOIN awsFileReference afr ON (s.type = 'AWS_FILE' AND s.reference_pk = afr.pk)
-        LEFT JOIN embeddedLink el ON (s.type = 'EMBEDDED_LINK' AND s.reference_pk = el.pk)
-        LEFT JOIN board b ON (afr.reference_pk = b.pk OR el.reference_pk = b.pk)
-        LEFT JOIN news n ON (afr.reference_pk = n.pk OR el.reference_pk = n.pk)
-        LEFT JOIN boardViewHistory bvh ON b.pk = bvh.board_pk
-        LEFT JOIN boardKick bk ON b.pk = bk.board_pk AND bk.status = 'ACTIVATED'
-        LEFT JOIN newsViewHistory nvh ON n.pk = nvh.news_pk
-        LEFT JOIN newsKick nk ON n.pk = nk.news_pk AND nk.status = 'ACTIVATED'
+        FROM Shorts s
+        LEFT JOIN AwsFileReference afr ON (s.type = 'AWS_FILE' AND s.reference_pk = afr.pk AND afr.status = 'ACTIVATED')
+        LEFT JOIN EmbeddedLink el ON (s.type = 'EMBEDDED_LINK' AND s.reference_pk = el.pk AND el.status = 'ACTIVATED')
+        LEFT JOIN Board b ON ((afr.reference_pk = b.pk OR el.reference_pk = b.pk) AND b.status = 'ACTIVATED')
+        LEFT JOIN News n ON ((afr.reference_pk = n.pk OR el.reference_pk = n.pk) AND n.status = 'ACTIVATED')
+        LEFT JOIN BoardViewHistory bvh ON b.pk = bvh.board_pk
+        LEFT JOIN BoardKick bk ON b.pk = bk.board_pk AND bk.status = 'ACTIVATED'
+        LEFT JOIN NewsViewHistory nvh ON n.pk = nvh.news_pk
+        LEFT JOIN NewsKick nk ON n.pk = nk.news_pk AND nk.status = 'ACTIVATED'
         WHERE s.status = 'ACTIVATED'
         GROUP BY s.pk, afr.s3_key, el.url, afr.used_in, el.used_in, b.pk, n.pk, b.title, n.title, s.created_at
         """, nativeQuery = true)
@@ -118,23 +118,23 @@ public interface ShortsRepository extends JpaRepository<Shorts, Long>, QuerydslP
                b.pk AS referencePk,
                b.title AS title,
                (SELECT COUNT(*) 
-                  FROM boardViewHistory bv 
+                  FROM BoardViewHistory bv 
                  WHERE bv.board_pk = b.pk) AS totalViewCount,
                (SELECT COUNT(*) 
-                  FROM boardKick bk 
+                  FROM BoardKick bk 
                  WHERE bk.board_pk = b.pk
                    AND bk.status = 'ACTIVATED') AS totalKickCount,
                (SELECT COUNT(*) 
-                  FROM boardViewHistory bv 
+                  FROM BoardViewHistory bv 
                  WHERE bv.board_pk = b.pk 
                    AND bv.created_at > NOW() - INTERVAL 48 HOUR) AS recentViewCount,
                (SELECT COUNT(*) 
-                  FROM boardKick bk 
+                  FROM BoardKick bk 
                  WHERE bk.board_pk = b.pk
                    AND bk.status = 'ACTIVATED'
                    AND bk.created_at > NOW() - INTERVAL 48 HOUR) AS recentKickCount,
                (SELECT COUNT(*) 
-                  FROM boardReply br
+                  FROM BoardReply br
                  WHERE br.board_pk = b.pk
                    AND br.status = 'ACTIVATED') AS totalReplyCount,
                s.created_at AS createdAt,
@@ -143,20 +143,20 @@ public interface ShortsRepository extends JpaRepository<Shorts, Long>, QuerydslP
                u.profile_image_url AS profileImgaeUrl,
                EXISTS (
                   SELECT 1
-                  FROM teamReporter tr
+                  FROM TeamReporter tr
                    WHERE tr.user_pk = u.pk
                ) AS isReporter,
                EXISTS (
-                  SELECT 1 FROM boardKick bk
+                  SELECT 1 FROM BoardKick bk
                    WHERE bk.board_pk = b.pk
                      AND bk.status = 'ACTIVATED'
                      AND bk.user_pk = :userPk
                ) AS isKicked
-        FROM shorts s
-        LEFT JOIN awsFileReference afr ON (s.type = 'AWS_FILE' AND s.reference_pk = afr.pk)
-        LEFT JOIN embeddedLink el ON (s.type = 'EMBEDDED_LINK' AND s.reference_pk = el.pk)
-        LEFT JOIN board b ON (afr.reference_pk = b.pk OR el.reference_pk = b.pk)
-        LEFT JOIN user u ON b.user_pk = u.pk
+        FROM Shorts s
+        LEFT JOIN AwsFileReference afr ON (s.type = 'AWS_FILE' AND s.reference_pk = afr.pk AND afr.status = 'ACTIVATED')
+        LEFT JOIN EmbeddedLink el ON (s.type = 'EMBEDDED_LINK' AND s.reference_pk = el.pk AND el.status = 'ACTIVATED')
+        LEFT JOIN Board b ON ((afr.reference_pk = b.pk OR el.reference_pk = b.pk) AND b.status = 'ACTIVATED')
+        LEFT JOIN User u ON b.user_pk = u.pk AND u.status = 'ACTIVATED'
         WHERE s.status = 'ACTIVATED'
           AND s.pk = :shortsPk
         """, nativeQuery = true)
@@ -174,23 +174,23 @@ public interface ShortsRepository extends JpaRepository<Shorts, Long>, QuerydslP
                n.pk AS referencePk,
                n.title AS title,
                (SELECT COUNT(*) 
-                  FROM newsViewHistory nv 
+                  FROM NewsViewHistory nv 
                  WHERE nv.news_pk = n.pk) AS totalViewCount,
                (SELECT COUNT(*) 
-                  FROM newsKick nk 
+                  FROM NewsKick nk 
                  WHERE nk.news_pk = n.pk
                    AND nk.status = 'ACTIVATED') AS totalKickCount,
                (SELECT COUNT(*) 
-                  FROM newsViewHistory nv 
+                  FROM NewsViewHistory nv 
                  WHERE nv.news_pk = n.pk 
                    AND nv.created_at > NOW() - INTERVAL 48 HOUR) AS recentViewCount,
                (SELECT COUNT(*) 
-                  FROM newsKick nk 
+                  FROM NewsKick nk 
                  WHERE nk.news_pk = n.pk
                    AND nk.status = 'ACTIVATED'
                    AND nk.created_at > NOW() - INTERVAL 48 HOUR) AS recentKickCount,
                (SELECT COUNT(*) 
-                  FROM newsReply nr
+                  FROM NewsReply nr
                  WHERE nr.news_pk = n.pk
                    AND nr.status = 'ACTIVATED') AS totalReplyCount,
                s.created_at AS createdAt,
@@ -199,20 +199,20 @@ public interface ShortsRepository extends JpaRepository<Shorts, Long>, QuerydslP
                u.profile_image_url AS profileImgaeUrl,
                EXISTS (
                   SELECT 1
-                  FROM teamReporter tr
+                  FROM TeamReporter tr
                    WHERE tr.user_pk = u.pk
                ) AS isReporter,
                EXISTS (
-                  SELECT 1 FROM newsKick nk
+                  SELECT 1 FROM NewsKick nk
                    WHERE nk.news_pk = n.pk
                      AND nk.status = 'ACTIVATED'
                      AND nk.user_pk = :userPk
                ) AS isKicked
-        FROM shorts s
-        LEFT JOIN awsFileReference afr ON (s.type = 'AWS_FILE' AND s.reference_pk = afr.pk)
-        LEFT JOIN embeddedLink el ON (s.type = 'EMBEDDED_LINK' AND s.reference_pk = el.pk)
-        LEFT JOIN news n ON (afr.reference_pk = n.pk OR el.reference_pk = n.pk)
-        LEFT JOIN user u ON n.user_pk = u.pk
+        FROM Shorts s
+        LEFT JOIN AwsFileReference afr ON (s.type = 'AWS_FILE' AND s.reference_pk = afr.pk AND afr.status = 'ACTIVATED')
+        LEFT JOIN EmbeddedLink el ON (s.type = 'EMBEDDED_LINK' AND s.reference_pk = el.pk AND el.status = 'ACTIVATED')
+        LEFT JOIN News n ON ((afr.reference_pk = n.pk OR el.reference_pk = n.pk) AND n.status = 'ACTIVATED')
+        LEFT JOIN User u ON n.user_pk = u.pk AND u.status = 'ACTIVATED'
         WHERE s.status = 'ACTIVATED'
           AND s.pk = :shortsPk
         """, nativeQuery = true)

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StopWatch;
 
 @Aspect
-//@Component
+@Component
 public class PerformanceAspect {
 
     @Around("execution(* kr.kickon.api.domain..*(..))")
