@@ -9,6 +9,8 @@ import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.annotation.Nullable;
+
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Comparator;
@@ -22,6 +24,7 @@ import kr.kickon.api.domain.embeddedLink.EmbeddedLinkService;
 import kr.kickon.api.domain.shorts.dto.ShortsDTO;
 import kr.kickon.api.domain.shorts.dto.ShortsDetailDTO;
 import kr.kickon.api.domain.shorts.request.GetShortsRequest;
+import kr.kickon.api.domain.user.dto.BaseUserDTO;
 import kr.kickon.api.global.common.entities.QAwsFileReference;
 import kr.kickon.api.global.common.entities.QBoard;
 import kr.kickon.api.global.common.entities.QBoardKick;
@@ -82,13 +85,11 @@ public class ShortsService {
    * * @return ShortsDTO 리스트
    */
   public List<ShortsDTO> getFixedShorts() {
-      StopWatch stopWatch = new StopWatch();
-      stopWatch.start();
 
-      List<ShortsDTO> result = queryShorts(4);
-
-      stopWatch.stop();
-      log.info("getFixedShorts() 실행 시간: {} ms", stopWatch.getTotalTimeMillis());
+      List<ShortsDTO> result = shortsRepository.findTop4ShortsByPopularity()
+              .stream()
+              .map(this::mapToDto)
+              .toList();
 
       return result;
   }
@@ -102,16 +103,11 @@ public class ShortsService {
    * @return ShortsDTO 리스트
    */
   public Page<ShortsDTO> getShortsWithPagination(GetShortsRequest request, Pageable pageable) {
-    QShorts shorts = QShorts.shorts;
-    List<ShortsDTO> combined = queryShorts(null);
 
-    Long totalCount = queryFactory
-        .select(shorts.count())
-        .from(shorts)
-        .where(shorts.status.eq(DataStatus.ACTIVATED))
-        .fetchOne();
-
-    long total = totalCount != null ? totalCount : 0L;
+      List<ShortsDTO> shorts = shortsRepository.findShorts()
+              .stream()
+              .map(this::mapToDto)
+              .toList();
 
     ShortsSortType sortType = Optional.ofNullable(request.getSort()).orElse(ShortsSortType.CREATED_DESC);
 
@@ -124,418 +120,88 @@ public class ShortsService {
         default -> Comparator.comparing(ShortsDTO::getCreatedAt).reversed(); // 기본: 최신순
     };
 
-    List<ShortsDTO> sortedShorts = combined.stream()
+    List<ShortsDTO> sortedShorts = shorts.stream()
         .sorted(comparator)
         .toList();
 
     int start = (int) pageable.getOffset();
     int end = Math.min(start + pageable.getPageSize(), sortedShorts.size());
     List<ShortsDTO> pageContent = start > end ? Collections.emptyList() : sortedShorts.subList(start, end);
-    return new PageImpl<>(pageContent, pageable, total);
+
+    return new PageImpl<>(pageContent, pageable, sortedShorts.size());
   }
   //endregion
 
-  // region 쇼츠 리스트 조회
-  /**
-   * Shorts 영상 리스트를 조회하는 공통 로직입니다.
-   * @param limit 조회 엔티티 수
-   * @return ShortsDTO 리스트
-   */
-  private List<ShortsDTO> queryShorts(@Nullable Integer limit) {
-    QAwsFileReference awsFileReference = QAwsFileReference.awsFileReference;
-    QBoard board = QBoard.board;
-    QNews news = QNews.news;
-    QBoardViewHistory boardViewHistory = QBoardViewHistory.boardViewHistory;
-    QBoardKick boardKick = QBoardKick.boardKick;
-    QNewsViewHistory newsViewHistory = QNewsViewHistory.newsViewHistory;
-    QNewsKick newsKick = QNewsKick.newsKick;
-    QEmbeddedLink embeddedLink = QEmbeddedLink.embeddedLink;
-    QShorts shorts = QShorts.shorts;
-
-    // 게시글/뉴스 각각의 48시간 기준 조회수, 킥 수를 가져옵니다.
-    LocalDateTime cutoff = LocalDateTime.now().minusHours(48);
-
-      // 1. Board 관련 조회수/킥 수 집계
-      Expression<Tuple> boardAggregates = JPAExpressions
-              .select(
-                      boardViewHistory.board.pk.as("boardPk"),
-                      boardViewHistory.pk.count().as("totalViewCount"),
-                      JPAExpressions.select(boardViewHistory.pk.count())
-                              .from(boardViewHistory)
-                              .where(boardViewHistory.board.pk.eq(board.pk)
-                                      .and(boardViewHistory.createdAt.after(cutoff))
-                              .as("recentViewCount")),
-                      boardKick.pk.count().as("totalKickCount"),
-                      JPAExpressions.select(boardKick.pk.count())
-                              .from(boardKick)
-                              .where(boardKick.board.pk.eq(board.pk)
-                                      .and(boardKick.status.eq(DataStatus.ACTIVATED))
-                                      .and(boardKick.createdAt.after(cutoff))
-                              .as("recentKickCount")
-              ))
-              .from(board)
-              .leftJoin(boardViewHistory).on(boardViewHistory.board.pk.eq(board.pk))
-              .leftJoin(boardKick).on(boardKick.board.pk.eq(board.pk))
-              .groupBy(board.pk);
-
-      // 2. News 관련 조회수/킥 수 집계
-      Expression<Tuple> newsAggregates = JPAExpressions
-              .select(
-                      newsViewHistory.news.pk.as("newsPk"),
-                      newsViewHistory.pk.count().as("totalViewCount"),
-                      JPAExpressions.select(newsViewHistory.pk.count())
-                              .from(newsViewHistory)
-                              .where(newsViewHistory.news.pk.eq(news.pk)
-                                      .and(newsViewHistory.createdAt.after(cutoff))
-                              .as("recentViewCount")),
-                      newsKick.pk.count().as("totalKickCount"),
-                      JPAExpressions.select(newsKick.pk.count())
-                              .from(newsKick)
-                              .where(newsKick.news.pk.eq(news.pk)
-                                      .and(newsKick.status.eq(DataStatus.ACTIVATED))
-                                      .and(newsKick.createdAt.after(cutoff))
-                              .as("recentKickCount")
-              ))
-              .from(news)
-              .leftJoin(newsViewHistory).on(newsViewHistory.news.pk.eq(news.pk))
-              .leftJoin(newsKick).on(newsKick.news.pk.eq(news.pk))
-              .groupBy(news.pk);
-
-    // 공통 expression
-    Expression<String> videoUrlExpression = new CaseBuilder()
-        .when(shorts.type.eq(ShortsType.AWS_FILE))
-        .then(Expressions.stringTemplate(
-            "CONCAT('https://kickon-files-bucket.s3.ap-northeast-2.amazonaws.com/', {0})",
-            awsFileReference.s3Key))
-        .otherwise(
-            Expressions.stringTemplate(
-                "REPLACE({0}, 'youtube.com/embed/', 'youtube.com/watch?v=')",
-                embeddedLink.url
-            ));
-
-    Expression<UsedInType> usedInExpression = new CaseBuilder()
-        .when(shorts.type.eq(ShortsType.AWS_FILE))
-        .then(awsFileReference.usedIn)
-        .otherwise(embeddedLink.usedIn);
-
-    NumberExpression<Long> referencePkExpression = new CaseBuilder()
-        .when((shorts.type.eq(ShortsType.AWS_FILE)
-            .and(awsFileReference.usedIn.eq(UsedInType.BOARD)))
-            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
-                .and(embeddedLink.usedIn.eq(UsedInType.BOARD))))
-        .then(board.pk)
-        .when((shorts.type.eq(ShortsType.AWS_FILE)
-            .and(awsFileReference.usedIn.eq(UsedInType.NEWS)))
-            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
-                .and(embeddedLink.usedIn.eq(UsedInType.NEWS))))
-        .then(news.pk)
-        .otherwise((NumberExpression<Long>) null);
-
-    // CASE: title
-    StringExpression titleExpression = new CaseBuilder()
-        .when((shorts.type.eq(ShortsType.AWS_FILE)
-            .and(awsFileReference.usedIn.eq(UsedInType.BOARD)))
-            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
-                .and(embeddedLink.usedIn.eq(UsedInType.BOARD))))
-        .then(board.title)
-        .when((shorts.type.eq(ShortsType.AWS_FILE)
-            .and(awsFileReference.usedIn.eq(UsedInType.NEWS)))
-            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
-                .and(embeddedLink.usedIn.eq(UsedInType.NEWS))))
-        .then(news.title)
-        .otherwise((StringExpression) null);
-
-
-    // CASE: totalViewCount
-    Expression<Long> totalViewCountExpression = new CaseBuilder()
-        .when((shorts.type.eq(ShortsType.AWS_FILE)
-            .and(awsFileReference.usedIn.eq(UsedInType.BOARD)))
-            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
-                .and(embeddedLink.usedIn.eq(UsedInType.BOARD))))
-        .then(JPAExpressions.select(boardViewHistory.pk.count())
-            .from(boardViewHistory)
-            .where(boardViewHistory.board.pk.eq(board.pk)))
-        .when((shorts.type.eq(ShortsType.AWS_FILE)
-            .and(awsFileReference.usedIn.eq(UsedInType.NEWS)))
-            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
-                .and(embeddedLink.usedIn.eq(UsedInType.NEWS))))
-        .then(JPAExpressions.select(newsViewHistory.pk.count())
-            .from(newsViewHistory)
-            .where(newsViewHistory.news.pk.eq(news.pk)))
-        .otherwise(0L);
-
-    // CASE: totalKickCount
-    Expression<Long> totalKickCountExpression = new CaseBuilder()
-        .when((shorts.type.eq(ShortsType.AWS_FILE)
-            .and(awsFileReference.usedIn.eq(UsedInType.BOARD)))
-            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
-                .and(embeddedLink.usedIn.eq(UsedInType.BOARD))))
-        .then(JPAExpressions.select(boardKick.pk.count())
-            .from(boardKick)
-            .where(boardKick.board.pk.eq(board.pk)
-                .and(boardKick.status.eq(DataStatus.ACTIVATED))))
-        .when((shorts.type.eq(ShortsType.AWS_FILE)
-            .and(awsFileReference.usedIn.eq(UsedInType.NEWS)))
-            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
-                .and(embeddedLink.usedIn.eq(UsedInType.NEWS))))
-        .then(JPAExpressions.select(newsKick.pk.count())
-            .from(newsKick)
-            .where(newsKick.news.pk.eq(news.pk)
-                .and(newsKick.status.eq(DataStatus.ACTIVATED))))
-        .otherwise(0L);
-
-    // CASE: recentViewCount
-    Expression<Long> recentViewCountExpression = new CaseBuilder()
-        .when((shorts.type.eq(ShortsType.AWS_FILE)
-            .and(awsFileReference.usedIn.eq(UsedInType.BOARD)))
-            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
-                .and(embeddedLink.usedIn.eq(UsedInType.BOARD))))
-        .then(JPAExpressions.select(boardViewHistory.pk.count())
-            .from(boardViewHistory)
-            .where(boardViewHistory.board.pk.eq(board.pk)
-                .and(boardViewHistory.createdAt.after(cutoff))))
-        .when((shorts.type.eq(ShortsType.AWS_FILE)
-            .and(awsFileReference.usedIn.eq(UsedInType.NEWS)))
-            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
-                .and(embeddedLink.usedIn.eq(UsedInType.NEWS))))
-        .then(JPAExpressions.select(newsViewHistory.pk.count())
-            .from(newsViewHistory)
-            .where(newsViewHistory.news.pk.eq(news.pk)
-                .and(newsViewHistory.createdAt.after(cutoff))))
-        .otherwise(0L);
-
-    // CASE: recentKickCount
-    Expression<Long> recentKickCountExpression = new CaseBuilder()
-        .when((shorts.type.eq(ShortsType.AWS_FILE)
-            .and(awsFileReference.usedIn.eq(UsedInType.BOARD)))
-            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
-                .and(embeddedLink.usedIn.eq(UsedInType.BOARD))))
-        .then(JPAExpressions.select(boardKick.pk.count())
-            .from(boardKick)
-            .where(boardKick.board.pk.eq(board.pk)
-                .and(boardKick.createdAt.after(cutoff))
-            .and(boardKick.status.eq(DataStatus.ACTIVATED))))
-        .when((shorts.type.eq(ShortsType.AWS_FILE)
-            .and(awsFileReference.usedIn.eq(UsedInType.NEWS)))
-            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
-                .and(embeddedLink.usedIn.eq(UsedInType.NEWS))))
-        .then(JPAExpressions.select(newsKick.pk.count())
-            .from(newsKick)
-            .where(newsKick.news.pk.eq(news.pk)
-                .and(newsKick.createdAt.after(cutoff))
-            .and(newsKick.status.eq(DataStatus.ACTIVATED))))
-        .otherwise(0L);
-
-
-    List<ShortsDTO> result = queryFactory
-        .select(Projections.constructor(ShortsDTO.class,
-            shorts.pk,
-            videoUrlExpression,
-            usedInExpression,
-            referencePkExpression,
-            titleExpression,
-            totalViewCountExpression,
-            totalKickCountExpression,
-                recentViewCountExpression,
-                recentKickCountExpression,
-                shorts.createdAt
-        ))
-        .from(shorts)
-        .leftJoin(awsFileReference).on(shorts.type.eq(ShortsType.AWS_FILE)
-            .and(shorts.referencePk.eq(awsFileReference.pk)))
-        .leftJoin(embeddedLink).on(shorts.type.eq(ShortsType.EMBEDDED_LINK)
-            .and(shorts.referencePk.eq(embeddedLink.pk)))
-        .leftJoin(board).on(shorts.type.eq(ShortsType.AWS_FILE)
-            .and(awsFileReference.referencePk.eq(board.pk))
-            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
-                .and(embeddedLink.referencePk.eq(board.pk))))
-        .leftJoin(news).on(shorts.type.eq(ShortsType.AWS_FILE)
-            .and(awsFileReference.referencePk.eq(news.pk))
-            .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
-                .and(embeddedLink.referencePk.eq(news.pk))))
-            .leftJoin(boardViewHistory).on(
-                    board.pk.eq(boardViewHistory.board.pk)
-            )
-            .leftJoin(newsViewHistory).on(
-                    news.pk.eq(newsViewHistory.news.pk)
-            )
-            .leftJoin(boardKick).on(
-                    board.pk.eq(boardKick.board.pk).and(boardKick.status.eq(DataStatus.ACTIVATED))
-            )
-            .leftJoin(newsKick).on(
-                    news.pk.eq(newsKick.news.pk).and(newsKick.status.eq(DataStatus.ACTIVATED))
-            )
-            .where(shorts.status.eq(DataStatus.ACTIVATED))
-            .groupBy(
-                    shorts.pk, awsFileReference.pk, embeddedLink.pk, board.pk, news.pk
-            )
-    .fetch();
-
-    if (limit != null) {
-      return result.stream()
-          .sorted(
-              Comparator.comparingLong(ShortsDTO::getRecentViewCount).reversed()
-                  .thenComparing(Comparator.comparingLong(ShortsDTO::getRecentKickCount).reversed())
-                  .thenComparing(Comparator.comparing(ShortsDTO::getCreatedAt).reversed()) // 최신순
-          )
-          .limit(limit)
-          .collect(Collectors.toList());
+    // region 쇼츠 DTO 변환
+    /**
+     * Shorts 영상 쿼리를 DTO로 매핑하는 로직입니다.
+     * @param tuple 네이티브 쿼리에서 반환하는 Object 배열
+     * @return ShortsDTO
+     */
+    private ShortsDTO mapToDto(Object[] tuple) {
+        return new ShortsDTO(
+                ((Number) tuple[0]).longValue(),   // shortsPk
+                (String) tuple[1],                // videoUrl
+                tuple[2] != null ? UsedInType.valueOf(tuple[2].toString()) : null, // usedIn
+                tuple[3] != null ? ((Number) tuple[3]).longValue() : null, // referencePk
+                (String) tuple[4],                // title
+                ((Number) tuple[5]).longValue(),  // totalViewCount
+                ((Number) tuple[6]).longValue(),  // totalKickCount
+                ((Number) tuple[7]).longValue(),  // recentViewCount
+                ((Number) tuple[8]).longValue(),  // recentKickCount
+                ((Timestamp) tuple[9]).toLocalDateTime() // createdAt
+        );
     }
-    return result;
-  }
   //endregion
 
   // region 쇼츠 상세 조회
   /**
    *
-   * @param file AwsFileReference 영상 엔티티
+   * @param file 쇼츠 엔티티
+   * @param sortType 정렬 기준
+   * @param user 로그인한 사용자 엔티티
    * @return ShortsDetailDTO
    */
   @Transactional
-  public ShortsDetailDTO getShortsDetail(Shorts file, ShortsSortType sortType) {
-    QAwsFileReference awsFileReference = QAwsFileReference.awsFileReference;
-    QBoard board = QBoard.board;
-    QNews news = QNews.news;
-    QBoardViewHistory boardViewHistory = QBoardViewHistory.boardViewHistory;
-    QBoardKick boardKick = QBoardKick.boardKick;
-    QBoardReply boardReply = QBoardReply.boardReply;
-    QNewsViewHistory newsViewHistory = QNewsViewHistory.newsViewHistory;
-    QNewsKick newsKick = QNewsKick.newsKick;
-    QNewsReply newsReply = QNewsReply.newsReply;
-    QEmbeddedLink embeddedLink = QEmbeddedLink.embeddedLink;
-    QShorts shorts = QShorts.shorts;
-    UsedInType usedInType = getUsedIn(file);
+  public ShortsDetailDTO getShortsDetail(Shorts file, ShortsSortType sortType, User user) {
+      UsedInType usedInType = getUsedIn(file);
 
-    // 공통 expression
-    Expression<String> videoUrlExpression = new CaseBuilder()
-        .when(shorts.type.eq(ShortsType.AWS_FILE))
-        .then(Expressions.stringTemplate(
-            "CONCAT('https://kickon-files-bucket.s3.ap-northeast-2.amazonaws.com/', {0})",
-            awsFileReference.s3Key))
-        .otherwise(
-            Expressions.stringTemplate(
-                "REPLACE({0}, 'youtube.com/embed/', 'youtube.com/watch?v=')",
-                embeddedLink.url
-            ));
+      Object[] row;
+      if (usedInType == UsedInType.BOARD) {
+          Object[] outer = shortsRepository.findBoardShortsDetail(file.getPk(), user.getPk());
+          row = (Object[]) outer[0]; // 내부 Object[] 꺼내기
+      } else {
+          Object[] outer = shortsRepository.findNewsShortsDetail(file.getPk(), user.getPk());
+          row = (Object[]) outer[0];
+      }
 
-    Expression<UsedInType> usedInExpression = new CaseBuilder()
-        .when(shorts.type.eq(ShortsType.AWS_FILE))
-        .then(awsFileReference.usedIn)
-        .otherwise(embeddedLink.usedIn);
+      ShortsDetailDTO dto = ShortsDetailDTO.builder()
+              .pk(((Number) row[0]).longValue())
+              .videoUrl((String) row[1])
+              .usedIn(row[2] != null ? UsedInType.valueOf(row[2].toString()) : null)
+              .referencePk(row[3] != null ? ((Number) row[3]).longValue() : null)
+              .title((String) row[4])
+              .viewCount(((Number) row[5]).longValue())
+              .kickCount(((Number) row[6]).longValue())
+              .recentViewCount(((Number) row[7]).longValue())
+              .recentKickCount(((Number) row[8]).longValue())
+              .replyCount(((Number) row[9]).longValue())
+              .createdAt(((Timestamp) row[10]).toLocalDateTime())
+              .user(new BaseUserDTO(
+                      row[11] != null ? row[11].toString() : null,   // userPk
+                      (String) row[12],                              // userNickname
+                      (String) row[13],                              // userProfileImageUrl
+                      row[14] != null && ((Number) row[14]).longValue() > 0 // isReporter: 0/1 → boolean
+              ))
+              .isKicked(row[15] != null && ((Number) row[15]).longValue() > 0) // isKicked: 0/1 → boolean
+              .build();
 
-    // 공통 서브쿼리
-    Expression<Long> totalViewCount;
-    Expression<Long> totalKickCount;
-    Expression<Long> recentViewCount;
-    Expression<Long> recentKickCount;
-    Expression<Long> totalReplyCount;
-    Expression<User> userExpression;
-    Expression<String> titleExpression;
-    Expression<Long> referencePkExpression;
-    Expression<Boolean> isKicked;
-
-    LocalDateTime cutoff = LocalDateTime.now().minusHours(48);
-
-    if (usedInType == UsedInType.BOARD) {
-      totalViewCount = JPAExpressions.select(boardViewHistory.pk.count().coalesce(0L))
-          .from(boardViewHistory)
-          .where(boardViewHistory.board.pk.eq(board.pk));
-      totalKickCount = JPAExpressions.select(boardKick.pk.count().coalesce(0L))
-          .from(boardKick)
-          .where(boardKick.board.pk.eq(board.pk)
-              .and(boardKick.status.eq(DataStatus.ACTIVATED)));
-      totalReplyCount = JPAExpressions.select(boardReply.pk.count().coalesce(0L))
-          .from(boardReply)
-          .where(boardReply.board.pk.eq(board.pk)
-              .and(boardReply.status.eq(DataStatus.ACTIVATED)));
-      recentViewCount = JPAExpressions.select(boardViewHistory.pk.count().coalesce(0L))
-              .from(boardViewHistory)
-              .where(boardViewHistory.board.pk.eq(board.pk)
-                      .and(boardViewHistory.createdAt.after(cutoff)));
-      recentKickCount = JPAExpressions.select(boardKick.pk.count().coalesce(0L))
-              .from(boardKick)
-              .where(boardKick.board.pk.eq(board.pk)
-                      .and(boardKick.createdAt.after(cutoff)));
-      userExpression = board.user;
-      titleExpression = board.title;
-      referencePkExpression = board.pk;
-      isKicked = JPAExpressions
-          .selectOne()
-          .from(boardKick)
-          .where(boardKick.board.pk.eq(board.pk)
-              .and(boardKick.status.eq(DataStatus.ACTIVATED)))
-          .exists();
-    } else { // NEWS
-      totalViewCount = JPAExpressions.select(newsViewHistory.pk.count().coalesce(0L))
-          .from(newsViewHistory)
-          .where(newsViewHistory.news.pk.eq(news.pk));
-      totalKickCount = JPAExpressions.select(newsKick.pk.count().coalesce(0L))
-          .from(newsKick)
-          .where(newsKick.news.pk.eq(news.pk)
-              .and(newsKick.status.eq(DataStatus.ACTIVATED)));
-      totalReplyCount = JPAExpressions.select(newsReply.pk.count().coalesce(0L))
-          .from(newsReply)
-          .where(newsReply.news.pk.eq(news.pk)
-              .and(newsReply.status.eq(DataStatus.ACTIVATED)));
-      recentViewCount = JPAExpressions.select(newsViewHistory.pk.count().coalesce(0L))
-                .from(newsViewHistory)
-                .where(newsViewHistory.news.pk.eq(news.pk)
-                        .and(newsViewHistory.createdAt.after(cutoff)));
-      recentKickCount = JPAExpressions.select(newsKick.pk.count().coalesce(0L))
-                .from(newsKick)
-                .where(newsKick.news.pk.eq(news.pk)
-                        .and(newsKick.createdAt.after(cutoff)));
-      userExpression = news.user;
-      titleExpression = news.title;
-      referencePkExpression = news.pk;
-      isKicked = JPAExpressions
-          .selectOne()
-          .from(newsKick)
-          .where(newsKick.news.pk.eq(news.pk)
-          .and(newsKick.status.eq(DataStatus.ACTIVATED)))
-          .exists();
-    }
-
-    JPAQuery<ShortsDetailDTO> query = queryFactory
-        .select(Projections.constructor(ShortsDetailDTO.class,
-            shorts.pk,
-            videoUrlExpression,
-            usedInExpression,
-            referencePkExpression,
-            titleExpression,
-            totalViewCount,
-            totalKickCount,
-            recentViewCount,
-            recentKickCount,
-            totalReplyCount,
-            shorts.createdAt,
-            userExpression,
-            isKicked
-        ))
-        .from(shorts)
-        .leftJoin(awsFileReference).on(shorts.type.eq(ShortsType.AWS_FILE)
-           .and(shorts.referencePk.eq(awsFileReference.pk)))
-        .leftJoin(embeddedLink).on(shorts.type.eq(ShortsType.EMBEDDED_LINK)
-           .and(shorts.referencePk.eq(embeddedLink.pk)))
-        .where(shorts.status.eq(DataStatus.ACTIVATED)
-        .and(shorts.pk.eq(file.getPk())));
-
-    if (usedInType == UsedInType.BOARD) {
-      query.leftJoin(board).on(shorts.type.eq(ShortsType.AWS_FILE)
-          .and(awsFileReference.referencePk.eq(board.pk))
-          .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
-              .and(embeddedLink.referencePk.eq(board.pk))));
-    } else {
-      query.leftJoin(news).on(shorts.type.eq(ShortsType.AWS_FILE)
-          .and(awsFileReference.referencePk.eq(news.pk))
-          .or(shorts.type.eq(ShortsType.EMBEDDED_LINK)
-              .and(embeddedLink.referencePk.eq(news.pk))));
-    }
-
-      ShortsDetailDTO dto = query.fetchOne();
       if (sortType == ShortsSortType.POPULAR) {
           // 2. 전체 리스트 불러오기
-          List<ShortsDTO> all = queryShorts(null);
+          List<ShortsDTO> all = new java.util.ArrayList<>(shortsRepository.findShorts()
+                  .stream()
+                  .map(this::mapToDto)
+                  .toList());
 
           // 3. Comparator 적용
           all.sort(
@@ -575,12 +241,11 @@ public class ShortsService {
                   .fetchFirst();
           dto.setNextPk(next != null ? next.getPk() : null);
       }
-
       return dto;
   }
   //endregion
 
-  @Transactional
+    @Transactional
   public void save(ShortsType type, Long referencePk) {
     Shorts shorts = Shorts.builder()
         .type(type)

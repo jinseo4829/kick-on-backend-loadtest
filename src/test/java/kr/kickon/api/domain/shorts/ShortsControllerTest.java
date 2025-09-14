@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import kr.kickon.api.domain.shorts.dto.ShortsDTO;
 import kr.kickon.api.domain.shorts.dto.ShortsDetailDTO;
 import kr.kickon.api.domain.shorts.request.GetShortsRequest;
+import kr.kickon.api.global.auth.jwt.user.JwtTokenProvider;
 import kr.kickon.api.global.common.entities.Shorts;
+import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.enums.ShortsSortType;
 import kr.kickon.api.global.common.enums.ShortsType;
 import kr.kickon.api.global.error.handler.GlobalExceptionHandler;
@@ -36,6 +38,9 @@ class ShortsControllerTest {
 
     @Mock
     private ShortsService shortsService;
+
+    @Mock
+    private JwtTokenProvider jwtTokenProvider;
 
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
@@ -108,9 +113,12 @@ class ShortsControllerTest {
         Long pk = 1L;
         Shorts shorts = Shorts.builder().pk(pk).type(ShortsType.AWS_FILE).build();
         ShortsDetailDTO dto = ShortsDetailDTO.builder().pk(pk).title("Short 1").build();
-
+        User mockUser = new User();
+        mockUser.setPk(1L);
+        mockUser.setId("user1");
+        when(jwtTokenProvider.getUserFromSecurityContext()).thenReturn(mockUser);
         when(shortsService.findByPk(pk)).thenReturn(shorts);
-        when(shortsService.getShortsDetail(shorts, ShortsSortType.CREATED_DESC)).thenReturn(dto);
+        when(shortsService.getShortsDetail(shorts, ShortsSortType.CREATED_DESC, mockUser)).thenReturn(dto);
 
         mockMvc.perform(get("/api/shorts/{pk}", pk)
                         .param("sort", "CREATED_DESC"))
@@ -120,7 +128,7 @@ class ShortsControllerTest {
                 .andExpect(jsonPath("$.data.title").value("Short 1"));
 
         verify(shortsService, times(1)).findByPk(pk);
-        verify(shortsService, times(1)).getShortsDetail(shorts, ShortsSortType.CREATED_DESC);
+        verify(shortsService, times(1)).getShortsDetail(shorts, ShortsSortType.CREATED_DESC, mockUser);
     }
 
     @Test
@@ -134,7 +142,7 @@ class ShortsControllerTest {
                 .andExpect(jsonPath("$.code").value("NOT_FOUND_SHORTS"));
 
         verify(shortsService, times(1)).findByPk(pk);
-        verify(shortsService, never()).getShortsDetail(any(), any());
+        verify(shortsService, never()).getShortsDetail(any(), any(), any());
     }
     // endregion
 }
