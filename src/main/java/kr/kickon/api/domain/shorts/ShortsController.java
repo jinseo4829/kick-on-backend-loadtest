@@ -20,6 +20,7 @@ import kr.kickon.api.global.common.entities.Shorts;
 import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.common.enums.ShortsSortType;
+import kr.kickon.api.global.error.exceptions.ForbiddenException;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -79,6 +80,8 @@ public class ShortsController {
     if (file == null) throw new NotFoundException(ResponseCode.NOT_FOUND_SHORTS);
 
     User user = jwtTokenProvider.getUserFromSecurityContext();
+    if (user == null) throw new ForbiddenException(ResponseCode.FORBIDDEN);
+    
     ShortsDetailDTO dto = shortsService.getShortsDetail(file, sort, user);
     return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, dto));
   }
