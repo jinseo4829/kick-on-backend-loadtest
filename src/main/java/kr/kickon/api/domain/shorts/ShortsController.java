@@ -13,9 +13,11 @@ import kr.kickon.api.domain.shorts.dto.ShortsDetailDTO;
 import kr.kickon.api.domain.shorts.request.GetShortsRequest;
 import kr.kickon.api.domain.shorts.response.GetShortsDetailResponse;
 import kr.kickon.api.domain.shorts.response.GetShortsResponse;
+import kr.kickon.api.global.auth.jwt.user.JwtTokenProvider;
 import kr.kickon.api.global.common.PagedMetaDTO;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.Shorts;
+import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import kr.kickon.api.global.common.enums.ShortsSortType;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
@@ -33,6 +35,7 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 public class ShortsController {
 
+   private final JwtTokenProvider jwtTokenProvider;
   private final ShortsService shortsService;
 
   @GetMapping("/fixed")
@@ -75,7 +78,8 @@ public class ShortsController {
     Shorts file = shortsService.findByPk(pk);
     if (file == null) throw new NotFoundException(ResponseCode.NOT_FOUND_SHORTS);
 
-    ShortsDetailDTO dto = shortsService.getShortsDetail(file, sort);
+    User user = jwtTokenProvider.getUserFromSecurityContext();
+    ShortsDetailDTO dto = shortsService.getShortsDetail(file, sort, user);
     return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, dto));
   }
 }

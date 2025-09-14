@@ -3,6 +3,7 @@ package kr.kickon.api.domain.user.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import kr.kickon.api.global.common.ExampleConstants;
 import kr.kickon.api.global.common.entities.User;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -13,6 +14,7 @@ import lombok.experimental.SuperBuilder;
 @Setter
 @SuperBuilder
 @NoArgsConstructor
+@AllArgsConstructor
 @Schema(description = "기본 유저 정보 DTO")
 public class BaseUserDTO {
     @Schema(description = "사용자 고유 ID", example = ExampleConstants.id)
