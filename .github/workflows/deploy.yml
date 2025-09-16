@@ -62,7 +62,7 @@ jobs:
         with:
           host: ${{ secrets.EC2_HOST_DEV }}
           username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key: ${{ secrets.EC2_SSH_KEY_DEV }}
           script: |
             sudo docker stop kickon-backend-dev || true
             sudo docker rm kickon-backend-dev || true
