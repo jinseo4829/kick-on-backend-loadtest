@@ -11,7 +11,7 @@ WORKDIR /app
 # 빌드된 JAR 복사
 COPY --from=builder /workspace/build/libs/*.jar app.jar
 
-# 프로파일별 application.yml 주입 (빌드 타임 ARG로 제어)
+# 프로파일별 application.yml 주입 (빌드 타임 ARG로 제어 )
 ARG SPRING_PROFILES_ACTIVE=dev
 COPY src/main/resources/application-${SPRING_PROFILES_ACTIVE}.yml application.yml
 
