@@ -29,16 +29,61 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew clean build -x test
 
+      # ==========================
+      # DEV: Docker + ECR 배포
+      # ==========================
+      - name: Configure AWS credentials
+        if: env.SPRING_PROFILES_ACTIVE == 'dev'
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: Login to Amazon ECR
+        if: env.SPRING_PROFILES_ACTIVE == 'dev'
+        run: |
+          aws ecr get-login-password --region ap-northeast-2 \
+          | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-2.amazonaws.com
+
+      - name: Build & Push Docker image
+        if: env.SPRING_PROFILES_ACTIVE == 'dev'
+        run: |
+          docker build -t kickon-backend-dev .
+          docker tag kickon-backend-dev:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-2.amazonaws.com/kickon-backend-dev:latest
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-2.amazonaws.com/kickon-backend-dev:latest
+
+      - name: Deploy to EC2 (dev)
+        if: env.SPRING_PROFILES_ACTIVE == 'dev'
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST_DEV }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            sudo docker stop kickon-backend-dev || true
+            sudo docker rm kickon-backend-dev || true
+            sudo docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-2.amazonaws.com/kickon-backend-dev:latest
+            sudo docker run -d --name kickon-backend-dev -p 8081:8080 ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-2.amazonaws.com/kickon-backend-dev:latest
+      
+
+      # ==========================
+      # PROD: 기존 CodeDeploy 배포
+      # ==========================
       - name: Copy appspec.yml
+        if: env.SPRING_PROFILES_ACTIVE == 'prod'
         run: cp appspec/appspec-${{env.SPRING_PROFILES_ACTIVE}}.yml appspec.yml
 
       - name: Copy application.yml
+        if: env.SPRING_PROFILES_ACTIVE == 'prod'
         run: cp src/main/resources/application-${{env.SPRING_PROFILES_ACTIVE}}.yml application-${{env.SPRING_PROFILES_ACTIVE}}.yml
 
       - name: Copy scripts
+        if: env.SPRING_PROFILES_ACTIVE == 'prod'
         run: mkdir -p scripts && cp -r ${{env.SPRING_PROFILES_ACTIVE}}-scripts/* scripts/
 
       - name: Package files for deployment
+        if: env.SPRING_PROFILES_ACTIVE == 'prod'
         run: |
           mkdir -p deploy
           cp application-${{env.SPRING_PROFILES_ACTIVE}}.yml deploy/
@@ -47,9 +92,11 @@ jobs:
           cp build/libs/*.jar deploy/
 
       - name: Compress deployment package
+        if: env.SPRING_PROFILES_ACTIVE == 'prod'
         run: zip -r deploy.zip deploy/
 
       - name: Upload to S3
+        if: env.SPRING_PROFILES_ACTIVE == 'prod'
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -57,10 +104,12 @@ jobs:
           aws-region: ap-northeast-2
 
       - name: Upload zip to S3
+        if: env.SPRING_PROFILES_ACTIVE == 'prod'
         run: |
           aws s3 cp deploy.zip s3://${{ secrets.S3_BUCKET }}/deploy/${{env.SPRING_PROFILES_ACTIVE}}.zip
 
       - name: Deploy with CodeDeploy
+        if: env.SPRING_PROFILES_ACTIVE == 'prod'
         run: |
           aws deploy create-deployment \
           --application-name ${{ env.APPLICATION_NAME }} \
