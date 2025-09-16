@@ -29,6 +29,9 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew clean build -x test
 
+      - name: Move JAR to root
+        run: cp build/libs/*.jar kickon.jar
+
       # ==========================
       # DEV: Docker + ECR 배포
       # ==========================
@@ -65,7 +68,6 @@ jobs:
             sudo docker rm kickon-backend-dev || true
             sudo docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-2.amazonaws.com/kickon-backend-dev:latest
             sudo docker run -d --name kickon-backend-dev -p 8081:8080 ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-2.amazonaws.com/kickon-backend-dev:latest
-      
 
       # ==========================
       # PROD: 기존 CodeDeploy 배포
