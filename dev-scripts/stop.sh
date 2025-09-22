@@ -1,21 +1,14 @@
 #!/bin/bash
 export SPRING_PROFILES_ACTIVE=dev
-export AWS_REGION=ap-northeast-2
 
-APP_DIR="/home/ubuntu/springboot-dev"
-JAR_FILE=$(ls -t $APP_DIR/*.jar | head -n 1)
+CONTAINER_NAME="kickon-backend-dev"
 
-if [ -z "$JAR_FILE" ]; then
-  echo "No JAR file found in $APP_DIR!"
-  exit 0
-fi
-
-# 현재 실행 중인 프로세스 종료 (dev 환경만)
-PID=$(pgrep -f "$JAR_FILE")
-if [ ! -z "$PID" ]; then
-  echo "Stopping process $PID running $JAR_FILE"
-  kill -9 $PID
-  echo "Process $PID stopped."
+# 현재 실행 중인 Docker 컨테이너 종료
+if [ "$(sudo docker ps -q -f name=$CONTAINER_NAME)" ]; then
+  echo "Stopping container: $CONTAINER_NAME"
+  sudo docker stop $CONTAINER_NAME
+  sudo docker rm $CONTAINER_NAME
+  echo "Container $CONTAINER_NAME stopped and removed."
 else
-  echo "No running process found for $JAR_FILE"
+  echo "No running container found: $CONTAINER_NAME"
 fi
