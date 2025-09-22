@@ -3,24 +3,29 @@ export SPRING_PROFILES_ACTIVE=dev
 export AWS_REGION=ap-northeast-2
 
 APP_DIR="/home/ubuntu/springboot-dev"
-JAR_FILE=$(ls -t $APP_DIR/*.jar | head -n 1)
+CONTAINER_NAME="kickon-backend-dev"
+IMAGE="235494776341.dkr.ecr.ap-northeast-2.amazonaws.com/kickon-backend-dev:latest"
 
-if [ -z "$JAR_FILE" ]; then
-  echo "No JAR file found in $APP_DIR!"
-  exit 1
-fi
-
-# 현재 실행 중인 프로세스 종료 (dev 환경만)
-PID=$(pgrep -f "$JAR_FILE")
-if [ ! -z "$PID" ]; then
-  echo "Stopping process $PID running $JAR_FILE"
-  kill -9 $PID
+# 현재 실행 중인 Docker 컨테이너 종료 (dev 환경만)
+if [ "$(sudo docker ps -q -f name=$CONTAINER_NAME)" ]; then
+  echo "Stopping existing container: $CONTAINER_NAME"
+  sudo docker stop $CONTAINER_NAME
+  sudo docker rm $CONTAINER_NAME
 else
-  echo "No running process found for $JAR_FILE"
+  echo "No running container found: $CONTAINER_NAME"
 fi
 
+# 로그 파일 준비 (기존 로직 유지)
 sudo touch $APP_DIR/app.log && sudo chmod 777 $APP_DIR/app.log
-# 새 애플리케이션 실행
-nohup java -Dspring.profiles.active=$SPRING_PROFILES_ACTIVE -Daws.paramstore.enabled=true -jar $JAR_FILE > $APP_DIR/app.log 2>&1 &
 
-echo "Application started: $JAR_FILE with profile: $SPRING_PROFILES_ACTIVE"
+# 새 Docker 이미지 pull
+echo "Pulling latest Docker image: $IMAGE"
+sudo docker pull $IMAGE
+
+# 새 Docker 컨테이너 실행
+echo "Starting new container: $CONTAINER_NAME"
+sudo docker run -d --name $CONTAINER_NAME -p 8081:8080 \
+  -e SPRING_PROFILES_ACTIVE=$SPRING_PROFILES_ACTIVE \
+  $IMAGE > $APP_DIR/app.log 2>&1 &
+
+echo "✅ Application started with Docker: $CONTAINER_NAME (profile: $SPRING_PROFILES_ACTIVE)"
