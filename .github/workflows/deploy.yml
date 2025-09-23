@@ -51,7 +51,7 @@ jobs:
       - name: Build & Push Docker image (dev)
         if: env.SPRING_PROFILES_ACTIVE == 'dev'
         run: |
-          docker build --build-arg SPRING_PROFILES_ACTIVE=dev -t kickon-backend-dev .
+          docker build --no-cache --build-arg SPRING_PROFILES_ACTIVE=dev -t kickon-backend-dev .
           docker tag kickon-backend-dev:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-2.amazonaws.com/kickon-backend-dev:latest
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-2.amazonaws.com/kickon-backend-dev:latest
 
