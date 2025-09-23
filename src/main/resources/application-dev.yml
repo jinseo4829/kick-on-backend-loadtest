@@ -111,3 +111,7 @@ management:
   metrics:
     tags:
       application: myapp  # 메트릭에 앱 이름 태그 추가
+    enable:
+      processor: false   # ✅ CPU 메트릭 비활성화 (Micrometer bug 회피)
+
+
