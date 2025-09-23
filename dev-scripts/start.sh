@@ -1,4 +1,4 @@
-==#!/bin/bash
+#!/bin/bash
   export SPRING_PROFILES_ACTIVE=dev
   export AWS_REGION=ap-northeast-2
 
