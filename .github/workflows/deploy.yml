@@ -67,6 +67,9 @@ jobs:
       - name: Copy scripts
         run: mkdir -p scripts && cp -r ${{env.SPRING_PROFILES_ACTIVE}}-scripts/* scripts/
 
+      - name: Make scripts executable   # ✅ 실행 권한 추가
+        run: chmod +x scripts/*.sh
+
       - name: Package files for deployment
         run: |
           mkdir -p deploy
