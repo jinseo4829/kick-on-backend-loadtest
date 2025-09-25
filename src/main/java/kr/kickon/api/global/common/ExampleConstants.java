@@ -39,5 +39,7 @@ public class ExampleConstants {
     public static final String fanCount = "100";
     public static final String apiId = "2746";
     public static final String shortsSortType = "CREATED_DESC";
+    public static final String chatMessage = "우리 팀 이겨라";
+    public static final String chatRoomTitle = "FC서울 vs 수원 삼성";
 
 }
