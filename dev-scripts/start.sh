@@ -27,11 +27,9 @@ echo "Pulling image: $IMAGE"
 sudo docker pull $IMAGE
 
 # 5. 새 컨테이너 실행 (컨테이너 안도 8081, EC2도 8081)
-echo "Running container on port 8081"
 sudo docker run -d --name $CONTAINER_NAME -p 8081:8081 \
   --env-file /etc/environment \
   -e SPRING_PROFILES_ACTIVE=$SPRING_PROFILES_ACTIVE \
-  $IMAGE \
-  java -jar -Dmanagement.metrics.enable.processor=false app.jar >> $APP_DIR/app.log 2>&1 &
+  $IMAGE >> $APP_DIR/app.log 2>&1 &
 
 echo "✅ $CONTAINER_NAME started (profile=$SPRING_PROFILES_ACTIVE, port=8081)"
