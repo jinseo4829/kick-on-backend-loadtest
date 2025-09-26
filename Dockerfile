@@ -16,4 +16,5 @@ ARG SPRING_PROFILES_ACTIVE=dev
 COPY src/main/resources/application-${SPRING_PROFILES_ACTIVE}.yml application.yml
 
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Dmanagement.metrics.enable.processor=false", "-jar", "app.jar"]
+
