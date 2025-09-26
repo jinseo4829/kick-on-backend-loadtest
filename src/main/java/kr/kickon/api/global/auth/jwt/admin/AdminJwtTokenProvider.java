@@ -39,7 +39,7 @@ public class AdminJwtTokenProvider {
     private final AdminService adminService;
 
     public AdminJwtTokenProvider(
-            @Value("${jwt.admin_secret_key}") String key,
+            @Value("${ADMIN_JWT_SECRET_KEY}") String key,
             @Value("${jwt.access-token-validity-in-seconds}") long accessTokenValidityMilliSeconds,
             @Value("${jwt.refresh-token-validity-in-seconds}") long refreshTokenValidityMilliSeconds,
             AdminService adminService) {
