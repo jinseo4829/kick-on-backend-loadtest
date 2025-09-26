@@ -30,6 +30,6 @@ sudo docker pull $IMAGE
 sudo docker run -d --name $CONTAINER_NAME -p 8081:8081 \
   --env-file /etc/environment \
   -e SPRING_PROFILES_ACTIVE=$SPRING_PROFILES_ACTIVE \
-  $IMAGE >> $APP_DIR/app.log 2>&1 &
+  $IMAGE
 
 echo "✅ $CONTAINER_NAME started (profile=$SPRING_PROFILES_ACTIVE, port=8081)"
