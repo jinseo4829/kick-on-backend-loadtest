@@ -19,4 +19,4 @@ COPY src/main/resources/application-${SPRING_PROFILES_ACTIVE}.yml application.ym
 EXPOSE 8081
 
 # Micrometer CPU metrics 버그 방지 옵션 추가
-ENTRYPOINT ["java", "-Dmanagement.metrics.enable.processor=false", "-jar", "app.jar"]
+ENTRYPOINT ["/usr/bin/java", "-Dmanagement.metrics.enable.processor=false", "-jar", "app.jar"]
