@@ -32,12 +32,17 @@ sudo docker pull $IMAGE
 sudo mkdir -p $APP_DIR
 sudo touch $APP_DIR/app.log && sudo chmod 777 $APP_DIR/app.log
 
-# 6. 새 컨테이너 실행 (컨테이너 안도 8081, EC2도 8081)
-sudo docker run -d --name $CONTAINER_NAME -p 8081:8081 \
+# 6. 새 컨테이너 실행 (로그 출력 포함)
+echo "Running container..."
+if ! sudo docker run -d --name $CONTAINER_NAME -p 8081:8081 \
   --env-file /etc/environment \
   -e SPRING_PROFILES_ACTIVE=$SPRING_PROFILES_ACTIVE \
   -e JWT_SECRET_KEY=$JWT_SECRET_KEY \
   -e ADMIN_JWT_SECRET_KEY=$ADMIN_JWT_SECRET_KEY \
-  $IMAGE
+  $IMAGE >> $APP_DIR/app.log 2>&1; then
+  echo "❌ Failed to start container $CONTAINER_NAME, check $APP_DIR/app.log"
+  exit 1
+fi
 
 echo "✅ $CONTAINER_NAME started (profile=$SPRING_PROFILES_ACTIVE, port=8081)"
+
