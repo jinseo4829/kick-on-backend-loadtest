@@ -18,15 +18,21 @@ if [ "$(sudo docker ps -q -f name=$CONTAINER_NAME)" ]; then
   sudo docker rm $CONTAINER_NAME
 fi
 
-# 3. 로그 파일 준비
+# 3. 기존 이미지 삭제 (꼬임 방지)
+if [ "$(sudo docker images -q $IMAGE)" ]; then
+  echo "Removing old image: $IMAGE"
+  sudo docker rmi -f $IMAGE
+fi
+
+# 4. 최신 이미지 pull
+echo "Pulling fresh image: $IMAGE"
+sudo docker pull $IMAGE
+
+# 5. 로그 파일 준비
 sudo mkdir -p $APP_DIR
 sudo touch $APP_DIR/app.log && sudo chmod 777 $APP_DIR/app.log
 
-# 4. 최신 이미지 pull
-echo "Pulling image: $IMAGE"
-sudo docker pull $IMAGE
-
-# 5. 새 컨테이너 실행 (컨테이너 안도 8081, EC2도 8081)
+# 6. 새 컨테이너 실행 (컨테이너 안도 8081, EC2도 8081)
 sudo docker run -d --name $CONTAINER_NAME -p 8081:8081 \
   --env-file /etc/environment \
   -e SPRING_PROFILES_ACTIVE=$SPRING_PROFILES_ACTIVE \
