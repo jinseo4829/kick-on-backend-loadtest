@@ -1,9 +1,14 @@
 package kr.kickon.api.domain.chat;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import kr.kickon.api.domain.chat.response.GetChatRoomsResponse;
+import kr.kickon.api.global.common.ResponseDTO;
+import kr.kickon.api.global.common.enums.ResponseCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -22,15 +27,18 @@ import java.util.List;
 public class ChatRoomController {
     private final ChatService chatService;
 
-    @Operation(summary = "채팅방 리스트 조회", description = "사용자가 채팅방 리스트 조회")
+    @Operation(summary = "채팅방 리스트 조회", description = "채팅방 리스트 조회")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "성공")})
+            @ApiResponse(responseCode = "200", description = "성공",
+                    content = @Content(schema = @Schema(implementation = GetChatRoomsResponse.class))),
+    })
     @GetMapping("/open")
-    public List<ChatRoom> getOpenChatRooms() {
-        return chatService.getOpenChatRooms();
+    public ResponseEntity<ResponseDTO<List<ChatRoom>>> getOpenChatRooms() {
+        List<ChatRoom> chatRooms = chatService.getOpenChatRooms();
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, chatRooms));
     }
 
-    @Operation(summary = "채팅방 정보 조회", description = "사용자가 채팅방 정보 조회")
+    @Operation(summary = "채팅방 정보 조회", description = "채팅방 정보 조회")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공")})    @GetMapping("/{roomId}")
     public ResponseEntity<ChatRoom> getChatRoom(@PathVariable String roomId) {

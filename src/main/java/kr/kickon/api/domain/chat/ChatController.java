@@ -1,6 +1,6 @@
 package kr.kickon.api.domain.chat;
 
-import kr.kickon.api.domain.chat.dto.request.ChatMessageDto;
+import kr.kickon.api.domain.chat.dto.ChatMessageDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;

@@ -1,4 +1,4 @@
-package kr.kickon.api.domain.chat.dto.request;
+package kr.kickon.api.domain.chat.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import kr.kickon.api.global.common.ExampleConstants;

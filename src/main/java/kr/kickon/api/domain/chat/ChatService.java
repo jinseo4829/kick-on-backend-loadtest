@@ -1,5 +1,8 @@
 package kr.kickon.api.domain.chat;
 
+import kr.kickon.api.domain.chat.request.CreateChatRoomRequest;
+import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.error.exceptions.NotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -15,15 +18,15 @@ public class ChatService {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(10);
 
     // 채팅방 생성
-    public ChatRoom createChatRoom(Long teamPk, String roomTitle, LocalDateTime openTime, LocalDateTime closeTime) {
+    public ChatRoom createChatRoom(CreateChatRoomRequest request) {
         String roomId = UUID.randomUUID().toString();
 
         ChatRoom chatRoom = ChatRoom.builder()
                 .roomId(roomId)
-                .teamPk(teamPk)
-                .roomTitle(roomTitle)
-                .openTime(openTime)
-                .closeTime(closeTime)
+                .teamPk(request.getTeamPk())
+                .roomTitle(request.getRoomTitle())
+                .openTime(request.getOpenTime())
+                .closeTime(request.getCloseTime())
                 .isOpen(false)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -31,30 +34,32 @@ public class ChatService {
         chatRooms.put(roomId, chatRoom);
 
         // 자동으로 열리고 닫히도록 스케줄링
-        scheduleRoomOpen(roomId, openTime);
-        scheduleRoomClose(roomId, closeTime);
+        scheduleRoomOpen(roomId, request.getOpenTime());
+        scheduleRoomClose(roomId, request.getCloseTime());
 
         return chatRoom;
     }
 
     // 방 즉시 열기
-    public boolean openRoom(String roomId) {
+    public ChatRoom openRoom(String roomId) {
         ChatRoom room = chatRooms.get(roomId);
         if (room != null) {
             room.setOpen(true);
-            return true;
+        }else {
+            throw new NotFoundException(ResponseCode.NOT_FOUND_CHATROOM);
         }
-        return false;
+        return room;
     }
 
     // 방 즉시 닫기
-    public boolean closeRoom(String roomId) {
+    public ChatRoom closeRoom(String roomId) {
         ChatRoom room = chatRooms.get(roomId);
         if (room != null) {
             room.setOpen(false);
-            return true;
+        }else {
+            throw new NotFoundException(ResponseCode.NOT_FOUND_CHATROOM);
         }
-        return false;
+        return room;
     }
 
     // 스케줄된 방 열기

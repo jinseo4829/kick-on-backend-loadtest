@@ -1,4 +1,4 @@
-package kr.kickon.api.domain.chat.dto.request;
+package kr.kickon.api.domain.chat.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
@@ -8,6 +8,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
+@Schema(description = "채팅방 생성을 위한 요청 객체")
 public class CreateChatRoomRequest {
 
     @NotNull(message = "팀은 필수값입니다.")

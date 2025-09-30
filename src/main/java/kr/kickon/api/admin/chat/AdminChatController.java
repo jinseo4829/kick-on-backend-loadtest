@@ -1,9 +1,17 @@
 package kr.kickon.api.admin.chat;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import kr.kickon.api.admin.board.response.AdminGetBoardDetailResponse;
 import kr.kickon.api.domain.chat.ChatService;
 import kr.kickon.api.domain.chat.ChatRoom;
-import kr.kickon.api.domain.chat.dto.request.CreateChatRoomRequest;
+import kr.kickon.api.domain.chat.request.CreateChatRoomRequest;
+import kr.kickon.api.global.common.ResponseDTO;
+import kr.kickon.api.global.common.enums.ResponseCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -19,34 +27,36 @@ import java.util.List;
 public class AdminChatController {
     private final ChatService chatService;
 
-    // 채팅방 생성
+    @Operation(summary = "채팅방 생성", description = "특정 팀 채팅방 생성")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공",
+                    content = @Content(schema = @Schema(implementation = ChatRoom.class))),
+    })
     @PostMapping
-    public ResponseEntity<ChatRoom> createChatRoom(@RequestBody CreateChatRoomRequest request) {
-        ChatRoom chatRoom = chatService.createChatRoom(
-                request.getTeamPk(),
-                request.getRoomTitle(),
-                request.getOpenTime(),
-                request.getCloseTime()
-        );
-        return ResponseEntity.ok(chatRoom);
+    public ResponseEntity<ResponseDTO<ChatRoom>> createChatRoom(@RequestBody CreateChatRoomRequest request) {
+        ChatRoom chatRoom = chatService.createChatRoom(request);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, chatRoom));
     }
 
-    // 방 즉시 열기
+    @Operation(summary = "채팅방 즉시 열기", description = "특정 채팅방 즉시 열기")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공",
+                    content = @Content(schema = @Schema(implementation = ChatRoom.class))),
+    })
     @PostMapping("/{roomId}/open")
-    public ResponseEntity<String> openRoom(@PathVariable String roomId) {
-        if (chatService.openRoom(roomId)) {
-            return ResponseEntity.ok("채팅방이 열렸습니다.");
-        }
-        return ResponseEntity.notFound().build();
+    public ResponseEntity<ResponseDTO<ChatRoom>> openRoom(@PathVariable String roomId) {
+        ChatRoom chatRoom = chatService.openRoom(roomId);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, chatRoom));
     }
 
-    // 방 즉시 닫기
-    @PostMapping("/{roomId}/close")
-    public ResponseEntity<String> closeRoom(@PathVariable String roomId) {
-        if (chatService.closeRoom(roomId)) {
-            return ResponseEntity.ok("채팅방이 닫혔습니다.");
-        }
-        return ResponseEntity.notFound().build();
+    @Operation(summary = "채팅방 즉시 닫기", description = "특정 채팅방 즉시 닫기")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공",
+                    content = @Content(schema = @Schema(implementation = ChatRoom.class))),
+    })      @PostMapping("/{roomId}/close")
+    public ResponseEntity<ResponseDTO<ChatRoom>> closeRoom(@PathVariable String roomId) {
+        ChatRoom chatRoom = chatService.closeRoom(roomId);
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, chatRoom));
     }
 
     // 모든 채팅방 목록
