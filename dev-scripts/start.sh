@@ -35,12 +35,15 @@ sudo chmod 777 $APP_DIR/app.log
 
 # 6. 새 컨테이너 실행
 echo "Running container..."
-if ! sudo docker run -d --name $CONTAINER_NAME -p 8081:8081 \
+sudo docker run -d --name $CONTAINER_NAME -p 8081:8081 \
   --env-file /etc/environment \
   -e SPRING_PROFILES_ACTIVE=$SPRING_PROFILES_ACTIVE \
   -e JWT_SECRET_KEY=$JWT_SECRET_KEY \
   -e ADMIN_JWT_SECRET_KEY=$ADMIN_JWT_SECRET_KEY \
-  $IMAGE; then
+  $IMAGE >> $APP_DIR/app.log 2>&1
+
+# 컨테이너가 실제로 떴는지 확인
+if ! sudo docker ps -q -f name=$CONTAINER_NAME > /dev/null; then
   echo "❌ Failed to start container $CONTAINER_NAME" | tee -a $APP_DIR/app.log
   exit 1
 fi
