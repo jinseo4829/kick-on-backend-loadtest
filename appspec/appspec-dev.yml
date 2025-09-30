@@ -1,8 +1,9 @@
 version: 0.0
 os: linux
+
 files:
   - source: /
-    destination: /home/ubuntu/springboot-dev  # EC2의 애플리케이션 배포 경로
+    destination: /home/ubuntu/springboot-dev  # EC2 배포 경로
 
 hooks:
   ApplicationStop:
@@ -10,11 +11,7 @@ hooks:
       timeout: 30
       runas: ubuntu
 
-  AfterInstall:
-  # 필요하면 DB 마이그레이션, 권한 설정 등
-  # start.sh는 여기서 실행하지 않음
-
   ApplicationStart:
     - location: scripts/start.sh
-      timeout: 120
+      timeout: 180
       runas: ubuntu
