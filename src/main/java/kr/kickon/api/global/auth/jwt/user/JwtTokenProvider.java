@@ -3,6 +3,8 @@ package kr.kickon.api.global.auth.jwt.user;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import kr.kickon.api.domain.user.UserService;
 import kr.kickon.api.global.auth.jwt.dto.TokenDto;
 import kr.kickon.api.global.auth.jwt.dto.PrincipalUserDetail;
@@ -173,5 +175,23 @@ public class  JwtTokenProvider{
         }
 
         return user;
+    }
+
+    public void setTokenCookies(HttpServletResponse response, TokenDto tokenDto) {
+        // Access Token 쿠키 설정
+        Cookie accessTokenCookie = new Cookie("accessToken", tokenDto.getAccessToken());
+        accessTokenCookie.setHttpOnly(true);  // XSS 공격 방지
+        accessTokenCookie.setSecure(true);    // HTTPS에서만 전송
+        accessTokenCookie.setPath("/");
+        accessTokenCookie.setMaxAge((int) (accessTokenValidityMilliSeconds)); // 초 단위
+        response.addCookie(accessTokenCookie);
+
+        // Refresh Token 쿠키 설정
+        Cookie refreshTokenCookie = new Cookie("refreshToken", tokenDto.getRefreshToken());
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(true);
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge((int) (refreshTokenValidityMilliSeconds)); // 초 단위
+        response.addCookie(refreshTokenCookie);
     }
 }

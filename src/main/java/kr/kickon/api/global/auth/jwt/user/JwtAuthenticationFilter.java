@@ -2,6 +2,7 @@ package kr.kickon.api.global.auth.jwt.user;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import kr.kickon.api.domain.user.UserService;
@@ -45,6 +46,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return null;
     }
 
+    // 쿠키에서 토큰을 추출
+    private String resolveTokenFromCookie(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if ("accessToken".equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        return null;
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try {
@@ -58,6 +72,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (!requestUri.startsWith("/api")) {
                 filterChain.doFilter(request, response); // 넘어가
                 return;
+            }
+
+            // 토큰이 헤더에 없으면 쿠키에서 확인
+            if (!StringUtils.hasText(jwt)) {
+                jwt = resolveTokenFromCookie(request);
             }
 
             if (StringUtils.hasText(jwt) && jwtTokenProvider.validateToken(jwt)) {
