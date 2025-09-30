@@ -7,6 +7,10 @@ IMAGE="235494776341.dkr.ecr.ap-northeast-2.amazonaws.com/kickon-backend-dev:late
 
 echo "=== [START] Starting $CONTAINER_NAME (profile=$SPRING_PROFILES_ACTIVE) ==="
 
+# ✅ 환경변수 값 확인용 로그 출력
+echo "JWT_SECRET_KEY=$JWT_SECRET_KEY"
+echo "ADMIN_JWT_SECRET_KEY=$ADMIN_JWT_SECRET_KEY"
+
 # 1. ECR 로그인
 aws ecr get-login-password --region ap-northeast-2 \
   | sudo docker login --username AWS --password-stdin 235494776341.dkr.ecr.ap-northeast-2.amazonaws.com
