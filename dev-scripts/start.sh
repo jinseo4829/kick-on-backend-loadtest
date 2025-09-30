@@ -30,19 +30,22 @@ sudo docker pull $IMAGE
 
 # 5. 로그 파일 준비 (매번 덮어쓰기)
 sudo mkdir -p $APP_DIR
-: > $APP_DIR/app.log   # 내용 초기화
+: > $APP_DIR/app.log
 sudo chmod 777 $APP_DIR/app.log
 
-# 6. 새 컨테이너 실행 (로그 덮어쓰기 모드)
+# 6. 새 컨테이너 실행
 echo "Running container..."
 if ! sudo docker run -d --name $CONTAINER_NAME -p 8081:8081 \
   --env-file /etc/environment \
   -e SPRING_PROFILES_ACTIVE=$SPRING_PROFILES_ACTIVE \
   -e JWT_SECRET_KEY=$JWT_SECRET_KEY \
   -e ADMIN_JWT_SECRET_KEY=$ADMIN_JWT_SECRET_KEY \
-  $IMAGE > $APP_DIR/app.log 2>&1; then
-  echo "❌ Failed to start container $CONTAINER_NAME, check $APP_DIR/app.log"
+  $IMAGE; then
+  echo "❌ Failed to start container $CONTAINER_NAME" | tee -a $APP_DIR/app.log
   exit 1
 fi
+
+# 7. 컨테이너 로그를 app.log에 따라붙도록 백그라운드에서 실행
+sudo docker logs -f $CONTAINER_NAME >> $APP_DIR/app.log 2>&1 &
 
 echo "✅ $CONTAINER_NAME started (profile=$SPRING_PROFILES_ACTIVE, port=8081)"
