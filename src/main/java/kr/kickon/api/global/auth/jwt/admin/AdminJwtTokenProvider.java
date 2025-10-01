@@ -4,11 +4,14 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import kr.kickon.api.admin.root.AdminService;
 import kr.kickon.api.global.auth.jwt.dto.PrincipalAdminDetail;
 import kr.kickon.api.global.auth.jwt.dto.TokenDto;
 import kr.kickon.api.global.common.entities.Admin;
 import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.config.CookieConfig;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.error.exceptions.UnauthorizedException;
 import lombok.extern.slf4j.Slf4j;
@@ -37,16 +40,19 @@ public class AdminJwtTokenProvider {
     private final long accessTokenValidityMilliSeconds;
     private final long refreshTokenValidityMilliSeconds;
     private final AdminService adminService;
+    private final CookieConfig cookieConfig;
 
     public AdminJwtTokenProvider(
             @Value("${jwt.admin_secret_key}") String key,
             @Value("${jwt.access-token-validity-in-seconds}") long accessTokenValidityMilliSeconds,
             @Value("${jwt.refresh-token-validity-in-seconds}") long refreshTokenValidityMilliSeconds,
-            AdminService adminService) {
+            AdminService adminService,
+            CookieConfig cookieConfig) {
         this.key = key;
         this.accessTokenValidityMilliSeconds = accessTokenValidityMilliSeconds;
         this.refreshTokenValidityMilliSeconds = refreshTokenValidityMilliSeconds;
         this.adminService = adminService;
+        this.cookieConfig = cookieConfig;
     }
 
     private SecretKey getSignInKey() {
@@ -92,6 +98,29 @@ public class AdminJwtTokenProvider {
         String accessToken = createAccessToken(claims, admin.getPk(), authorities);
 
         return TokenDto.of(accessToken, refreshToken);
+    }
+
+    // Admin용 쿠키 설정
+    public void setTokenCookies(HttpServletResponse response, TokenDto tokenDto) {
+        boolean isSecure = cookieConfig.isSecure();
+
+        // Admin Access Token 쿠키 설정 (일반 쿠키)
+        Cookie accessTokenCookie = new Cookie("adminAccessToken", tokenDto.getAccessToken());
+        accessTokenCookie.setHttpOnly(false);
+        accessTokenCookie.setSecure(isSecure);
+        accessTokenCookie.setPath("/");
+        accessTokenCookie.setMaxAge((int) accessTokenValidityMilliSeconds); // 초 단위
+        response.addCookie(accessTokenCookie);
+
+        // Admin Refresh Token 쿠키 설정
+        Cookie refreshTokenCookie = new Cookie("adminRefreshToken", tokenDto.getRefreshToken());
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(isSecure); // dev: false, prod: true
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge((int) refreshTokenValidityMilliSeconds); // 초 단위
+        response.addCookie(refreshTokenCookie);
+
+        log.info("✅ Admin 토큰이 쿠키에 설정되었습니다.");
     }
 
     public boolean validateToken(String token) throws AuthenticationException {
