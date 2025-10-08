@@ -148,7 +148,7 @@ public class BoardService{
                 .leftJoin(team).on(board.team.pk.eq(team.pk))
                 .leftJoin(boardKick).on(board.pk.eq(boardKick.board.pk).and(boardKick.status.eq(DataStatus.ACTIVATED)))
                 .leftJoin(boardViewHistory).on(board.pk.eq(boardViewHistory.board.pk).and(boardViewHistory.status.eq(DataStatus.ACTIVATED)))
-                .leftJoin(boardReply).on(board.pk.eq(boardReply.board.pk).and(boardReply.status.eq(DataStatus.ACTIVATED)))
+                .leftJoin(boardReply).on(board.pk.eq(boardReply.board.pk).and(boardReply.status.eq(DataStatus.ACTIVATED)).and(boardReply.user.status.eq(DataStatus.ACTIVATED)))
                 .where(board.status.eq(DataStatus.ACTIVATED)
                         .and(user.status.eq(DataStatus.ACTIVATED)));
     }
