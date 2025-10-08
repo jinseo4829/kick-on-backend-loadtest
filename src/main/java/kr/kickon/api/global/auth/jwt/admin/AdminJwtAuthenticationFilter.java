@@ -2,6 +2,7 @@ package kr.kickon.api.global.auth.jwt.admin;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import kr.kickon.api.global.auth.jwt.CustomAuthenticationEntryPoint;
@@ -39,6 +40,12 @@ public class AdminJwtAuthenticationFilter extends OncePerRequestFilter {
 //        log.info("🔥 AdminJwtAuthenticationFilter activated for URI: {}", request.getRequestURI());
         try {
             String token = resolveToken(request);
+
+            // 헤더에 없으면 쿠키에서 확인
+            if (!StringUtils.hasText(token)) {
+                token = resolveTokenFromCookie(request);
+            }
+
             if (!StringUtils.hasText(token) || !jwtTokenProvider.validateToken(token)) {
                 throw new BadCredentialsException("유효하지 않은 토큰입니다.");
             }
@@ -77,6 +84,19 @@ public class AdminJwtAuthenticationFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(JwtTokenProvider.TOKEN_PREFIX)) {
 
             return bearerToken.substring(JwtTokenProvider.TOKEN_PREFIX.length());
+        }
+        return null;
+    }
+
+    // Admin 쿠키에서 토큰을 추출하는 메서드 추가
+    private String resolveTokenFromCookie(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if ("adminAccessToken".equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
         }
         return null;
     }

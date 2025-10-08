@@ -57,12 +57,25 @@ public class CustomAuthorizationRequestResolver implements OAuth2AuthorizationRe
 
         String state = request.getParameter("state");
 
-        if (!StringUtils.hasText(state)) {
-            throw new kr.kickon.api.global.error.exceptions.BadRequestException(ResponseCode.PARAMETER_NOT_EXIST);
+        // state가 있을 때만 커스터마이징
+        if (StringUtils.hasText(state)) {
+            return OAuth2AuthorizationRequest.from(authorizationRequest)
+                    .state(state)  // 프론트가 보낸 state 사용
+                    .build();
         }
 
+        /*
+        if (!StringUtils.hasText(state)) {
+            throw new kr.kickon.api.global.error.exceptions.BadRequestException(ResponseCode.PARAMETER_NOT_EXIST);
+        }*/
+
+        // state가 없으면 원본 그대로
+        return authorizationRequest;
+
+        /*
         return OAuth2AuthorizationRequest.from(authorizationRequest)
                 .state(state)
                 .build();
+         */
     }
 }

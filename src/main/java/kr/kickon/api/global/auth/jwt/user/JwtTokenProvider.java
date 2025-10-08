@@ -3,11 +3,14 @@ package kr.kickon.api.global.auth.jwt.user;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import kr.kickon.api.domain.user.UserService;
 import kr.kickon.api.global.auth.jwt.dto.TokenDto;
 import kr.kickon.api.global.auth.jwt.dto.PrincipalUserDetail;
 import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.config.CookieConfig;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.error.exceptions.UnauthorizedException;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +39,8 @@ public class  JwtTokenProvider{
     private final long accessTokenValidityMilliSeconds;
     private final long refreshTokenValidityMilliSeconds;
     private final UserService userService;
+    private final CookieConfig cookieConfig;
+
     public JwtTokenProvider(
             @Value("${jwt.secret_key}")
             String key,
@@ -43,11 +48,13 @@ public class  JwtTokenProvider{
             long accessTokenValidityMilliSeconds,
             @Value("${jwt.refresh-token-validity-in-seconds}")
             long refreshTokenValidityMilliSeconds,
-            UserService userService) {
+            UserService userService,
+            CookieConfig cookieConfig) {
         this.key = key;
         this.accessTokenValidityMilliSeconds = accessTokenValidityMilliSeconds;
         this.refreshTokenValidityMilliSeconds = refreshTokenValidityMilliSeconds;
         this.userService = userService;
+        this.cookieConfig = cookieConfig;
     }
 
     private SecretKey getSignInKey() {
@@ -173,5 +180,25 @@ public class  JwtTokenProvider{
         }
 
         return user;
+    }
+
+    public void setTokenCookies(HttpServletResponse response, TokenDto tokenDto) {
+        boolean isSecure = cookieConfig.isSecure();
+
+        // Access Token 쿠키 설정 (일반 쿠키)
+        Cookie accessTokenCookie = new Cookie("accessToken", tokenDto.getAccessToken());
+        accessTokenCookie.setHttpOnly(false);
+        accessTokenCookie.setSecure(isSecure); // dev: false, prod: true
+        accessTokenCookie.setPath("/");
+        accessTokenCookie.setMaxAge((int) (accessTokenValidityMilliSeconds)); // 초 단위
+        response.addCookie(accessTokenCookie);
+
+        // Refresh Token 쿠키 설정
+        Cookie refreshTokenCookie = new Cookie("refreshToken", tokenDto.getRefreshToken());
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(isSecure);
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge((int) (refreshTokenValidityMilliSeconds)); // 초 단위
+        response.addCookie(refreshTokenCookie);
     }
 }
