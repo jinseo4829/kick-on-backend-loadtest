@@ -170,12 +170,12 @@ public class GameController {
                 .games(gameDTOs)
                 .build()));
     }
-    // endregionㅣ
+    // endregion
 
-    // region {getMyCalendarDates} 달력에 내 응원팀 경기 일정 표시 API, 오늘 ~ 해당 달 마지막 날까지 응원팀의 경기 날짜 + 수 반환
+    // region {getMyCalendarDates} 달력에 내 응원팀 경기 일정 표시 API
     @Operation(
             summary = "달력에 내 응원팀 경기 일정 표시",
-            description = "내 응원팀 기준 오늘 ~ 해당 달 마지막 날까지 경기가 있는 날짜와 경기 수 반환"
+            description = "내 응원팀 기준 오늘 ~ 해당 달 마지막 날까지 경기가 있는 날짜와 경기 수 반환 (비회원은 프리미어리그 기준)"
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공",
@@ -186,10 +186,16 @@ public class GameController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate month
     ) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        List<CalendarDateCountDTO> dates = gameService.getCalendarDateListByMyTeams(user.getPk(), month);
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, new CalendarDateCountResponse(dates)));
+
+        Long userPk = (user != null) ? user.getPk() : null;
+        List<CalendarDateCountDTO> dates = gameService.getCalendarDateListByMyTeams(userPk, month);
+
+        return ResponseEntity.ok(
+                ResponseDTO.success(ResponseCode.SUCCESS, new CalendarDateCountResponse(dates))
+        );
     }
     // endregion
+
 
     // region {getNextAvailableGameDate} 가장 가까운 예정 경기 날짜 조회 API
     @Operation(
@@ -205,8 +211,13 @@ public class GameController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate after
     ) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
-        LocalDate nextDate = gameService.getNextAvailableGameDateDetail(user.getPk(), after);
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, new NextGameDateResponse(nextDate)));
+
+        Long userPk = (user != null) ? user.getPk() : null;
+        LocalDate nextDate = gameService.getNextAvailableGameDateDetail(userPk, after);
+
+        return ResponseEntity.ok(
+                ResponseDTO.success(ResponseCode.SUCCESS, new NextGameDateResponse(nextDate))
+        );
     }
     // endregion
 

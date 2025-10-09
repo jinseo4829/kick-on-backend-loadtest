@@ -374,30 +374,37 @@ public class GameService{
     // region {getCalendarDateListByMyTeams} 사용자의 응원 팀 기준으로 해당 월 경기 날짜별 개수 조회
     /**
      * 사용자의 즐겨찾기 팀 기준으로, 특정 월(monthStart)에 진행 예정 또는 진행된 경기를 조회합니다.
-     * - 게임 시작일을 기준으로 날짜별 개수를 카운트하여 반환
      * - today 이후 날짜만 포함되도록 조정
+     * - 비회원은 프리미어리그 기준으로 조회
      */
     public List<CalendarDateCountDTO> getCalendarDateListByMyTeams(Long userPk, LocalDate monthStart) {
         LocalDate today = LocalDate.now();
         LocalDate monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth());
         LocalDate fromDate = monthStart.isBefore(today) && monthStart.getMonth() == today.getMonth() ? today : monthStart;
 
-        List<UserFavoriteTeam> favoriteTeams = userFavoriteTeamService.findAllByUserPk(userPk);
+        List<UserFavoriteTeam> favoriteTeams = new ArrayList<>();
 
-        if (favoriteTeams == null || favoriteTeams.isEmpty()) {
-            return List.of();
+        if (userPk != null) {
+            favoriteTeams = userFavoriteTeamService.findAllByUserPk(userPk);
         }
 
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(QGame.game.status.eq(DataStatus.ACTIVATED));
         builder.and(QGame.game.startedAt.between(fromDate.atStartOfDay(), monthEnd.atTime(23,59,59)));
 
-        BooleanBuilder teamCondition = new BooleanBuilder();
-        for (UserFavoriteTeam fav : favoriteTeams) {
-            teamCondition.or(QGame.game.homeTeam.pk.eq(fav.getTeam().getPk()));
-            teamCondition.or(QGame.game.awayTeam.pk.eq(fav.getTeam().getPk()));
+        if (favoriteTeams != null && !favoriteTeams.isEmpty()) {
+            // 로그인 사용자: 응원팀 기준
+            BooleanBuilder teamCondition = new BooleanBuilder();
+            for (UserFavoriteTeam fav : favoriteTeams) {
+                teamCondition.or(QGame.game.homeTeam.pk.eq(fav.getTeam().getPk()));
+                teamCondition.or(QGame.game.awayTeam.pk.eq(fav.getTeam().getPk()));
+            }
+            builder.and(teamCondition);
+        } else {
+            // 비회원 또는 응원팀 없는 사용자: 프리미어리그 기준
+            Long premierLeaguePk = 1L;
+            builder.and(QGame.game.actualSeason.league.pk.eq(premierLeaguePk));
         }
-        builder.and(teamCondition);
 
         List<Game> games = queryFactory.selectFrom(QGame.game)
                 .where(builder)
@@ -424,27 +431,29 @@ public class GameService{
      * - 홈팀 또는 어웨이팀으로 포함된 경기만 대상
      */
     public LocalDate getNextAvailableGameDateDetail(Long userPk, LocalDate today) {
-
         QGame game = QGame.game;
-
-        // 사용자의 응원팀 PK 리스트 조회
-        List<Long> favoriteTeamPks = userFavoriteTeamService.findAllByUserPk(userPk).stream()
-                .map(userFavoriteTeam -> userFavoriteTeam.getTeam().getPk())
-                .toList();
 
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(game.status.eq(DataStatus.ACTIVATED));
         builder.and(game.gameStatus.in(GameStatus.PENDING, GameStatus.POSTPONED, GameStatus.PROCEEDING));
         builder.and(game.startedAt.goe(today.atStartOfDay()));
 
+        List<Long> favoriteTeamPks = new ArrayList<>();
+
+        if (userPk != null) {
+            favoriteTeamPks = userFavoriteTeamService.findAllByUserPk(userPk).stream()
+                    .map(userFavoriteTeam -> userFavoriteTeam.getTeam().getPk())
+                    .toList();
+        }
+
         if (!favoriteTeamPks.isEmpty()) {
-            // 응원팀이 있는 경우: 홈 또는 어웨이 팀으로 조건 추가
+            // 응원팀 있는 사용자
             builder.and(
                     game.homeTeam.pk.in(favoriteTeamPks)
                             .or(game.awayTeam.pk.in(favoriteTeamPks))
             );
         } else {
-            // 응원팀이 없는 경우: 프리미어리그 기준 가장 가까운 예정 경기 날짜 반환
+            // 비회원 또는 응원팀 없는 사용자 → 프리미어리그 기준
             Long premierLeaguePk = 1L;
             builder.and(game.actualSeason.league.pk.eq(premierLeaguePk));
         }
