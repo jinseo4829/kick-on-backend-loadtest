@@ -84,6 +84,7 @@ public class SecurityConfig {
     @Bean
     @Order(2)
     public SecurityFilterChain securityFilterChainOAuth(HttpSecurity http) throws Exception {
+        log.info("🔐 OAuth SecurityFilterChain 설정 시작");
         configureCommonSecuritySettings(http);
         http
                 .securityMatchers(matchers -> matchers
@@ -95,16 +96,19 @@ public class SecurityConfig {
                         ))
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
                 .oauth2Login(oAuth2Login -> {
+                    log.info("📋 OAuth2Login 설정 중...");
                     oAuth2Login.userInfoEndpoint(
                             userInfoEndpointConfig -> userInfoEndpointConfig.userService(principalOauth2UserService)
                         )
                         .successHandler(oAuth2SuccessHandler)
-                        .authorizationEndpoint(endpoint -> endpoint
-                            .authorizationRequestResolver(customAuthorizationRequestResolver)
-                        )
+                        .authorizationEndpoint(endpoint -> {
+                            log.info("🔗 CustomAuthorizationRequestResolver 등록 중...");
+                            endpoint.authorizationRequestResolver(customAuthorizationRequestResolver);
+                        })
                         .failureHandler(customOAuth2FailureHandler);
                     }
                 );
+        log.info("✅ OAuth SecurityFilterChain 설정 완료");
         return http.build();
     }
 
