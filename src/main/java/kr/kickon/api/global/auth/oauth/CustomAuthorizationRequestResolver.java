@@ -2,8 +2,8 @@ package kr.kickon.api.global.auth.oauth;
 
 import jakarta.servlet.http.HttpServletRequest;
 import kr.kickon.api.global.common.enums.ResponseCode;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.coyote.BadRequestException;
-import org.apache.coyote.Response;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 @Component
+@Slf4j
 public class CustomAuthorizationRequestResolver implements OAuth2AuthorizationRequestResolver {
 
     private final OAuth2AuthorizationRequestResolver defaultAuthorizationRequestResolver;
@@ -19,6 +20,22 @@ public class CustomAuthorizationRequestResolver implements OAuth2AuthorizationRe
     public CustomAuthorizationRequestResolver(ClientRegistrationRepository clientRegistrationRepository) {
         this.defaultAuthorizationRequestResolver = new DefaultOAuth2AuthorizationRequestResolver(
                 clientRegistrationRepository, "/oauth2/authorization");
+        
+        // OAuth 설정 디버깅 로그
+        log.info("🔍 OAuth2 설정 디버깅 시작");
+        try {
+            var registration = clientRegistrationRepository.findByRegistrationId("kakao");
+            if (registration != null) {
+                log.info("📋 Kakao OAuth 설정:");
+                log.info("   - Client ID: {}", registration.getClientId());
+                log.info("   - Redirect URI: {}", registration.getRedirectUri());
+                log.info("   - Authorization URI: {}", registration.getProviderDetails().getAuthorizationUri());
+            } else {
+                log.warn("⚠️ Kakao OAuth 등록을 찾을 수 없습니다!");
+            }
+        } catch (Exception e) {
+            log.error("❌ OAuth 설정 확인 중 오류 발생: {}", e.getMessage());
+        }
     }
 
     /**
