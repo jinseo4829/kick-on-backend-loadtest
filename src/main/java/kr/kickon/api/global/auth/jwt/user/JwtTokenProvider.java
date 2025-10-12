@@ -188,8 +188,6 @@ public class  JwtTokenProvider{
         String domain = cookieConfig.getDomain();
         String sameSite = cookieConfig.getSameSite();
 
-        log.info("🍪 쿠키 설정 - domain: {}, secure: {}", domain, isSecure); // ⭐ 로그 추가
-
         ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", tokenDto.getAccessToken())
                 .httpOnly(false)
                 .secure(isSecure)
