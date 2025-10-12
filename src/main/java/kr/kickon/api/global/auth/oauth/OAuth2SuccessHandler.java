@@ -32,8 +32,9 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         TokenDto tokenDto = jwtTokenProvider.createToken(authentication);
         log.info("✅ 토큰 생성 완료");
 
-        // 쿠키에 토큰 설정
-        jwtTokenProvider.setTokenCookies(response, tokenDto);
+        // 쿠키에 토큰 설정 (요청 도메인 정보 전달)
+        String requestDomain = request.getServerName();
+        jwtTokenProvider.setTokenCookies(response, tokenDto, requestDomain);
 
         // 클라이언트에서 전달한 redirect_uri 파라미터를 얻기
         String redirectUri = request.getParameter("state");

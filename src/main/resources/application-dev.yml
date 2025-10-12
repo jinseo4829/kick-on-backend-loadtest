@@ -114,6 +114,6 @@ management:
     enable:
       processor: false   # ✅ CPU 메트릭 비활성화 (Micrometer bug 회피)
 cookie:
-  domain: .kick-on.kr
+  domain: .kick-on.kr  # dev 환경 기본 도메인 (동적으로 조정됨)
   secure: false
   same-site: Lax
