@@ -68,8 +68,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             }
             
             if (host.contains("localhost")) {
-                // localhost 환경에서는 도메인을 null로 설정 (브라우저가 자동으로 현재 도메인 사용)
-                return null;
+                // localhost 환경에서는 localhost 도메인으로 설정
+                return "localhost";
             } else if (host.contains("dev.kick-on.kr")) {
                 // dev.kick-on.kr 도메인이면 .kick-on.kr 사용 (하위 도메인 공유)
                 return ".kick-on.kr";
