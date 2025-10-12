@@ -43,6 +43,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -382,15 +384,27 @@ public class GameService{
         LocalDate monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth());
         LocalDate fromDate = monthStart.isBefore(today) && monthStart.getMonth() == today.getMonth() ? today : monthStart;
 
-        List<UserFavoriteTeam> favoriteTeams = new ArrayList<>();
+        ZoneId KST = ZoneId.of("Asia/Seoul");
 
+        // ✅ KST → UTC 변환
+        LocalDateTime utcStart = fromDate.atStartOfDay(KST)
+                .withZoneSameInstant(ZoneOffset.UTC)
+                .toLocalDateTime();
+
+        LocalDateTime utcEnd = monthEnd.atTime(23, 59, 59)
+                .atZone(KST)
+                .withZoneSameInstant(ZoneOffset.UTC)
+                .toLocalDateTime();
+
+        List<UserFavoriteTeam> favoriteTeams = new ArrayList<>();
         if (userPk != null) {
             favoriteTeams = userFavoriteTeamService.findAllByUserPk(userPk);
         }
 
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(QGame.game.status.eq(DataStatus.ACTIVATED));
-        builder.and(QGame.game.startedAt.between(fromDate.atStartOfDay(), monthEnd.atTime(23,59,59)));
+        // ✅ UTC 기준 비교
+        builder.and(QGame.game.startedAt.between(utcStart, utcEnd));
 
         if (favoriteTeams != null && !favoriteTeams.isEmpty()) {
             // 로그인 사용자: 응원팀 기준
@@ -410,10 +424,13 @@ public class GameService{
                 .where(builder)
                 .fetch();
 
-        // 날짜별 count 집계
+        // ✅ 반환 시 한국 시간으로 변환 후 날짜 추출
         Map<LocalDate, Long> dateCountMap = games.stream()
                 .collect(Collectors.groupingBy(
-                        g -> g.getStartedAt().toLocalDate(),
+                        g -> g.getStartedAt()
+                                .atZone(ZoneOffset.UTC)
+                                .withZoneSameInstant(KST)
+                                .toLocalDate(),
                         Collectors.counting()
                 ));
 
@@ -436,7 +453,11 @@ public class GameService{
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(game.status.eq(DataStatus.ACTIVATED));
         builder.and(game.gameStatus.in(GameStatus.PENDING, GameStatus.POSTPONED, GameStatus.PROCEEDING));
-        builder.and(game.startedAt.goe(today.atStartOfDay()));
+        ZoneId KST = ZoneId.of("Asia/Seoul");
+        builder.and(game.startedAt.goe(today.atStartOfDay(KST)
+                .withZoneSameInstant(ZoneOffset.UTC)
+                .toLocalDateTime()));
+
 
         List<Long> favoriteTeamPks = new ArrayList<>();
 
@@ -515,9 +536,10 @@ public class GameService{
         QUserGameGamble ugg = QUserGameGamble.userGameGamble;
         QGame game = QGame.game;
 
-        // DATE(game.started_at) → LocalDate로 그룹핑
+        // ✅ 한국 시간 기준으로 변환 후 DATE() 처리
         Expression<LocalDate> startDate =
-                Expressions.dateTemplate(LocalDate.class, "DATE({0})", game.startedAt);
+                Expressions.dateTemplate(LocalDate.class,
+                        "DATE(CONVERT_TZ({0}, '+00:00', '+09:00'))", game.startedAt);
 
         BooleanExpression finished =
                 game.gameStatus.in(GameStatus.HOME, GameStatus.AWAY, GameStatus.DRAW);
@@ -526,7 +548,6 @@ public class GameService{
                 .select(Projections.constructor(
                         CalendarDateCountDTO.class,
                         startDate,
-                        // 중복 예측 가능성 있으면 아래 줄을 game.pk.countDistinct().intValue() 로 교체
                         ugg.count().intValue()
                 ))
                 .from(ugg)
@@ -534,10 +555,10 @@ public class GameService{
                 .where(
                         ugg.user.pk.eq(userPk),
                         finished,
-                        game.startedAt.isNotNull() // 널가드 권장
+                        game.startedAt.isNotNull()
                 )
                 .groupBy(startDate)
-                .orderBy(new OrderSpecifier<>(Order.ASC, startDate)) // asc() 오류 회피 OK
+                .orderBy(new OrderSpecifier<>(Order.ASC, startDate))
                 .fetch();
     }
     // endregion
@@ -553,19 +574,31 @@ public class GameService{
      * - 소속 리그 정보(LeagueDTO)
      */
     public List<GameDTO> getMyPredictionList(Long userPk, LocalDate from, LocalDate to) {
-        LocalDateTime start = from.atStartOfDay();
-        LocalDateTime end = to.atTime(23, 59, 59);
+        ZoneId KST = ZoneId.of("Asia/Seoul");
+
+        // ✅ 한국 시간 기준 from~to 범위를 UTC로 변환
+        LocalDateTime start = from.atStartOfDay(KST)
+                .withZoneSameInstant(ZoneOffset.UTC)
+                .toLocalDateTime();
+        LocalDateTime end = to.atTime(23, 59, 59)
+                .atZone(KST)
+                .withZoneSameInstant(ZoneOffset.UTC)
+                .toLocalDateTime();
 
         return userGameGambleService.findByUserPk(userPk).stream()
-                .filter(gamble -> !gamble.getGame().getStartedAt().isBefore(start)
-                        && !gamble.getGame().getStartedAt().isAfter(end))
+                .filter(gamble -> {
+                    LocalDateTime startedAt = gamble.getGame().getStartedAt();
+                    return !startedAt.isBefore(start) && !startedAt.isAfter(end);
+                })
                 .map(gamble -> {
                     Game gameEntity = gamble.getGame();
 
                     TeamDTO homeTeamDTO = new TeamDTO(gameEntity.getHomeTeam());
                     TeamDTO awayTeamDTO = new TeamDTO(gameEntity.getAwayTeam());
 
-                    Map<PredictedResult, Long> userGamblePredictedResult = userGameGambleService.findGambleCountByGamePk(gameEntity.getPk());
+                    Map<PredictedResult, Long> userGamblePredictedResult =
+                            userGameGambleService.findGambleCountByGamePk(gameEntity.getPk());
+
                     long homeCount = userGamblePredictedResult.getOrDefault(PredictedResult.HOME, 0L);
                     long awayCount = userGamblePredictedResult.getOrDefault(PredictedResult.AWAY, 0L);
                     long drawCount = userGamblePredictedResult.getOrDefault(PredictedResult.DRAW, 0L);
@@ -574,9 +607,9 @@ public class GameService{
                     int homeRatio = (totalParticipation > 0) ? (int) ((homeCount * 100) / totalParticipation) : 0;
                     int awayRatio = (totalParticipation > 0) ? (int) ((awayCount * 100) / totalParticipation) : 0;
                     int drawRatio = (totalParticipation > 0) ? (int) ((drawCount * 100) / totalParticipation) : 0;
-                    GambleResultDTO gambleResultDTO = new GambleResultDTO(homeRatio, awayRatio, drawRatio, totalParticipation);
 
-                    UserGameGambleDTO myGambleResultDTO = new kr.kickon.api.domain.userGameGamble.dto.UserGameGambleDTO(gamble);
+                    GambleResultDTO gambleResultDTO = new GambleResultDTO(homeRatio, awayRatio, drawRatio, totalParticipation);
+                    UserGameGambleDTO myGambleResultDTO = new UserGameGambleDTO(gamble);
 
                     GameDTO gameDTO = new GameDTO(homeTeamDTO, awayTeamDTO, gameEntity, gambleResultDTO);
                     gameDTO.setMyGambleResult(myGambleResultDTO);
