@@ -44,7 +44,7 @@ public class BoardReplyController {
 
     @Operation(summary = "게시글 댓글 생성", description = "회원가입한 유저만 게시글 댓글 생성 가능")
     @PostMapping()
-    public ResponseEntity<ResponseDTO<Void>> createBoardReply(@Valid @RequestBody CreateBoardReplyRequest request){
+    public ResponseEntity<ResponseDTO<ReplyDTO>> createBoardReply(@Valid @RequestBody CreateBoardReplyRequest request){
         User user = jwtTokenProvider.getUserFromSecurityContext();
         user = userService.findByPk(user.getPk());
         Board board = boardService.findByPk(request.getBoard());
@@ -75,7 +75,10 @@ public class BoardReplyController {
         BoardReply boardReply = boardReplyBuilder.build();
         boardReply = boardReplyService.createBoardReplyWithImages(boardReply,request.getUsedImageKeys());
         boardReplyService.sendReplyNotification(board, parentBoardReply,user);
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
+        
+        // 생성된 댓글을 ReplyDTO로 변환하여 반환
+        ReplyDTO replyDTO = boardReplyService.convertToReplyDTO(boardReply, user.getPk());
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, replyDTO));
     }
 
     @Operation(summary = "게시글 댓글 리스트 조회", description = "게시글 댓글 페이징 처리해서 전달")
@@ -115,7 +118,7 @@ public class BoardReplyController {
 
     @Operation(summary = "게시글 댓글 수정", description = "게시글 댓글 PK값으로 댓글 수정")
     @PatchMapping("/{boardReplyPk}")
-    public ResponseEntity<ResponseDTO<Void>> patchBoardReply(@PathVariable Long boardReplyPk,
+    public ResponseEntity<ResponseDTO<ReplyDTO>> patchBoardReply(@PathVariable Long boardReplyPk,
         @Valid @RequestBody PatchBoardReplyRequest request){
         User user = jwtTokenProvider.getUserFromSecurityContext();
         BoardReply boardReplyData = boardReplyService.findByPk(boardReplyPk);
@@ -126,6 +129,9 @@ public class BoardReplyController {
         boardReplyData.setContents(request.getContents());
 
         boardReplyService.updateBoardReply(boardReplyData);
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
+        
+        // 수정된 댓글을 ReplyDTO로 변환하여 반환
+        ReplyDTO replyDTO = boardReplyService.convertToReplyDTO(boardReplyData, user.getPk());
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, replyDTO));
     }
 }

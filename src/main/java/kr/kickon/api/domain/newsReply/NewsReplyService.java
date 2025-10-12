@@ -189,6 +189,33 @@ public class NewsReplyService{
                 .kickCount(kickCount)
                 .build();
     }
+
+    /**
+     * NewsReply 엔티티를 ReplyDTO로 변환
+     */
+    public ReplyDTO convertToReplyDTO(NewsReply newsReply, Long userPk) {
+        NewsReplyKick myNewsReplyKick = null;
+        if(userPk != null) {
+            myNewsReplyKick = newsReplyKickService.findByNewsReplyAndUser(newsReply.getPk(), userPk);
+        }
+        Long kickCount = newsReplyKickService.getNewsReplyKickCount(newsReply.getPk());
+        TeamReporter teamReporter = teamReporterService.findByUserId(newsReply.getUser().getId());
+        
+        return ReplyDTO.builder()
+                .pk(newsReply.getPk())
+                .contents(newsReply.getContents())
+                .createdAt(newsReply.getCreatedAt())
+                .user(BaseUserDTO.builder()
+                        .id(newsReply.getUser().getId())
+                        .nickname(newsReply.getUser().getNickname())
+                        .profileImageUrl(newsReply.getUser().getProfileImageUrl())
+                        .isReporter(teamReporter != null)
+                        .build())
+                .isKicked(myNewsReplyKick != null)
+                .kickCount(kickCount)
+                .replies(newsReply.getParentNewsReply() != null ? null : getChildReplyList(newsReply.getPk(), userPk))
+                .build();
+    }
     // endregion
 
     // region {getChildReplyList} 부모 댓글에 대한 자식 댓글 목록 조회

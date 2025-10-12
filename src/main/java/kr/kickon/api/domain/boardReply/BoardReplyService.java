@@ -156,6 +156,33 @@ public class BoardReplyService{
                 .kickCount(kickCount)
                 .build();
     }
+
+    /**
+     * BoardReply 엔티티를 ReplyDTO로 변환
+     */
+    public ReplyDTO convertToReplyDTO(BoardReply boardReply, Long userPk) {
+        BoardReplyKick myBoardReplyKick = null;
+        if(userPk != null) {
+            myBoardReplyKick = boardReplyKickService.findByBoardReplyAndUser(boardReply.getPk(), userPk);
+        }
+        Long kickCount = boardReplyKickService.getBoardReplyKickCount(boardReply.getPk());
+        TeamReporter teamReporter = teamReporterService.findByUserId(boardReply.getUser().getId());
+        
+        return ReplyDTO.builder()
+                .pk(boardReply.getPk())
+                .contents(boardReply.getContents())
+                .createdAt(boardReply.getCreatedAt())
+                .user(BaseUserDTO.builder()
+                        .id(boardReply.getUser().getId())
+                        .nickname(boardReply.getUser().getNickname())
+                        .profileImageUrl(boardReply.getUser().getProfileImageUrl())
+                        .isReporter(teamReporter!=null)
+                        .build())
+                .isKicked(myBoardReplyKick != null)
+                .kickCount(kickCount)
+                .replies(boardReply.getParentBoardReply() != null ? null : getChildReplyList(boardReply.getPk(), userPk))
+                .build();
+    }
     // endregion
 
     // region {getChildReplyList} 대댓글 목록 조회

@@ -44,7 +44,7 @@ public class NewsReplyController {
 
     @Operation(summary = "뉴스 댓글 생성", description = "회원가입한 유저만 뉴스 댓글 생성 가능")
     @PostMapping()
-    public ResponseEntity<ResponseDTO<Void>> createNewsReply(@Valid @RequestBody CreateNewsReplyRequest request){
+    public ResponseEntity<ResponseDTO<ReplyDTO>> createNewsReply(@Valid @RequestBody CreateNewsReplyRequest request){
         User user = jwtTokenProvider.getUserFromSecurityContext();
         user = userService.findByPk(user.getPk());
         News news = newsService.findByPk(request.getNews());
@@ -77,7 +77,9 @@ public class NewsReplyController {
 
         newsReplyService.sendReplyNotification(news, parentNewsReply, user);
 
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
+        // 생성된 댓글을 ReplyDTO로 변환하여 반환
+        ReplyDTO replyDTO = newsReplyService.convertToReplyDTO(newsReply, user.getPk());
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, replyDTO));
     }
 
 
@@ -118,7 +120,7 @@ public class NewsReplyController {
 
     @Operation(summary = "뉴스 댓글 수정", description = "뉴스 댓글 PK값으로 댓글 수정")
     @PatchMapping("/{newsReplyPk}")
-    public ResponseEntity<ResponseDTO<Void>> patchNewsReply(@PathVariable Long newsReplyPk,
+    public ResponseEntity<ResponseDTO<ReplyDTO>> patchNewsReply(@PathVariable Long newsReplyPk,
         @Valid @RequestBody PatchNewsReplyRequest request){
         User user = jwtTokenProvider.getUserFromSecurityContext();
         NewsReply newsReplyData = newsReplyService.findByPk(newsReplyPk);
@@ -129,6 +131,9 @@ public class NewsReplyController {
         newsReplyData.setContents(request.getContents());
 
         newsReplyService.updateNewsReply(newsReplyData);
-        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS));
+        
+        // 수정된 댓글을 ReplyDTO로 변환하여 반환
+        ReplyDTO replyDTO = newsReplyService.convertToReplyDTO(newsReplyData, user.getPk());
+        return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, replyDTO));
     }
 }
