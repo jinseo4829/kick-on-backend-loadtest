@@ -15,6 +15,7 @@ import kr.kickon.api.global.error.exceptions.NotFoundException;
 import kr.kickon.api.global.error.exceptions.UnauthorizedException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -184,21 +185,29 @@ public class  JwtTokenProvider{
 
     public void setTokenCookies(HttpServletResponse response, TokenDto tokenDto) {
         boolean isSecure = cookieConfig.isSecure();
+        String domain = cookieConfig.getDomain();
+        String sameSite = cookieConfig.getSameSite();
 
-        // Access Token 쿠키 설정 (일반 쿠키)
-        Cookie accessTokenCookie = new Cookie("accessToken", tokenDto.getAccessToken());
-        accessTokenCookie.setHttpOnly(false);
-        accessTokenCookie.setSecure(isSecure); // dev: false, prod: true
-        accessTokenCookie.setPath("/");
-        accessTokenCookie.setMaxAge((int) (accessTokenValidityMilliSeconds)); // 초 단위
-        response.addCookie(accessTokenCookie);
+        log.info("🍪 쿠키 설정 - domain: {}, secure: {}", domain, isSecure); // ⭐ 로그 추가
 
-        // Refresh Token 쿠키 설정
-        Cookie refreshTokenCookie = new Cookie("refreshToken", tokenDto.getRefreshToken());
-        refreshTokenCookie.setHttpOnly(true);
-        refreshTokenCookie.setSecure(isSecure);
-        refreshTokenCookie.setPath("/");
-        refreshTokenCookie.setMaxAge((int) (refreshTokenValidityMilliSeconds)); // 초 단위
-        response.addCookie(refreshTokenCookie);
+        ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", tokenDto.getAccessToken())
+                .httpOnly(false)
+                .secure(isSecure)
+                .path("/")
+                .domain(domain)
+                .maxAge(accessTokenValidityMilliSeconds)
+                .sameSite(sameSite)
+                .build();
+        response.addHeader("Set-Cookie", accessTokenCookie.toString());
+
+        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", tokenDto.getRefreshToken())
+                .httpOnly(true)
+                .secure(isSecure)
+                .path("/")
+                .domain(domain)
+                .maxAge(refreshTokenValidityMilliSeconds)
+                .sameSite(sameSite)
+                .build();
+        response.addHeader("Set-Cookie", refreshTokenCookie.toString());
     }
 }

@@ -1,14 +1,17 @@
 package kr.kickon.api.global.config;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Component
+@Setter
+@Getter
+@ConfigurationProperties(prefix = "cookie")
 public class CookieConfig {
-    @Value("${spring.profiles.active:dev}")
-    private String activeProfile;
-
-    public boolean isSecure() {
-        return "prod".equals(activeProfile);
-    }
+    private boolean secure;
+    private String domain;
+    private String sameSite;
 }
