@@ -188,6 +188,13 @@ public class  JwtTokenProvider{
         String domain = cookieConfig.getDomain();
         String sameSite = cookieConfig.getSameSite();
 
+        log.info("🍪 쿠키 설정 정보:");
+        log.info("   - Secure: {}", isSecure);
+        log.info("   - Domain: {}", domain);
+        log.info("   - SameSite: {}", sameSite);
+        log.info("   - AccessToken 길이: {}", tokenDto.getAccessToken().length());
+        log.info("   - RefreshToken 길이: {}", tokenDto.getRefreshToken().length());
+
         ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", tokenDto.getAccessToken())
                 .httpOnly(false)
                 .secure(isSecure)
@@ -207,5 +214,9 @@ public class  JwtTokenProvider{
                 .sameSite(sameSite)
                 .build();
         response.addHeader("Set-Cookie", refreshTokenCookie.toString());
+
+        log.info("✅ 쿠키가 응답 헤더에 추가되었습니다.");
+        log.info("   - AccessToken Cookie: {}", accessTokenCookie.toString());
+        log.info("   - RefreshToken Cookie: {}", refreshTokenCookie.toString());
     }
 }

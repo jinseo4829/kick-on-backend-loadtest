@@ -24,22 +24,28 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException {
+        log.info("🎉 OAuth2 로그인 성공!");
+        log.info("   - 요청 URI: {}", request.getRequestURI());
+        log.info("   - 요청 URL: {}", request.getRequestURL());
+        log.info("   - 요청 도메인: {}", request.getServerName());
+        
         TokenDto tokenDto = jwtTokenProvider.createToken(authentication);
+        log.info("✅ 토큰 생성 완료");
 
         // 쿠키에 토큰 설정
         jwtTokenProvider.setTokenCookies(response, tokenDto);
 
         // 클라이언트에서 전달한 redirect_uri 파라미터를 얻기
         String redirectUri = request.getParameter("state");
-//        log.info("OAuth2 Success - Redirect URI: {}", redirectUri);
+        log.info("🔗 리다이렉트 URI: {}", redirectUri);
+        
         // redirect_uri가 없으면 기본값을 설정하거나 예외 처리
         if (redirectUri == null || redirectUri.isEmpty()) {
             redirectUri = "http://localhost:3000";  // 예시로 기본 프론트엔드 URL 설정
+            log.info("⚠️ state 파라미터가 없어서 기본값 사용: {}", redirectUri);
         }
-        // 리디렉션할 URL에 accessToken과 refreshToken 추가
-        // 토큰 없이 리디렉션 (쿠키에 이미 설정됨)
-        //String finalRedirectUri = String.format("%s?accessToken=%s&refreshToken=%s",
-        //        redirectUri, tokenDto.getAccessToken(), tokenDto.getRefreshToken());
+        
+        log.info("🚀 최종 리다이렉트: {}", redirectUri);
         getRedirectStrategy().sendRedirect(request, response, redirectUri);
     }
 
