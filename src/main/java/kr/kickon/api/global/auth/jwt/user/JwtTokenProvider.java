@@ -187,21 +187,12 @@ public class  JwtTokenProvider{
         setTokenCookies(response, tokenDto, null);
     }
     
-    public void setTokenCookies(HttpServletResponse response, TokenDto tokenDto, String requestDomain) {
+    public void setTokenCookies(HttpServletResponse response, TokenDto tokenDto, String cookieDomain) {
         boolean isSecure = cookieConfig.isSecure();
-        String domain = cookieConfig.getDomain();
         String sameSite = cookieConfig.getSameSite();
 
-        // 요청 도메인에 따라 쿠키 도메인 동적 설정
-        if (requestDomain != null) {
-            if (requestDomain.contains("localhost")) {
-                // localhost 요청이면 도메인을 null로 설정
-                domain = null;
-            } else if (requestDomain.contains("dev.kick-on.kr") || requestDomain.contains("api-dev.kick-on.kr")) {
-                // dev 서버 요청이면 .kick-on.kr 도메인 사용
-                domain = ".kick-on.kr";
-            }
-        }
+        // 전달받은 쿠키 도메인 사용 (null이면 기본 설정 사용)
+        String domain = cookieDomain != null ? cookieDomain : cookieConfig.getDomain();
 
         log.info("🍪 쿠키 설정 정보:");
         log.info("   - Secure: {}", isSecure);

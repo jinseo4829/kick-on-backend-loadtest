@@ -32,10 +32,6 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         TokenDto tokenDto = jwtTokenProvider.createToken(authentication);
         log.info("✅ 토큰 생성 완료");
 
-        // 쿠키에 토큰 설정 (요청 도메인 정보 전달)
-        String requestDomain = request.getServerName();
-        jwtTokenProvider.setTokenCookies(response, tokenDto, requestDomain);
-
         // 클라이언트에서 전달한 redirect_uri 파라미터를 얻기
         String redirectUri = request.getParameter("state");
         log.info("🔗 리다이렉트 URI: {}", redirectUri);
@@ -46,8 +42,48 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             log.info("⚠️ state 파라미터가 없어서 기본값 사용: {}", redirectUri);
         }
         
+        // 리다이렉트 URI에서 도메인 추출하여 쿠키 도메인 결정
+        String cookieDomain = determineCookieDomain(redirectUri);
+        log.info("🍪 결정된 쿠키 도메인: {}", cookieDomain);
+        
+        // 쿠키에 토큰 설정 (리다이렉트 도메인 기반)
+        jwtTokenProvider.setTokenCookies(response, tokenDto, cookieDomain);
+        
         log.info("🚀 최종 리다이렉트: {}", redirectUri);
         getRedirectStrategy().sendRedirect(request, response, redirectUri);
+    }
+    
+    /**
+     * 리다이렉트 URI를 기반으로 적절한 쿠키 도메인을 결정합니다.
+     */
+    private String determineCookieDomain(String redirectUri) {
+        try {
+            java.net.URI uri = new java.net.URI(redirectUri);
+            String host = uri.getHost();
+            
+            log.info("🔍 URI 분석 - Host: {}", host);
+            
+            if (host == null) {
+                return null;
+            }
+            
+            if (host.contains("localhost")) {
+                // localhost 환경에서는 도메인을 null로 설정 (브라우저가 자동으로 현재 도메인 사용)
+                return null;
+            } else if (host.contains("dev.kick-on.kr")) {
+                // dev.kick-on.kr 도메인이면 .kick-on.kr 사용 (하위 도메인 공유)
+                return ".kick-on.kr";
+            } else if (host.contains("kick-on.kr")) {
+                // 기타 kick-on.kr 도메인이면 .kick-on.kr 사용
+                return ".kick-on.kr";
+            } else {
+                // 기타 도메인은 null로 설정
+                return null;
+            }
+        } catch (Exception e) {
+            log.error("❌ URI 분석 실패: {}", e.getMessage());
+            return null;
+        }
     }
 
     private void setTokenCookies(HttpServletResponse response, TokenDto tokenDto) {
