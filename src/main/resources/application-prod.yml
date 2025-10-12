@@ -100,3 +100,7 @@ aws:
     profile-sparator: _
     name: kickon
 
+cookie:
+  domain: .kick-on.kr
+  secure: true
+  same-site: None
