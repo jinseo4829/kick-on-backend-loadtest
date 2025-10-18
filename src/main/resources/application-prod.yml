@@ -103,4 +103,4 @@ aws:
 cookie:
   domain: .kick-on.kr
   secure: true
-  same-site: None
+  same-site: Lax
