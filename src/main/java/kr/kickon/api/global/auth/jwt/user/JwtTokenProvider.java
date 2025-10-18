@@ -3,7 +3,6 @@ package kr.kickon.api.global.auth.jwt.user;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import kr.kickon.api.domain.user.UserService;
 import kr.kickon.api.global.auth.jwt.dto.TokenDto;
@@ -184,57 +183,35 @@ public class  JwtTokenProvider{
     }
 
     public void setTokenCookies(HttpServletResponse response, TokenDto tokenDto) {
-        setTokenCookies(response, tokenDto, null);
-    }
-    
-    public void setTokenCookies(HttpServletResponse response, TokenDto tokenDto, String cookieDomain) {
         boolean isSecure = cookieConfig.isSecure();
+        String domain = cookieConfig.getDomain();
         String sameSite = cookieConfig.getSameSite();
 
-        // 전달받은 쿠키 도메인 사용 (null이면 기본 설정 사용)
-        String domain = cookieDomain != null ? cookieDomain : cookieConfig.getDomain();
-
-        log.info("🍪 쿠키 설정 정보:");
-        log.info("   - Secure: {}", isSecure);
+        log.info("🍪 쿠키 설정:");
         log.info("   - Domain: {}", domain);
+        log.info("   - Secure: {}", isSecure);
         log.info("   - SameSite: {}", sameSite);
-        log.info("   - AccessToken 길이: {}", tokenDto.getAccessToken().length());
-        log.info("   - RefreshToken 길이: {}", tokenDto.getRefreshToken().length());
 
-        // AccessToken 쿠키 생성
-        ResponseCookie.ResponseCookieBuilder accessTokenBuilder = ResponseCookie.from("accessToken", tokenDto.getAccessToken())
+        ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", tokenDto.getAccessToken())
                 .httpOnly(false)
                 .secure(isSecure)
                 .path("/")
+                .domain(domain)  // yml 설정 사용
                 .maxAge(accessTokenValidityMilliSeconds)
-                .sameSite(sameSite);
-        
-        // 도메인이 null이 아닐 때만 도메인 설정
-        if (domain != null) {
-            accessTokenBuilder.domain(domain);
-        }
-        
-        ResponseCookie accessTokenCookie = accessTokenBuilder.build();
+                .sameSite(sameSite)
+                .build();
         response.addHeader("Set-Cookie", accessTokenCookie.toString());
 
-        // RefreshToken 쿠키 생성
-        ResponseCookie.ResponseCookieBuilder refreshTokenBuilder = ResponseCookie.from("refreshToken", tokenDto.getRefreshToken())
+        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", tokenDto.getRefreshToken())
                 .httpOnly(true)
                 .secure(isSecure)
                 .path("/")
+                .domain(domain)
                 .maxAge(refreshTokenValidityMilliSeconds)
-                .sameSite(sameSite);
-        
-        // 도메인이 null이 아닐 때만 도메인 설정
-        if (domain != null) {
-            refreshTokenBuilder.domain(domain);
-        }
-        
-        ResponseCookie refreshTokenCookie = refreshTokenBuilder.build();
+                .sameSite(sameSite)
+                .build();
         response.addHeader("Set-Cookie", refreshTokenCookie.toString());
 
-        log.info("✅ 쿠키가 응답 헤더에 추가되었습니다.");
-        log.info("   - AccessToken Cookie: {}", accessTokenCookie.toString());
-        log.info("   - RefreshToken Cookie: {}", refreshTokenCookie.toString());
+        log.info("✅ 쿠키 설정 완료");
     }
 }
