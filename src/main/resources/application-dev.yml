@@ -1,24 +1,11 @@
 server:
   port: 8081
 spring:
-  kafka:
-    bootstrap-servers: localhost:9092
-    consumer:
-      group-id: gamble-group
-      auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: "*"
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-    topic:
-      game-result: game-result-processing
   config:
     import: 'aws-parameterstore:/config/kickon_dev/'
     activate:
       on-profile: dev
+
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}

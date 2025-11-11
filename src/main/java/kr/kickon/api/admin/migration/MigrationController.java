@@ -18,7 +18,6 @@ import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.*;
 import kr.kickon.api.global.error.exceptions.NotFoundException;
-import kr.kickon.api.global.kafka.KafkaGameProducer;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -43,7 +42,6 @@ public class MigrationController {
     private final CountryService countryService;
     private final LeagueService leagueService;
     private final GameService gameService;
-    private final KafkaGameProducer kafkaGameProducer;
     private final TeamService teamService;
     private final UserService userService;
     private final UserFavoriteTeamService userFavoriteTeamService;
@@ -147,30 +145,30 @@ public class MigrationController {
         migrationService.saveRankings(rankingsFromApi);
     }
 
-    @Operation(summary = "게임 결과 불러오기",description = "게임결과 API 불러와서, 승부예측 마감 진행. 포인트 지급. 매일 오전 0시에 업데이트")
+    @Operation(summary = "게임 결과 불러오기", description = "게임결과 API 불러와서, 승부예측 마감 진행. 포인트 지급. 매일 오전 0시에 업데이트")
     @GetMapping("/gambles")
     @Scheduled(cron = "0 0 */3 * * *")
     public void fetchGambles() {
+        // 1️⃣ 현재 미완료(PENDING) 경기 목록 가져오기
         List<Game> games = gameService.getPendingGames();
-        List<ApiGamesDTO> apiGamesDTOS = migrationService.fetchGamesByApiIds(games);
-        // 👇 여기 추가
-        List<CompletableFuture<SendResult<String, ApiGamesDTO>>> futures = new ArrayList<>();
 
+        // 2️⃣ API로부터 최신 경기 결과 불러오기
+        List<ApiGamesDTO> apiGamesDTOS = migrationService.fetchGamesByApiIds(games);
+
+        // 3️⃣ Kafka 대신 직접 서비스에서 처리
         for (ApiGamesDTO apiGame : apiGamesDTOS) {
-            CompletableFuture<SendResult<String, ApiGamesDTO>> future =
-                    kafkaGameProducer.sendGameResultProcessing(apiGame.getId().toString(), apiGame);
-            futures.add(future);
+            gameService.processGameResult(apiGame);
         }
 
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-
-
+        // 4️⃣ 리그별 시즌 랭킹 갱신
         List<League> leagues = leagueService.findAllLeagues();
-        for(League league : leagues) {
+        for (League league : leagues) {
             ActualSeason actualSeason = actualSeasonService.findRecentByLeaguePk(league.getPk());
             gambleSeasonRankingService.updateGameNumOnlyByActualSeason(actualSeason.getPk());
         }
 
+        // 5️⃣ 최종 팀 랭킹 업데이트
         migrationService.updateFinalTeamRanking();
     }
+
 }
