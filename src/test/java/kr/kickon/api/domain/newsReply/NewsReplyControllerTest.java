@@ -58,7 +58,7 @@ class NewsReplyControllerTest {
                 .thenReturn(List.of(UserFavoriteTeam.builder().user(user).team(news.getTeam()).build()));
         when(newsReplyService.createNewsReplyWithImages(any(), any())).thenReturn(new NewsReply());
 
-        ResponseEntity<ResponseDTO<Void>> response = newsReplyController.createNewsReply(request);
+        ResponseEntity<ResponseDTO<ReplyDTO>> response = newsReplyController.createNewsReply(request);
 
         assertThat(response.getStatusCodeValue()).isEqualTo(200);
         assertThat(response.getBody().getCode()).isEqualTo(ResponseCode.SUCCESS.getCode());
@@ -146,7 +146,7 @@ class NewsReplyControllerTest {
         when(jwtTokenProvider.getUserFromSecurityContext()).thenReturn(user);
         when(newsReplyService.findByPk(1L)).thenReturn(reply);
 
-        ResponseEntity<ResponseDTO<Void>> response = newsReplyController.patchNewsReply(1L, req);
+        ResponseEntity<ResponseDTO<ReplyDTO>> response = newsReplyController.patchNewsReply(1L, req);
 
         assertEquals(200, response.getStatusCodeValue());
     }
