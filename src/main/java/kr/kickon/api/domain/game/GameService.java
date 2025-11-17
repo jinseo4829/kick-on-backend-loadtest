@@ -17,6 +17,9 @@ import kr.kickon.api.admin.game.dto.GameListDTO;
 import kr.kickon.api.admin.game.request.GameFilterRequest;
 import kr.kickon.api.admin.game.request.GameUpdateRequest;
 import kr.kickon.api.admin.migration.dto.ApiGamesDTO;
+import kr.kickon.api.domain.gambleSeasonPoint.GambleSeasonPointService;
+import kr.kickon.api.domain.gambleSeasonRanking.GambleSeasonRankingService;
+import kr.kickon.api.domain.gambleSeasonTeam.GambleSeasonTeamService;
 import kr.kickon.api.domain.game.dto.GambleResultDTO;
 import kr.kickon.api.domain.game.dto.GameDTO;
 import kr.kickon.api.domain.game.response.CalendarDateCountDTO;
@@ -29,6 +32,7 @@ import kr.kickon.api.domain.team.dto.TeamDTO;
 import kr.kickon.api.domain.userFavoriteTeam.UserFavoriteTeamService;
 import kr.kickon.api.domain.userGameGamble.UserGameGambleService;
 import kr.kickon.api.domain.userGameGamble.dto.UserGameGambleDTO;
+import kr.kickon.api.domain.userPointDetail.UserPointDetailService;
 import kr.kickon.api.domain.userPointEvent.UserPointEventService;
 import kr.kickon.api.global.common.entities.*;
 import kr.kickon.api.global.common.enums.*;
@@ -39,6 +43,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -62,6 +67,10 @@ public class GameService{
     public static String[] FinishedStatus = {"FT", "AET", "PEN"};
     private final UserFavoriteTeamService userFavoriteTeamService;
     private final NotificationService notificationService;
+    private final GambleSeasonTeamService gambleSeasonTeamService;
+    private final UserPointDetailService userPointDetailService;
+    private final GambleSeasonRankingService gambleSeasonRankingService;
+    private final GambleSeasonPointService gambleSeasonPointService;
 
     // region {findByPk} Game PK 기반 조회
     public Game findByPk(Long pk) {
@@ -808,6 +817,203 @@ public class GameService{
             }
         }
     }
+
+    @Scheduled(cron = "0 0 * * * *") // 매 시간 0분에 실행
+    public void notifyUpcomingGames() {
+        notifyGamesBeforeHours(72); // D-3
+        notifyGamesBeforeHours(24); // D-1
+    }
+
+    // region {processGameResult} 경기 결과 처리 (기존 KafkaConsumer 로직 통합)
+    @Transactional
+    public void processGameResult(ApiGamesDTO gameData) {
+        try {
+            List<String> scheduledStatus = Arrays.asList(ScheduledStatus);
+            List<String> finishedStatus = Arrays.asList(FinishedStatus);
+
+            GameStatus gameStatus = getGameStatus(gameData, scheduledStatus, finishedStatus);
+            Game game = saveGameResult(gameData, gameStatus);
+
+            if (gameStatus == GameStatus.PENDING || gameStatus == GameStatus.PROCEEDING ||
+                    gameStatus == GameStatus.CANCELED || gameStatus == GameStatus.POSTPONED) {
+                // 아직 결과 반영 필요 없는 경기
+                return;
+            }
+
+            processUserPredictions(game, gameData, gameStatus);
+            updateTeamAvgPoints(game, gameData);
+            updateTeamRankingStats(game);
+
+            notifyGameFinished(game);
+            log.info("[GameResult] {} 처리 완료 (상태: {})", game.getApiId(), gameStatus);
+
+        } catch (Exception e) {
+            log.error("[GameResult] 처리 중 오류 발생: {}", e.getMessage(), e);
+            throw e;
+        }
+    }
+    // endregion
+
+    private void updateTeamRankingStats(Game game) {
+        gambleSeasonRankingService.updateGameNumOnlyByActualSeason(game.getActualSeason().getPk());
+    }
+
+    // region {saveGameResult} 경기 정보 저장 or 업데이트
+    private Game saveGameResult(ApiGamesDTO apiData, GameStatus gameStatus) {
+        Game game;
+        try {
+            // 기존 경기 조회 후 상태 업데이트
+            game = findByApiId(apiData.getId());
+            game.setGameStatus(gameStatus);
+            game.setAwayPenaltyScore(apiData.getAwayPenaltyScore());
+            game.setHomePenaltyScore(apiData.getHomePenaltyScore());
+            game.setHomeScore(apiData.getHomeScore());
+            game.setAwayScore(apiData.getAwayScore());
+        } catch (NotFoundException ignore) {
+            // 존재하지 않으면 새로 생성
+            Team homeTeam = teamService.findByApiId(apiData.getHomeTeamId());
+            Team awayTeam = teamService.findByApiId(apiData.getAwayTeamId());
+
+            if (homeTeam == null || awayTeam == null) {
+                throw new NotFoundException(ResponseCode.NOT_FOUND_TEAM);
+            }
+
+            game = Game.builder()
+                    .id(UUID.randomUUID().toString())
+                    .gameStatus(gameStatus)
+                    .awayPenaltyScore(apiData.getAwayPenaltyScore())
+                    .homePenaltyScore(apiData.getHomePenaltyScore())
+                    .actualSeason(apiData.getActualSeason())
+                    .apiId(apiData.getId())
+                    .homeScore(apiData.getHomeScore())
+                    .awayScore(apiData.getAwayScore())
+                    .round(apiData.getRound())
+                    .homeTeam(homeTeam)
+                    .awayTeam(awayTeam)
+                    .startedAt(apiData.getDate())
+                    .build();
+        }
+
+        return save(game);
+    }
+    // endregion
+
+
+    // region {processUserPredictions} 유저 예측 결과 및 포인트 반영
+    private void processUserPredictions(Game game, ApiGamesDTO apiGamesDTO, GameStatus gameStatus) {
+        List<UserGameGamble> userGameGambles = userGameGambleService.findByGameApiId(game.getApiId());
+
+        for (UserGameGamble userGameGamble : userGameGambles) {
+            PredictedResult predictedResult = userGameGamble.getPredictedResult();
+            GambleStatus gambleStatus;
+
+            if ((predictedResult == PredictedResult.HOME && gameStatus == GameStatus.HOME) ||
+                    (predictedResult == PredictedResult.AWAY && gameStatus == GameStatus.AWAY) ||
+                    (predictedResult == PredictedResult.DRAW && gameStatus == GameStatus.DRAW)) {
+
+                if (userGameGamble.getPredictedHomeScore().equals(apiGamesDTO.getHomeScore()) &&
+                        userGameGamble.getPredictedAwayScore().equals(apiGamesDTO.getAwayScore())) {
+                    gambleStatus = GambleStatus.PERFECT;
+                } else {
+                    gambleStatus = GambleStatus.SUCCEED;
+                }
+            } else {
+                gambleStatus = GambleStatus.FAILED;
+            }
+
+            userGameGamble.setGambleStatus(gambleStatus);
+
+            int points = 0;
+            if (gambleStatus == GambleStatus.SUCCEED) points = 1;
+            else if (gambleStatus == GambleStatus.PERFECT) points = 3;
+
+            if (points > 0) {
+                UserPointEvent event = UserPointEvent.builder()
+                        .point(points)
+                        .pointStatus(PointStatus.SAVE)
+                        .user(userGameGamble.getUser())
+                        .category(PointCategory.GAMBLE)
+                        .build();
+
+                UserPointDetail detail = UserPointDetail.builder()
+                        .pointStatus(PointStatus.SAVE)
+                        .user(userGameGamble.getUser())
+                        .point(points)
+                        .userPointEvent(userPointEventService.save(event))
+                        .build();
+
+                userPointDetailService.save(detail);
+            }
+        }
+
+        userGameGambleService.saveAll(userGameGambles);
+    }
+    // endregion
+
+
+    // region {updateTeamAvgPoints} 팀별 평균 포인트 및 랭킹 업데이트
+    private void updateTeamAvgPoints(Game game, ApiGamesDTO apiGamesDTO) {
+        List<UserGameGamble> userGameGambles = userGameGambleService.findByGameApiId(game.getApiId());
+
+        List<UserGameGamble> homeTeamGambles = userGameGambles.stream()
+                .filter(g -> g.getSupportingTeam().getApiId().equals(apiGamesDTO.getHomeTeamId()))
+                .toList();
+
+        List<UserGameGamble> awayTeamGambles = userGameGambles.stream()
+                .filter(g -> g.getSupportingTeam().getApiId().equals(apiGamesDTO.getAwayTeamId()))
+                .toList();
+
+        GambleSeasonTeam homeSeasonTeam = gambleSeasonTeamService.getRecentOperatingByTeamPk(game.getHomeTeam().getPk());
+        if (homeSeasonTeam == null) return;
+
+        Team homeTeam = teamService.findByApiId(apiGamesDTO.getHomeTeamId());
+        Team awayTeam = teamService.findByApiId(apiGamesDTO.getAwayTeamId());
+
+        double homeAvgPoints = calculateAveragePoints(homeTeamGambles);
+        double awayAvgPoints = calculateAveragePoints(awayTeamGambles);
+
+        saveOrUpdateSeasonPoint(game, homeSeasonTeam, homeTeam, homeAvgPoints);
+        saveOrUpdateSeasonPoint(game, homeSeasonTeam, awayTeam, awayAvgPoints);
+
+        gambleSeasonRankingService.updateGameNumOnlyByActualSeason(game.getActualSeason().getPk());
+    }
+    // endregion
+
+
+    // region {saveOrUpdateSeasonPoint} 시즌 포인트 저장 또는 갱신
+    private void saveOrUpdateSeasonPoint(Game game, GambleSeasonTeam seasonTeam, Team team, double avgPoints) {
+        GambleSeasonPoint point = gambleSeasonPointService.findByTeamPkAndGamePk(team.getPk(), game.getPk());
+        int scaledPoints = (int) Math.round(avgPoints * 1000);
+
+        if (point == null) {
+            point = GambleSeasonPoint.builder()
+                    .gambleSeason(seasonTeam.getGambleSeason())
+                    .averagePoints(scaledPoints)
+                    .team(team)
+                    .game(game)
+                    .build();
+        } else {
+            point.setAveragePoints(scaledPoints);
+        }
+
+        gambleSeasonPointService.save(point);
+
+        GambleSeasonRanking ranking = gambleSeasonRankingService.findByTeamPk(point.getTeam().getPk());
+        ranking.setPoints(ranking.getPoints() + point.getAveragePoints());
+        gambleSeasonRankingService.save(ranking);
+    }
+    // endregion
+
+
+    // region {calculateAveragePoints} 평균 포인트 계산
+    private double calculateAveragePoints(List<UserGameGamble> gambles) {
+        return gambles.stream()
+                .filter(g -> g.getGambleStatus() == GambleStatus.SUCCEED || g.getGambleStatus() == GambleStatus.PERFECT)
+                .mapToInt(g -> g.getGambleStatus() == GambleStatus.PERFECT ? 3 : 1)
+                .average()
+                .orElse(0.0);
+    }
+    // endregion
 
 
 }
