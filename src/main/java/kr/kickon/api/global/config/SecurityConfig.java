@@ -66,6 +66,7 @@ public class SecurityConfig {
 
     private RequestMatcher[] requestPermitAll() {
         List<RequestMatcher> requestMatchers = List.of(
+                antMatcher("/ws/**"),
                 antMatcher("/swagger-ui/**"),
                 antMatcher("/swagger-ui.html"), // 경우에 따라 필요
                 antMatcher("/v3/api-docs/**"),
