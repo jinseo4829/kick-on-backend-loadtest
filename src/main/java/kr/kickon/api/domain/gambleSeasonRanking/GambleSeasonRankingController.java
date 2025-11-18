@@ -17,6 +17,7 @@ import kr.kickon.api.global.common.entities.GambleSeason;
 import kr.kickon.api.global.common.entities.GambleSeasonRanking;
 import kr.kickon.api.global.common.entities.User;
 import kr.kickon.api.global.common.enums.ResponseCode;
+import kr.kickon.api.global.error.exceptions.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -45,6 +46,7 @@ public class GambleSeasonRankingController {
     public ResponseEntity<ResponseDTO<List<GetGambleSeasonRankingDTO>>> getEventBoards(@Valid GetActualSeasonRankingRequestDTO paramDto) {
         User user = jwtTokenProvider.getUserFromSecurityContext();
         GambleSeason gambleSeason = gambleSeasonService.findRecentOperatingSeasonByLeaguePk(paramDto.getLeague());
+        if(gambleSeason == null) throw new NotFoundException(ResponseCode.NOT_FOUND_GAMBLE_SEASON);
         List<GambleSeasonRanking> gambleSeasonRankings = gambleSeasonRankingService.findRecentSeasonRankingByLeague(gambleSeason.getPk());
         List<GetGambleSeasonRankingDTO>getGambleSeasonRankingDTOS = gambleSeasonRankings.stream().map(gambleSeasonRanking -> GetGambleSeasonRankingDTO.builder()
                         .rankOrder(gambleSeasonRanking.getRankOrder())
