@@ -6,6 +6,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import kr.kickon.api.domain.chat.dto.ChatRoomDTO;
+import kr.kickon.api.domain.chat.response.GetChatRoomDetailResponse;
 import kr.kickon.api.domain.chat.response.GetChatRoomsResponse;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.enums.ResponseCode;
@@ -21,7 +23,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/chatrooms")
-@Tag(name = "게시글")
+@Tag(name = "채팅방")
 @RequiredArgsConstructor
 @Slf4j
 public class ChatRoomController {
@@ -33,16 +35,19 @@ public class ChatRoomController {
                     content = @Content(schema = @Schema(implementation = GetChatRoomsResponse.class))),
     })
     @GetMapping("/open")
-    public ResponseEntity<ResponseDTO<List<ChatRoom>>> getOpenChatRooms() {
-        List<ChatRoom> chatRooms = chatService.getOpenChatRooms();
+    public ResponseEntity<ResponseDTO<List<ChatRoomDTO>>> getOpenChatRooms() {
+        List<ChatRoomDTO> chatRooms = chatService.getOpenChatRooms();
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, chatRooms));
     }
 
     @Operation(summary = "채팅방 정보 조회", description = "채팅방 정보 조회")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "성공")})    @GetMapping("/{roomId}")
-    public ResponseEntity<ChatRoom> getChatRoom(@PathVariable String roomId) {
-        ChatRoom chatRoom = chatService.getChatRoom(roomId);
+            @ApiResponse(responseCode = "200", description = "성공",
+                    content = @Content(schema = @Schema(implementation = GetChatRoomDetailResponse.class))),
+    })
+    @GetMapping("/{roomId}")
+    public ResponseEntity<ChatRoomDTO> getChatRoom(@PathVariable String roomId) {
+        ChatRoomDTO chatRoom = chatService.getChatRoom(roomId);
         if (chatRoom != null) {
             return ResponseEntity.ok(chatRoom);
         }

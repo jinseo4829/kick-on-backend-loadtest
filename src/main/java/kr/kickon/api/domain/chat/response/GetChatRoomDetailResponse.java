@@ -3,8 +3,7 @@ package kr.kickon.api.domain.chat.response;
 import io.swagger.v3.oas.annotations.media.Schema;
 import kr.kickon.api.domain.chat.dto.ChatRoomDTO;
 import kr.kickon.api.global.common.ResponseDTO;
-import java.util.List;
 
-@Schema(description = "채팅방 리스트 조회 응답")
-public class GetChatRoomsResponse extends ResponseDTO<List<ChatRoomDTO>> {
+@Schema(description = "채팅방 상세 조회 응답")
+public class GetChatRoomDetailResponse extends ResponseDTO<ChatRoomDTO> {
 }

@@ -32,4 +32,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                                     "http://localhost:3000")// 실서비스는 origin 제한 필요
                 .withSockJS();          // SockJS fallback 지원
     }
+
+
 }

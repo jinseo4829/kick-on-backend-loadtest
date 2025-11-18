@@ -6,10 +6,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import kr.kickon.api.admin.board.response.AdminGetBoardDetailResponse;
 import kr.kickon.api.domain.chat.ChatService;
-import kr.kickon.api.domain.chat.ChatRoom;
+import kr.kickon.api.domain.chat.dto.ChatRoomDTO;
 import kr.kickon.api.domain.chat.request.CreateChatRoomRequest;
+import kr.kickon.api.domain.chat.response.GetChatRoomDetailResponse;
+import kr.kickon.api.domain.chat.response.GetChatRoomsResponse;
 import kr.kickon.api.global.common.ResponseDTO;
 import kr.kickon.api.global.common.enums.ResponseCode;
 import lombok.RequiredArgsConstructor;
@@ -30,64 +31,83 @@ public class AdminChatController {
     @Operation(summary = "채팅방 생성", description = "특정 팀 채팅방 생성")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공",
-                    content = @Content(schema = @Schema(implementation = ChatRoom.class))),
+                    content = @Content(schema = @Schema(implementation = GetChatRoomDetailResponse.class))),
     })
     @PostMapping
-    public ResponseEntity<ResponseDTO<ChatRoom>> createChatRoom(@RequestBody CreateChatRoomRequest request) {
-        ChatRoom chatRoom = chatService.createChatRoom(request);
+    public ResponseEntity<ResponseDTO<ChatRoomDTO>> createChatRoom(@RequestBody CreateChatRoomRequest request) {
+        ChatRoomDTO chatRoom = chatService.createChatRoom(request);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, chatRoom));
     }
 
     @Operation(summary = "채팅방 즉시 열기", description = "특정 채팅방 즉시 열기")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공",
-                    content = @Content(schema = @Schema(implementation = ChatRoom.class))),
+                    content = @Content(schema = @Schema(implementation = GetChatRoomDetailResponse.class))),
     })
     @PostMapping("/{roomId}/open")
-    public ResponseEntity<ResponseDTO<ChatRoom>> openRoom(@PathVariable String roomId) {
-        ChatRoom chatRoom = chatService.openRoom(roomId);
+    public ResponseEntity<ResponseDTO<ChatRoomDTO>> openRoom(@PathVariable String roomId) {
+        ChatRoomDTO chatRoom = chatService.openRoom(roomId);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, chatRoom));
     }
 
     @Operation(summary = "채팅방 즉시 닫기", description = "특정 채팅방 즉시 닫기")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공",
-                    content = @Content(schema = @Schema(implementation = ChatRoom.class))),
-    })      @PostMapping("/{roomId}/close")
-    public ResponseEntity<ResponseDTO<ChatRoom>> closeRoom(@PathVariable String roomId) {
-        ChatRoom chatRoom = chatService.closeRoom(roomId);
+                    content = @Content(schema = @Schema(implementation = GetChatRoomDetailResponse.class))),
+    })
+    @PostMapping("/{roomId}/close")
+    public ResponseEntity<ResponseDTO<ChatRoomDTO>> closeRoom(@PathVariable String roomId) {
+        ChatRoomDTO chatRoom = chatService.closeRoom(roomId);
         return ResponseEntity.ok(ResponseDTO.success(ResponseCode.SUCCESS, chatRoom));
     }
 
-    // 모든 채팅방 목록
+    @Operation(summary = "채팅방 목록 조회", description = "모든 채팅방 목록 조회")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공",
+                    content = @Content(schema = @Schema(implementation = GetChatRoomsResponse.class))),
+    })
     @GetMapping
-    public List<ChatRoom> getAllChatRooms() {
+    public List<ChatRoomDTO> getAllChatRooms() {
         return chatService.getAllChatRooms();
     }
 
-    // 현재 열린 채팅방 목록
+    @Operation(summary = "open 채팅방 목록 조회", description = "현재 open된 채팅방 목록 조회")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공",
+                    content = @Content(schema = @Schema(implementation = GetChatRoomsResponse.class))),
+    })
     @GetMapping("/open")
-    public List<ChatRoom> getOpenChatRooms() {
+    public List<ChatRoomDTO> getOpenChatRooms() {
         return chatService.getOpenChatRooms();
     }
 
-    // 특정 팀 채팅방 목록
-    @GetMapping("/team/{teamName}")
-    public List<ChatRoom> getChatRoomsByTeam(@PathVariable Long teamPk) {
+    @Operation(summary = "특정 팀 채팅방 목록 조회", description = "특정 팀 pk로 채팅방 목록 조회")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공",
+                    content = @Content(schema = @Schema(implementation = GetChatRoomsResponse.class))),
+    })    @GetMapping("/team/{teamName}")
+    public List<ChatRoomDTO> getChatRoomsByTeam(@PathVariable Long teamPk) {
         return chatService.getChatRoomsByTeam(teamPk);
     }
 
-    // 채팅방 상세 정보
+    @Operation(summary = "채팅방 상세 조회", description = "roomId로 채팅방 상세 조회")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공",
+                    content = @Content(schema = @Schema(implementation = GetChatRoomDetailResponse.class))),
+    })
     @GetMapping("/{roomId}")
-    public ResponseEntity<ChatRoom> getChatRoom(@PathVariable String roomId) {
-        ChatRoom chatRoom = chatService.getChatRoom(roomId);
+    public ResponseEntity<ChatRoomDTO> getChatRoom(@PathVariable String roomId) {
+        ChatRoomDTO chatRoom = chatService.getChatRoom(roomId);
         if (chatRoom != null) {
             return ResponseEntity.ok(chatRoom);
         }
         return ResponseEntity.notFound().build();
     }
 
-    // 채팅방 삭제
+    @Operation(summary = "채팅방 삭제", description = "roomId로 채팅방 삭제")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공"),
+    })
     @DeleteMapping("/{roomId}")
     public ResponseEntity<String> deleteChatRoom(@PathVariable String roomId) {
         if (chatService.deleteChatRoom(roomId)) {
