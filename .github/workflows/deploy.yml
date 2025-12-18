@@ -3,8 +3,8 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - main  # 프로덕션 배포
-      - dev   # 개발 환경 배포
+      - main
+      - dev
 
 jobs:
   deploy:
@@ -29,27 +29,29 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew clean build -x test
 
-      - name: Copy appspec.yml
-        run: cp appspec/appspec-${{env.SPRING_PROFILES_ACTIVE}}.yml appspec.yml
-
-      - name: Copy application.yml
-        run: cp src/main/resources/application-${{env.SPRING_PROFILES_ACTIVE}}.yml application-${{env.SPRING_PROFILES_ACTIVE}}.yml
-
-      - name: Copy scripts
-        run: mkdir -p scripts && cp -r ${{env.SPRING_PROFILES_ACTIVE}}-scripts/* scripts/
-
-      - name: Package files for deployment
+      # ⭐ 핵심: CodeDeploy가 이해하는 구조로 "조립"
+      - name: Prepare deploy directory
         run: |
-          mkdir -p deploy
-          cp application-${{env.SPRING_PROFILES_ACTIVE}}.yml deploy/
-          cp appspec.yml deploy/
-          cp -r scripts deploy/
+          rm -rf deploy
+          mkdir -p deploy/scripts
+
+          if [[ "${SPRING_PROFILES_ACTIVE}" == "prod" ]]; then
+            cp appspec/appspec-prod.yml deploy/appspec.yml
+            cp -r prod-scripts/* deploy/scripts/
+          else
+            cp appspec/appspec-dev.yml deploy/appspec.yml
+            cp -r dev-scripts/* deploy/scripts/
+          fi
+
+          chmod +x deploy/scripts/*.sh
           cp build/libs/*.jar deploy/
 
-      - name: Compress deployment package
-        run: zip -r deploy.zip deploy/
+      - name: Zip deployment package
+        run: |
+          cd deploy
+          zip -r ../deploy.zip .
 
-      - name: Upload to S3
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -58,11 +60,11 @@ jobs:
 
       - name: Upload zip to S3
         run: |
-          aws s3 cp deploy.zip s3://${{ secrets.S3_BUCKET }}/deploy/${{env.SPRING_PROFILES_ACTIVE}}.zip
+          aws s3 cp deploy.zip s3://${{ secrets.S3_BUCKET }}/deploy/${SPRING_PROFILES_ACTIVE}.zip
 
       - name: Deploy with CodeDeploy
         run: |
           aws deploy create-deployment \
-          --application-name ${{ env.APPLICATION_NAME }} \
-          --deployment-group-name ${{ env.DEPLOYMENT_GROUP }} \
-          --s3-location bucket=${{ secrets.S3_BUCKET }},bundleType=zip,key=deploy/${{env.SPRING_PROFILES_ACTIVE}}.zip
+            --application-name ${APPLICATION_NAME} \
+            --deployment-group-name ${DEPLOYMENT_GROUP} \
+            --s3-location bucket=${{ secrets.S3_BUCKET }},bundleType=zip,key=deploy/${SPRING_PROFILES_ACTIVE}.zip
