@@ -14,6 +14,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # 1️⃣ 브랜치 기준 환경 결정
       - name: Set environment variables
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
@@ -26,10 +27,11 @@ jobs:
             echo "DEPLOYMENT_GROUP=kickon-dev-group" >> $GITHUB_ENV
           fi
 
+      # 2️⃣ 빌드
       - name: Build with Gradle
         run: ./gradlew clean build -x test
 
-      # ⭐ 핵심: CodeDeploy가 이해하는 구조로 "조립"
+      # 3️⃣ ⭐ CodeDeploy 규칙에 맞게 "루트 구조"로 조립
       - name: Prepare deploy directory
         run: |
           rm -rf deploy
@@ -46,11 +48,13 @@ jobs:
           chmod +x deploy/scripts/*.sh
           cp build/libs/*.jar deploy/
 
+      # 4️⃣ ⭐ zip 최상위에 appspec.yml이 오도록 압축
       - name: Zip deployment package
         run: |
           cd deploy
           zip -r ../deploy.zip .
 
+      # 5️⃣ AWS 인증
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -58,10 +62,12 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-northeast-2
 
+      # 6️⃣ S3 업로드
       - name: Upload zip to S3
         run: |
           aws s3 cp deploy.zip s3://${{ secrets.S3_BUCKET }}/deploy/${SPRING_PROFILES_ACTIVE}.zip
 
+      # 7️⃣ CodeDeploy 트리거
       - name: Deploy with CodeDeploy
         run: |
           aws deploy create-deployment \
