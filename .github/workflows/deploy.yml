@@ -31,12 +31,13 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew clean build -x test
 
-      # 3️⃣ ⭐ CodeDeploy 규칙에 맞게 "루트 구조"로 조립
+      # 3️⃣ CodeDeploy 규칙에 맞게 "루트 구조"로 조립
       - name: Prepare deploy directory
         run: |
           rm -rf deploy
           mkdir -p deploy/scripts
 
+          # 레포지토리 루트의 appspec/ 폴더와 scripts/ 폴더를 활용
           if [[ "${SPRING_PROFILES_ACTIVE}" == "prod" ]]; then
             cp appspec/appspec-prod.yml deploy/appspec.yml
             cp -r prod-scripts/* deploy/scripts/
@@ -45,10 +46,15 @@ jobs:
             cp -r dev-scripts/* deploy/scripts/
           fi
 
+          # 윈도우 줄바꿈 제거 및 실행 권한 부여
+          sed -i 's/\r$//' deploy/scripts/*.sh
           chmod +x deploy/scripts/*.sh
-          cp build/libs/*.jar deploy/
+          
+          # 빌드된 jar 파일 복사 (plain.jar 제외하고 실행 가능한 jar만 선택)
+          cp build/libs/*-SNAPSHOT.jar deploy/ 2>/dev/null || cp build/libs/*.jar deploy/
+          rm -f deploy/*-plain.jar
 
-      # 4️⃣ ⭐ zip 최상위에 appspec.yml이 오도록 압축
+      # 4️⃣ Zip 압축
       - name: Zip deployment package
         run: |
           cd deploy
@@ -73,4 +79,5 @@ jobs:
           aws deploy create-deployment \
             --application-name ${APPLICATION_NAME} \
             --deployment-group-name ${DEPLOYMENT_GROUP} \
-            --s3-location bucket=${{ secrets.S3_BUCKET }},bundleType=zip,key=deploy/${SPRING_PROFILES_ACTIVE}.zip
+            --s3-location bucket=${{ secrets.S3_BUCKET }},bundleType=zip,key=deploy/${SPRING_PROFILES_ACTIVE}.zip \
+            --file-exists-behavior OVERWRITE
