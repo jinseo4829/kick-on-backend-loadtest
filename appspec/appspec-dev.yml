@@ -5,6 +5,14 @@ files:
   - source: /
     destination: /srv/kickon/dev
 
+# 이 섹션을 추가하세요
+permissions:
+  - object: /srv/kickon/dev/scripts
+    pattern: "*.sh"
+    owner: ubuntu
+    group: ubuntu
+    mode: 755
+
 hooks:
   ApplicationStop:
     - location: scripts/stop.sh
