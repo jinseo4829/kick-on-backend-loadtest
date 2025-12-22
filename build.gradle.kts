@@ -103,7 +103,7 @@ dependencies {
 	implementation("com.slack.api:bolt-jetty:1.45.3")
 
 	// kafka
-	implementation("org.springframework.kafka:spring-kafka")
+	//implementation("org.springframework.kafka:spring-kafka")
 
 	implementation(kotlin("script-runtime"))
 
