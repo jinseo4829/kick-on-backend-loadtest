@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import kr.kickon.api.global.common.enums.DataStatus;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.ColumnDefault;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -30,6 +31,7 @@ public abstract class BaseEntity {
     private DataStatus status = DataStatus.ACTIVATED;
 
     @CreatedDate
+    @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(updatable = false, nullable = false)
     private LocalDateTime createdAt;
 
