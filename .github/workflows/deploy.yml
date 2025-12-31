@@ -14,7 +14,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 1️⃣ 브랜치 기준 환경 결정
+      # 1️⃣ 브랜치 기준 환경결정
       - name: Set environment variables
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
