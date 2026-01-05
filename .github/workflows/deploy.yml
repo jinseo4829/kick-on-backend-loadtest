@@ -1,10 +1,9 @@
-name: Deploy to EC2
+name: Deploy to LoadTest EC2
 
 on:
   push:
     branches:
-      - main
-      - dev
+      - main   # 테스트 레포는 main만 사용
 
 jobs:
   deploy:
@@ -14,43 +13,32 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 1️⃣ 브랜치 기준 환경결정
+      # 1️⃣ 환경 변수 고정 (Load Test 전용)
       - name: Set environment variables
         run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "SPRING_PROFILES_ACTIVE=prod" >> $GITHUB_ENV
-            echo "APPLICATION_NAME=kickon-prod" >> $GITHUB_ENV
-            echo "DEPLOYMENT_GROUP=kickon-prod-group" >> $GITHUB_ENV
-          else
-            echo "SPRING_PROFILES_ACTIVE=dev" >> $GITHUB_ENV
-            echo "APPLICATION_NAME=kickon-dev" >> $GITHUB_ENV
-            echo "DEPLOYMENT_GROUP=kickon-dev-group" >> $GITHUB_ENV
-          fi
+          echo "SPRING_PROFILES_ACTIVE=loadtest" >> $GITHUB_ENV
+          echo "APPLICATION_NAME=kickon-loadtest" >> $GITHUB_ENV
+          echo "DEPLOYMENT_GROUP=kickon-loadtest-group" >> $GITHUB_ENV
 
       # 2️⃣ 빌드
       - name: Build with Gradle
         run: ./gradlew clean build -x test
 
-      # 3️⃣ CodeDeploy 규칙에 맞게 "루트 구조"로 조립
+      # 3️⃣ CodeDeploy용 디렉토리 구성
       - name: Prepare deploy directory
         run: |
           rm -rf deploy
           mkdir -p deploy/scripts
 
-          # 레포지토리 루트의 appspec/ 폴더와 scripts/ 폴더를 활용
-          if [[ "${SPRING_PROFILES_ACTIVE}" == "prod" ]]; then
-            cp appspec/appspec-prod.yml deploy/appspec.yml
-            cp -r prod-scripts/* deploy/scripts/
-          else
-            cp appspec/appspec-dev.yml deploy/appspec.yml
-            cp -r dev-scripts/* deploy/scripts/
-          fi
+          # loadtest 전용 appspec / scripts 사용
+          cp appspec/appspec-loadtest.yml deploy/appspec.yml
+          cp -r scripts/* deploy/scripts/
 
-          # 윈도우 줄바꿈 제거 및 실행 권한 부여
+          # 줄바꿈/권한 처리
           sed -i 's/\r$//' deploy/scripts/*.sh
           chmod +x deploy/scripts/*.sh
-          
-          # 빌드된 jar 파일 복사 (plain.jar 제외하고 실행 가능한 jar만 선택)
+
+          # 실행 가능한 jar만 복사
           cp build/libs/*-SNAPSHOT.jar deploy/ 2>/dev/null || cp build/libs/*.jar deploy/
           rm -f deploy/*-plain.jar
 
@@ -68,16 +56,16 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-northeast-2
 
-      # 6️⃣ S3 업로드
+      # 6️⃣ S3 업로드 (LoadTest 전용)
       - name: Upload zip to S3
         run: |
-          aws s3 cp deploy.zip s3://${{ secrets.S3_BUCKET }}/deploy/${SPRING_PROFILES_ACTIVE}.zip
+          aws s3 cp deploy.zip s3://${{ secrets.S3_BUCKET }}/deploy/loadtest.zip
 
       # 7️⃣ CodeDeploy 트리거
       - name: Deploy with CodeDeploy
         run: |
           aws deploy create-deployment \
-            --application-name ${APPLICATION_NAME} \
-            --deployment-group-name ${DEPLOYMENT_GROUP} \
-            --s3-location bucket=${{ secrets.S3_BUCKET }},bundleType=zip,key=deploy/${SPRING_PROFILES_ACTIVE}.zip \
+            --application-name kickon-loadtest \
+            --deployment-group-name kickon-loadtest-group \
+            --s3-location bucket=${{ secrets.S3_BUCKET }},bundleType=zip,key=deploy/loadtest.zip \
             --file-exists-behavior OVERWRITE

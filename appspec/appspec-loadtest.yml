@@ -3,11 +3,10 @@ os: linux
 
 files:
   - source: /
-    destination: /srv/kickon/dev
+    destination: /srv/kickon/loadtest
 
-# 실행 권한 자동 부여 (dev 경로 기준)
 permissions:
-  - object: /srv/kickon/dev/scripts
+  - object: /srv/kickon/loadtest/scripts
     pattern: "*.sh"
     owner: ubuntu
     group: ubuntu
