@@ -1,31 +1,32 @@
 #!/bin/bash
-APP_DIR="/srv/kickon/dev"
+export SPRING_PROFILES_ACTIVE=loadtest
+export AWS_REGION=ap-northeast-2
 
-# 1. 디렉토리 존재 확인
-if [ ! -d "$APP_DIR" ]; then
-  echo "> Directory $APP_DIR does not exist. Skipping stop."
-  exit 0
+APP_DIR="/srv/kickon/loadtest"
+LOG_DIR="/srv/kickon/logs"
+LOG_FILE="$LOG_DIR/loadtest.log"
+
+# 로그 디렉토리 생성
+if [ ! -d "$LOG_DIR" ]; then
+  mkdir -p $LOG_DIR
+  chown ubuntu:ubuntu $LOG_DIR
 fi
 
-# 2. 실행 중인 JAR 찾기
+# JAR 찾기
 JAR_FILE=$(ls -t $APP_DIR/*.jar 2>/dev/null | head -n 1)
 
 if [ -z "$JAR_FILE" ]; then
-  echo "> No JAR file found in $APP_DIR. Skipping stop."
-  exit 0
+  echo "> Error: No JAR file found in $APP_DIR" >> $LOG_FILE
+  exit 1
 fi
 
-# 3. 프로세스 종료 (pgrep 실패 시 에러 방지를 위해 || true 추가)
-PID=$(pgrep -f "$(basename "$JAR_FILE")") || true
+echo "> Starting loadtest application: $JAR_FILE" >> $LOG_FILE
 
-if [ ! -z "$PID" ]; then
-  echo "> Found process $PID. Stopping..."
-  kill -15 $PID
-  sleep 5
-  kill -9 $PID 2>/dev/null || true
-else
-  echo "> No running process found for $JAR_FILE."
-fi
+nohup java \
+  -Dspring.profiles.active=loadtest \
+  -Dserver.port=8082 \
+  -Daws.paramstore.enabled=true \
+  -jar $JAR_FILE >> $LOG_FILE 2>&1 &
 
-# ⭐ 명시적으로 성공을 반환
+echo "> Loadtest application started on port 8082" >> $LOG_FILE
 exit 0
