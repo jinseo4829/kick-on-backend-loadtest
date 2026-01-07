@@ -13,7 +13,7 @@ SERVER_PORT=8082
 echo "===== [START] Loadtest Application ====="
 
 # 1. 로그 디렉토리 준비
-# mkdir -p "$LOG_DIR"
+mkdir -p "$LOG_DIR"
 
 # 2. 최신 JAR 찾기
 JAR_FILE=$(ls -t "$APP_DIR"/*.jar 2>/dev/null | head -n 1)
