@@ -13,7 +13,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 1️⃣ AWS 인증
+      # 1️⃣ JAR 빌드 (가장 중요)
+      - name: Build with Gradle
+        run: ./gradlew clean build -x test
+
+      # 2️⃣ 빌드 결과 확인
+      - name: Verify JAR exists
+        run: |
+          echo "=== build/libs ==="
+          ls -al build/libs
+
+      # 3️⃣ AWS 인증
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -21,11 +31,11 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-northeast-2
 
-      # 2️⃣ ECR 로그인
+      # 4️⃣ ECR 로그인
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v1
 
-      # 3️⃣ Docker 이미지 빌드 & ECR 푸시
+      # 5️⃣ Docker 이미지 빌드 & ECR 푸시
       - name: Build and Push Docker Image
         env:
           ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
@@ -35,30 +45,27 @@ jobs:
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-      # 4️⃣ CodeDeploy용 디렉토리 구성
+      # 6️⃣ CodeDeploy 패키지 구성 (스크립트만)
       - name: Prepare deploy directory
         run: |
           rm -rf deploy
           mkdir -p deploy/scripts
-
           cp appspec/appspec-loadtest.yml deploy/appspec.yml
           cp scripts/* deploy/scripts/
-
-          sed -i 's/\r$//' deploy/scripts/*.sh
           chmod +x deploy/scripts/*.sh
 
-      # 5️⃣ Zip 압축 (스크립트만 포함)
+      # 7️⃣ Zip
       - name: Zip deployment package
         run: |
           cd deploy
           zip -r ../deploy.zip .
 
-      # 6️⃣ S3 업로드
+      # 8️⃣ S3 업로드
       - name: Upload zip to S3
         run: |
           aws s3 cp deploy.zip s3://${{ secrets.S3_BUCKET }}/deploy/loadtest.zip
 
-      # 7️⃣ CodeDeploy 트리거
+      # 9️⃣ CodeDeploy 트리거
       - name: Deploy with CodeDeploy
         run: |
           aws deploy create-deployment \
