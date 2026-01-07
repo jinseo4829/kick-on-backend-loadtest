@@ -1,9 +1,9 @@
-name: Deploy to LoadTest EC2
+name: Deploy LoadTest Backend (Docker + ECR)
 
 on:
   push:
     branches:
-      - main   # 테스트 레포는 main만 사용
+      - main
 
 jobs:
   deploy:
@@ -13,42 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 1️⃣ 환경 변수 고정 (Load Test 전용)
-      - name: Set environment variables
-        run: |
-          echo "SPRING_PROFILES_ACTIVE=loadtest" >> $GITHUB_ENV
-          echo "APPLICATION_NAME=kickon-loadtest" >> $GITHUB_ENV
-          echo "DEPLOYMENT_GROUP=kickon-loadtest-group" >> $GITHUB_ENV
-
-      # 2️⃣ 빌드
-      - name: Build with Gradle
-        run: ./gradlew clean build -x test
-
-      # 3️⃣ CodeDeploy용 디렉토리 구성
-      - name: Prepare deploy directory
-        run: |
-          rm -rf deploy
-          mkdir -p deploy/scripts
-
-          # loadtest 전용 appspec / scripts 사용
-          cp appspec/appspec-loadtest.yml deploy/appspec.yml
-          cp -r scripts/* deploy/scripts/
-
-          # 줄바꿈/권한 처리
-          sed -i 's/\r$//' deploy/scripts/*.sh
-          chmod +x deploy/scripts/*.sh
-
-          # 실행 가능한 jar만 복사
-          cp build/libs/*-SNAPSHOT.jar deploy/ 2>/dev/null || cp build/libs/*.jar deploy/
-          rm -f deploy/*-plain.jar
-
-      # 4️⃣ Zip 압축
-      - name: Zip deployment package
-        run: |
-          cd deploy
-          zip -r ../deploy.zip .
-
-      # 5️⃣ AWS 인증
+      # 1️⃣ AWS 인증
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -56,7 +21,39 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-northeast-2
 
-      # 6️⃣ S3 업로드 (LoadTest 전용)
+      # 2️⃣ ECR 로그인
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
+
+      # 3️⃣ Docker 이미지 빌드 & ECR 푸시
+      - name: Build and Push Docker Image
+        env:
+          ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+          ECR_REPOSITORY: kickon-loadtest
+          IMAGE_TAG: latest
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      # 4️⃣ CodeDeploy용 디렉토리 구성
+      - name: Prepare deploy directory
+        run: |
+          rm -rf deploy
+          mkdir -p deploy/scripts
+
+          cp appspec/appspec-loadtest.yml deploy/appspec.yml
+          cp scripts/* deploy/scripts/
+
+          sed -i 's/\r$//' deploy/scripts/*.sh
+          chmod +x deploy/scripts/*.sh
+
+      # 5️⃣ Zip 압축 (스크립트만 포함)
+      - name: Zip deployment package
+        run: |
+          cd deploy
+          zip -r ../deploy.zip .
+
+      # 6️⃣ S3 업로드
       - name: Upload zip to S3
         run: |
           aws s3 cp deploy.zip s3://${{ secrets.S3_BUCKET }}/deploy/loadtest.zip

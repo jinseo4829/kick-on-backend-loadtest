@@ -1,5 +1,5 @@
 server:
-  port: 8083
+  port: 8082
 
 spring:
   config:
@@ -16,7 +16,7 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.MySQL8Dialect
     hibernate:
-      ddl-auto:
+      ddl-auto: none
       naming:
         physical-strategy: kr.kickon.api.global.config.CustomNamingStrategy
         implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
@@ -94,7 +94,7 @@ management:
     enable:
       processor: false
 
-cookie:
-  domain: .kick-on.kr
-  secure: false
-  same-site: Lax
+#cookie:
+#  domain: .kick-on.kr
+#  secure: false
+#  same-site: Lax
