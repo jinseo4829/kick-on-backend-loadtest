@@ -1,0 +1,61 @@
+# ===============================
+# Git / VCS
+# ===============================
+.git
+.gitignore
+.github
+
+# ===============================
+# Gradle / Build Cache
+# ===============================
+.gradle
+build/tmp
+build/resources
+build/generated
+build/reports
+build/test-results
+
+# ❗ JAR는 필요하므로 build/libs는 제외하지 않음
+# build/libs/*.jar 는 Dockerfile에서 COPY 대상
+
+# ===============================
+# IDE / Editor
+# ===============================
+.idea
+*.iws
+*.iml
+*.ipr
+out
+bin
+.vscode
+.settings
+.project
+.classpath
+.factorypath
+.springBeans
+.sts4-cache
+
+# ===============================
+# OS / Misc
+# ===============================
+.DS_Store
+Thumbs.db
+HELP.md
+
+# ===============================
+# Test / Generated
+# ===============================
+src/test
+src/main/generated
+
+# ===============================
+# Local / Secret Config
+# ===============================
+src/main/resources/application.yml
+*.env
+*.log
+
+# ===============================
+# Node (혹시 있을 경우 대비)
+# ===============================
+node_modules
