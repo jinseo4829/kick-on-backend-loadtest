@@ -1,7 +1,7 @@
 version: 0.0
 os: linux
 
-files: # GitHub Actions에서 만든 deploy.zip에서 codedeploy가 scripts/start.sh → /srv/kickon/loadtest/scripts/start.sh로 파일 복사
+files: # GitHub Actions에서 만든 deploy.zip에서 codedeploy가 scripts/start.sh → /srv/kickon/loadtest/scripts/start.sh로 파일복사
   - source: scripts/ # 실행은 아직 안하고 hook에서 실행
     destination: /srv/kickon/loadtest/scripts
 
