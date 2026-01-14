@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 1️⃣ JAR 빌드 (가장 중요)
+      # 1️⃣ JAR 빌드
       - name: Build with Gradle
         run: ./gradlew clean build -x test
 
