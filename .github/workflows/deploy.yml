@@ -17,7 +17,7 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew clean build -x test
 
-      # 2️⃣ 빌드 결과 확인
+      # 2️⃣ 빌드결과 확인
       - name: Verify JAR exists
         run: |
           echo "=== build/libs ==="
